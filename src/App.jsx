@@ -352,10 +352,21 @@ function CandForm({initial,allCandidates,onSave,onClose,activeUser=TEAM_FALLBACK
         const imgType=file.type||"image/jpeg";
         messages=[{role:"user",content:[{type:"image",source:{type:"base64",media_type:imgType,data:base64}},{type:"text",text:extractPrompt}]}];
       } else if(isDOCX){
-        // Send DOCX as a document
-        messages=[{role:"user",content:[{type:"document",source:{type:"base64",media_type:"application/vnd.openxmlformats-officedocument.wordprocessingml.document",data:base64}},{type:"text",text:extractPrompt}]}];
+        // Extract text from DOCX using mammoth npm package
+        let docText="";
+        try{
+          const mammoth=await import("mammoth");
+          const arrayBuffer=await file.arrayBuffer();
+          const result=await mammoth.extractRawText({arrayBuffer});
+          docText=result.value?.substring(0,4000)||"";
+        }catch(me){
+          // fallback: strip binary chars
+          const ab=await file.arrayBuffer();
+          docText=new TextDecoder("utf-8",{fatal:false}).decode(ab).replace(/[^\x20-\x7E\n\r]/g," ").replace(/\s+/g," ").substring(0,3000);
+        }
+        messages=[{role:"user",content:`${extractPrompt}\n\nResume text:\n${docText}`}];
       } else {
-        messages=[{role:"user",content:`Extract candidate info. Return ONLY valid JSON: name, email, phone, title, seniority, experience, salary, location, workAuth, skills (array max 8), vertical.\n\nFile content (may be garbled if binary):\n${atob(base64).substring(0,3000)}`}];
+        messages=[{role:"user",content:`${extractPrompt}\n\nResume text:\n${atob(base64).replace(/[^\x20-\x7E\n]/g," ").substring(0,3000)}`}];
       }
       const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":import.meta.env.VITE_ANTHROPIC_API_KEY,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1200,messages})});
       const data=await res.json();
