@@ -30,7 +30,10 @@ export async function fetchCandidates() {
   if (error) throw error;
   return data.map((c) => ({
     ...c,
-    ownerId: c.owner_id || c.ownerId,
+    ownerId: c.owner_id,
+    workAuth: c.work_auth,
+    addedDate: c.added_date,
+    lastUpdated: c.updated_at?.split("T")[0],
     notes: c.candidate_notes || [],
     submittedTo: (c.candidate_jobs || []).map((r) => r.job_id),
     collaborators: c.collaborators || [],
@@ -39,10 +42,23 @@ export async function fetchCandidates() {
 }
 
 export async function upsertCandidate(candidate) {
-  const { notes, submittedTo, candidate_notes, candidate_jobs, ownerId, ...row } = candidate;
+  const { notes, submittedTo, candidate_notes, candidate_jobs, ownerId, workAuth, addedDate, lastUpdated, submittedTo: _st, ...rest } = candidate;
+  const row = {
+    ...rest,
+    owner_id: ownerId || candidate.owner_id,
+    work_auth: workAuth || candidate.work_auth,
+    added_date: addedDate || candidate.added_date || new Date().toISOString().split("T")[0],
+    updated_at: new Date().toISOString(),
+  };
+  // Remove any camelCase keys that don't exist in DB
+  delete row.ownerId;
+  delete row.workAuth;
+  delete row.addedDate;
+  delete row.lastUpdated;
+  delete row.assignedRecruiters;
   const { data, error } = await supabase
     .from("candidates")
-    .upsert({ ...row, owner_id: ownerId || row.owner_id, updated_at: new Date().toISOString() })
+    .upsert(row)
     .select()
     .single();
   if (error) throw error;
