@@ -9,7 +9,7 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 export async function uploadResume(candidateId, file) {
   const ext = file.name.split(".").pop();
   const path = `${candidateId}/${Date.now()}.${ext}`;
-  const { error } = await supabase.storage.from("resumes").upload(path, file, { upsert: true });
+  const { error } = await supabase.storage.from("HCP One Resumes").upload(path, file, { upsert: true });
   if (error) throw error;
   // Save path to candidate record
   const { error: updateError } = await supabase
@@ -22,12 +22,12 @@ export async function uploadResume(candidateId, file) {
 
 export async function getResumeUrl(path) {
   if (!path) return null;
-  const { data } = await supabase.storage.from("resumes").createSignedUrl(path, 3600);
+  const { data } = await supabase.storage.from("HCP One Resumes").createSignedUrl(path, 3600);
   return data?.signedUrl || null;
 }
 
 export async function deleteResume(path) {
-  const { error } = await supabase.storage.from("resumes").remove([path]);
+  const { error } = await supabase.storage.from("HCP One Resumes").remove([path]);
   if (error) throw error;
 }
 

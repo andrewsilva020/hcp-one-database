@@ -308,6 +308,7 @@ function CandForm({initial,allCandidates,onSave,onClose,activeUser=TEAM_FALLBACK
   const [pMsg,setPMsg]=useState(null);
   const [dupes,setDupes]=useState([]);
   const [dupeOk,setDupeOk]=useState(false);
+  const [pendingResume,setPendingResume]=useState(null); // store file for upload after save
   const fr=useRef();
   const s=(k,v)=>setF(p=>({...p,[k]:v}));
   const chkDupe=(em,ph)=>{if(dupeOk)return;setDupes(detectDupes(allCandidates,em,ph,f.id));};
@@ -315,6 +316,7 @@ function CandForm({initial,allCandidates,onSave,onClose,activeUser=TEAM_FALLBACK
   const toggleCollab=(id)=>{const cur=f.collaborators||[];if(cur.includes(id)){s("collaborators",cur.filter(x=>x!==id));}else{if(cur.length>=2)return;s("collaborators",[...cur,id]);}};
   const handleFile=async(e)=>{
     const file=e.target.files[0];if(!file)return;
+    setPendingResume(file); // store for upload after candidate is saved
     setParsing(true);setPMsg("Reading resume…");
     try{
       const isPDF=file.type==="application/pdf"||file.name.endsWith(".pdf");
@@ -325,13 +327,9 @@ function CandForm({initial,allCandidates,onSave,onClose,activeUser=TEAM_FALLBACK
         :[{role:"user",content:`Extract candidate info from this resume. Return ONLY valid JSON: name, email, phone, title, seniority, experience, salary, location, workAuth, skills (array max 8), vertical.\n\nResume:\n${atob(base64).substring(0,4000)}`}];
       const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":import.meta.env.VITE_ANTHROPIC_API_KEY,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1200,messages})});
       const data=await res.json();
-      console.log("API response:",JSON.stringify(data).substring(0,500));
       if(data.error) throw new Error(data.error.message);
       const rawText=data.content?.[0]?.text||"{}";
-      console.log("Raw text:",rawText.substring(0,500));
-      const cleaned=rawText.replace(/```json|```/g,"").trim();
-      const parsed=JSON.parse(cleaned);
-      console.log("Parsed:",parsed);
+      const parsed=JSON.parse(rawText.replace(/```json|```/g,"").trim());
       const mapped={};
       if(parsed.name) mapped.name=parsed.name;
       if(parsed.email) mapped.email=parsed.email;
@@ -344,20 +342,19 @@ function CandForm({initial,allCandidates,onSave,onClose,activeUser=TEAM_FALLBACK
       if(parsed.workAuth||parsed.work_auth) mapped.workAuth=parsed.workAuth||parsed.work_auth;
       if(parsed.skills?.length) mapped.skills=parsed.skills;
       if(parsed.vertical) mapped.vertical=parsed.vertical;
-      console.log("Mapped fields:",mapped);
       if(!Object.keys(mapped).length){
         setPMsg("⚠ Could not extract details. Fill manually.");
       } else {
-        setF(prev=>{const updated={...prev,...mapped};console.log("Updated form:",updated);return updated;});
-        setPMsg(`✓ Extracted ${Object.keys(mapped).length} fields — review below.`);
+        setF(prev=>({...prev,...mapped}));
+        setPMsg(`✓ Extracted ${Object.keys(mapped).length} fields — resume will be saved with candidate.`);
       }
     }catch(err){console.error("Parse error:",err);setPMsg("⚠ Parse failed: "+err.message);}
     setParsing(false);
   };
-  const submit=()=>{
+  const submit=async()=>{
     if(!f.name.trim()||!f.email.trim()) return alert("Name + email required.");
     if(dupes.length&&!dupeOk) return alert("Review duplicate warning first.");
-    onSave({...f,id:f.id||Date.now(),addedDate:f.addedDate||today(),lastUpdated:today(),submittedTo:f.submittedTo||[]});
+    await onSave({...f,id:f.id||null,addedDate:f.addedDate||today(),lastUpdated:today(),submittedTo:f.submittedTo||[]},pendingResume);
   };
   return <div>
     {dupes.length>0&&!dupeOk&&<div style={{background:C.warnL,border:`1px solid ${C.warn}40`,borderRadius:9,padding:"12px 14px",marginBottom:16}}>
@@ -421,7 +418,7 @@ function CandForm({initial,allCandidates,onSave,onClose,activeUser=TEAM_FALLBACK
       </div>
     </div>
     <div style={{display:"flex",gap:10}}>
-      <button onClick={submit} style={{flex:1,background:C.navy,color:C.white,border:"none",borderRadius:9,padding:"12px",fontSize:13,fontWeight:700,cursor:"pointer"}}>{initial?.id?"Save Changes":"Add Candidate"}</button>
+      <button onClick={submit} style={{flex:1,background:C.navy,color:C.white,border:"none",borderRadius:9,padding:"12px",fontSize:13,fontWeight:700,cursor:"pointer"}}>{initial?.id?"Save Changes":pendingResume?"Add Candidate + Save Resume":"Add Candidate"}</button>
       <button onClick={onClose} style={{background:C.white,color:C.gray500,border:`1px solid ${C.gray300}`,borderRadius:9,padding:"12px 20px",fontSize:13,cursor:"pointer"}}>Cancel</button>
     </div>
   </div>;
@@ -885,7 +882,7 @@ export default function HCPRecruit(){
   const stats={total:cands.length,active:cands.filter(c=>!["Placed","Rejected","On Hold"].includes(c.stage)).length,hot:cands.filter(c=>["Interview 1","Interview 2","Final Interview","Offer"].includes(c.stage)).length,placed:cands.filter(c=>c.stage==="Placed").length,openJobs:jobs.filter(j=>["Open – Sourcing","Active"].includes(j.status)).length,filled:jobs.filter(j=>j.status==="Filled").length};
 
   const reload=async()=>{const[c,j]=await Promise.all([fetchCandidates(),fetchJobs()]);setCands(c);setJobs(j);};
-  const saveCand=async(c)=>{await upsertCandidate(c);await reload();setModal(null);};
+  const saveCand=async(c,resumeFile)=>{const saved=await upsertCandidate(c);if(resumeFile&&saved?.id){try{await uploadResume(saved.id,resumeFile);}catch(e){console.error("Resume upload failed:",e);}}await reload();setModal(null);};
   const saveJob=async(j)=>{await upsertJob(j);await reload();setModal(null);};
   const stageChange=async(id,stage)=>{await updateCandidateStage(id,stage);const data=await fetchCandidates();setCands(data);};
   const jobStatusChange=async(id,status)=>{await updateJobStatus(id,status);const data=await fetchJobs();setJobs(data);};
