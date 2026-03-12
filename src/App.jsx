@@ -704,7 +704,7 @@ export default function HCPRecruit(){
 
     {/* TOP NAV */}
     <div style={{background:C.navy,padding:"0 28px",position:"sticky",top:0,zIndex:100,boxShadow:"0 2px 12px rgba(10,22,40,0.18)"}}>
-      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",height:58,maxWidth:1400,margin:"0 auto"}}>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",height:58,maxWidth:"100%",}}>
         <div style={{display:"flex",alignItems:"center",gap:10}}>
           <div style={{width:34,height:34,borderRadius:9,background:"linear-gradient(135deg,#2563eb,#1d4ed8)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,boxShadow:"0 4px 12px rgba(37,99,235,0.35)"}}>⚡</div>
           <div>
@@ -737,7 +737,7 @@ export default function HCPRecruit(){
       </div>
     </div>
 
-    <div style={{padding:"24px 28px",maxWidth:1400,margin:"0 auto",width:"100%",boxSizing:"border-box"}}>
+    <div style={{padding:"24px 28px",maxWidth:"100%",width:"100%",boxSizing:"border-box"}}>
 
       {/* STATS */}
       <div style={{display:"flex",gap:12,marginBottom:24,flexWrap:"wrap"}}>
