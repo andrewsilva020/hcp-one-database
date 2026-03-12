@@ -646,56 +646,89 @@ function JobDetail({job,candidates,onEdit,onStatusChange,onAddNote,onRemove,onOp
 }
 
 // ── TEAM MANAGER ──────────────────────────────────────────────────
-function TeamManager({team,onSave}){
-  const blank={id:"",name:"",initials:"",color:"#1e56c8",role:"Recruiter",email:"",active:true};
+function TeamManager({team,activeUser,onSave,onRefresh}){
+  const isAdmin=activeUser?.is_admin;
+  const blank={id:"",name:"",initials:"",color:"#1e56c8",role:"Recruiter",email:"",active:true,is_admin:false};
   const [form,setForm]=useState(blank);
   const [editing,setEditing]=useState(null);
   const [saving,setSaving]=useState(false);
   const [msg,setMsg]=useState(null);
-  const colors=["#1e56c8","#7c3aed","#16a34a","#d97706","#dc2626","#0891b2","#ea580c","#db2777","#0f766e","#7c3aed"];
+  const colors=["#1e56c8","#7c3aed","#16a34a","#d97706","#dc2626","#0891b2","#ea580c","#db2777","#0f766e","#6366f1"];
   const s=(k,v)=>setForm(p=>({...p,[k]:v}));
-  const startEdit=(m)=>{setForm({...m});setEditing(m.id);setMsg(null);};
-  const startNew=()=>{setForm(blank);setEditing("new");setMsg(null);};
+
+  const canEdit=(m)=>{
+    if(isAdmin) return true;
+    return m.id===activeUser?.id; // non-admins can only edit themselves
+  };
+
+  const startEdit=(m)=>{
+    if(!canEdit(m)) return;
+    // Non-admins only see limited fields
+    setForm({...m});setEditing(m.id);setMsg(null);
+  };
+  const startNew=()=>{
+    if(!isAdmin) return;
+    setForm(blank);setEditing("new");setMsg(null);
+  };
   const save=async()=>{
     if(!form.name.trim()||!form.id.trim()) return setMsg("Name and ID are required.");
     setSaving(true);
     try{
       await onSave({...form,initials:form.initials||form.name.split(" ").map(x=>x[0]).join("").substring(0,2).toUpperCase()});
-      setMsg("✓ Saved successfully");
+      setMsg("✓ Saved");
       setEditing(null);setForm(blank);
+      if(onRefresh) onRefresh();
     }catch(e){setMsg("⚠ Save failed: "+e.message);}
     setSaving(false);
   };
+
   return <div>
     <div style={{marginBottom:16,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-      <div style={{fontSize:13,color:C.gray500}}>Manage your recruiting team. Set each member's email to match their Supabase login.</div>
-      <button onClick={startNew} style={{background:C.navy,color:C.white,border:"none",borderRadius:8,padding:"8px 16px",fontSize:12,fontWeight:600,cursor:"pointer"}}>+ Add Member</button>
+      <div>
+        <div style={{fontSize:13,color:C.gray700,fontWeight:600,marginBottom:3}}>
+          {isAdmin?"Admin View — Full Control":"Your Team"}
+        </div>
+        <div style={{fontSize:12,color:C.gray400}}>
+          {isAdmin?"You can add, edit, and deactivate any team member. New members auto-join when they first log in.":"You can edit your own profile. Contact Andrew to make other changes."}
+        </div>
+      </div>
+      {isAdmin&&<button onClick={startNew} style={{background:C.navy,color:C.white,border:"none",borderRadius:8,padding:"8px 16px",fontSize:12,fontWeight:600,cursor:"pointer",flexShrink:0}}>+ Add Member</button>}
     </div>
 
     {/* Team list */}
     <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:20}}>
-      {team.map(m=><div key={m.id} style={{background:C.white,border:`1px solid ${C.gray200}`,borderRadius:10,padding:"12px 16px",display:"flex",alignItems:"center",gap:12,boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
-        <div style={{width:38,height:38,borderRadius:9,background:m.color,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:700,color:C.white,flexShrink:0}}>{m.initials}</div>
-        <div style={{flex:1}}>
-          <div style={{color:C.navy,fontSize:13,fontWeight:600}}>{m.name}</div>
-          <div style={{color:C.gray400,fontSize:11,marginTop:1}}>{m.role} · {m.email||<span style={{color:C.danger}}>No email set</span>}</div>
-        </div>
-        <span style={{background:m.active?C.successL:C.dangerL,color:m.active?C.success:C.danger,borderRadius:5,padding:"2px 8px",fontSize:11,fontWeight:600}}>{m.active?"Active":"Inactive"}</span>
-        <button onClick={()=>startEdit(m)} style={{background:C.gray100,color:C.gray600,border:`1px solid ${C.gray200}`,borderRadius:6,padding:"5px 12px",fontSize:11,cursor:"pointer",fontWeight:500}}>Edit</button>
-      </div>)}
+      {team.map(m=>{
+        const editable=canEdit(m);
+        const isMe=m.id===activeUser?.id;
+        return <div key={m.id} style={{background:C.white,border:`1px solid ${isMe?m.color+"40":C.gray200}`,borderRadius:10,padding:"12px 16px",display:"flex",alignItems:"center",gap:12,boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
+          <div style={{width:38,height:38,borderRadius:9,background:m.color,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:700,color:C.white,flexShrink:0}}>{m.initials}</div>
+          <div style={{flex:1}}>
+            <div style={{display:"flex",alignItems:"center",gap:6}}>
+              <div style={{color:C.navy,fontSize:13,fontWeight:600}}>{m.name}</div>
+              {isMe&&<span style={{background:C.accentL,color:C.accent,borderRadius:4,padding:"1px 6px",fontSize:10,fontWeight:700}}>You</span>}
+              {m.is_admin&&<span style={{background:C.warnL,color:C.warn,borderRadius:4,padding:"1px 6px",fontSize:10,fontWeight:700}}>Admin</span>}
+            </div>
+            <div style={{color:C.gray400,fontSize:11,marginTop:1}}>{m.role} · {m.email||<span style={{color:C.danger,fontWeight:500}}>No email — can't log in</span>}</div>
+          </div>
+          <span style={{background:m.active?C.successL:C.dangerL,color:m.active?C.success:C.danger,borderRadius:5,padding:"2px 8px",fontSize:11,fontWeight:600,flexShrink:0}}>{m.active?"Active":"Inactive"}</span>
+          {editable&&<button onClick={()=>startEdit(m)} style={{background:C.gray100,color:C.gray600,border:`1px solid ${C.gray200}`,borderRadius:6,padding:"5px 12px",fontSize:11,cursor:"pointer",fontWeight:500,flexShrink:0}}>Edit</button>}
+          {!editable&&<div style={{width:60}}/>}
+        </div>;
+      })}
     </div>
 
     {/* Edit / Add form */}
     {editing&&<div style={{background:C.gray50,border:`1px solid ${C.gray200}`,borderRadius:12,padding:"20px"}}>
-      <div style={{fontSize:14,fontWeight:700,color:C.navy,marginBottom:16}}>{editing==="new"?"Add New Team Member":"Edit Team Member"}</div>
+      <div style={{fontSize:14,fontWeight:700,color:C.navy,marginBottom:4}}>{editing==="new"?"Add New Team Member":isAdmin?"Edit Team Member":"Edit Your Profile"}</div>
+      {!isAdmin&&<div style={{fontSize:12,color:C.gray400,marginBottom:14}}>You can update your name, initials, and avatar color.</div>}
       {msg&&<div style={{background:msg.startsWith("✓")?C.successL:C.dangerL,color:msg.startsWith("✓")?C.success:C.danger,borderRadius:7,padding:"8px 12px",marginBottom:14,fontSize:12,fontWeight:500}}>{msg}</div>}
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"12px 16px",marginBottom:16}}>
         <F label="Full Name *"><input style={inp} value={form.name} onChange={e=>s("name",e.target.value)} placeholder="Sarah Kim"/></F>
-        <F label="ID * (no spaces, lowercase)" ><input style={inp} value={form.id} onChange={e=>s("id",e.target.value.toLowerCase().replace(/\s/g,""))} placeholder="sarah" disabled={editing!=="new"}/></F>
-        <F label="Role"><input style={inp} value={form.role} onChange={e=>s("role",e.target.value)} placeholder="Recruiter"/></F>
-        <F label="Email (must match Supabase login)"><input style={inp} value={form.email||""} onChange={e=>s("email",e.target.value)} placeholder="sarah@inxldigital.com" type="email"/></F>
+        {isAdmin&&<F label="ID (no spaces, lowercase)"><input style={inp} value={form.id} onChange={e=>s("id",e.target.value.toLowerCase().replace(/\s/g,""))} placeholder="sarah" disabled={editing!=="new"}/></F>}
+        {isAdmin&&<F label="Role"><input style={inp} value={form.role} onChange={e=>s("role",e.target.value)} placeholder="Recruiter"/></F>}
+        {isAdmin&&<F label="Email (must match Supabase login)"><input style={inp} value={form.email||""} onChange={e=>s("email",e.target.value)} placeholder="sarah@inxldigital.com" type="email"/></F>}
         <F label="Initials"><input style={inp} value={form.initials} onChange={e=>s("initials",e.target.value.toUpperCase().substring(0,2))} placeholder="SK" maxLength={2}/></F>
-        <F label="Status"><select style={sel} value={form.active?"active":"inactive"} onChange={e=>s("active",e.target.value==="active")}><option value="active">Active</option><option value="inactive">Inactive</option></select></F>
+        {isAdmin&&<F label="Status"><select style={sel} value={form.active?"active":"inactive"} onChange={e=>s("active",e.target.value==="active")}><option value="active">Active</option><option value="inactive">Inactive</option></select></F>}
       </div>
       <div style={{marginBottom:16}}>
         <label style={{display:"block",color:C.gray500,fontSize:11,fontWeight:600,letterSpacing:0.3,marginBottom:8}}>Avatar Color</label>
@@ -705,7 +738,7 @@ function TeamManager({team,onSave}){
         </div>
       </div>
       <div style={{display:"flex",gap:10}}>
-        <button onClick={save} disabled={saving} style={{flex:1,background:C.navy,color:C.white,border:"none",borderRadius:8,padding:"11px",fontSize:13,fontWeight:600,cursor:"pointer"}}>{saving?"Saving…":"Save Member"}</button>
+        <button onClick={save} disabled={saving} style={{flex:1,background:C.navy,color:C.white,border:"none",borderRadius:8,padding:"11px",fontSize:13,fontWeight:600,cursor:"pointer"}}>{saving?"Saving…":"Save"}</button>
         <button onClick={()=>{setEditing(null);setForm(blank);setMsg(null);}} style={{background:C.white,color:C.gray500,border:`1px solid ${C.gray300}`,borderRadius:8,padding:"11px 18px",fontSize:13,cursor:"pointer"}}>Cancel</button>
       </div>
     </div>}
@@ -731,14 +764,24 @@ export default function HCPRecruit(){
   useEffect(()=>{getSession().then(s=>{setSession(s);setAuthChecked(true);});},[]);
   useEffect(()=>{
     if(!session) return;
+    const email=session.user?.email;
     Promise.all([fetchCandidates(),fetchJobs(),fetchTeam()])
-      .then(([c,j,t])=>{
+      .then(async([c,j,t])=>{
         setCands(c);setJobs(j);
-        TEAM=t; setTeam(t);
-        // Match logged-in email to team member
-        const email=session.user?.email;
+        // Auto-add new user to team if not already there
         const matched=t.find(m=>m.email&&m.email.toLowerCase()===email?.toLowerCase());
-        if(matched) setActiveUser(matched);
+        if(!matched&&email){
+          const namePart=email.split("@")[0].replace(/[._]/g," ").replace(/\b\w/g,x=>x.toUpperCase());
+          const newMember={id:email.split("@")[0].toLowerCase().replace(/[^a-z0-9]/g,""),name:namePart,initials:namePart.split(" ").map(x=>x[0]).join("").substring(0,2).toUpperCase(),color:"#64748b",role:"Recruiter",email,active:true,is_admin:false};
+          await upsertTeamMember(newMember);
+          const refreshed=await fetchTeam();
+          TEAM=refreshed;setTeam(refreshed);
+          const me=refreshed.find(m=>m.email?.toLowerCase()===email.toLowerCase());
+          if(me) setActiveUser(me);
+        } else {
+          TEAM=t;setTeam(t);
+          if(matched) setActiveUser(matched);
+        }
         setLoading(false);
       })
       .catch(err=>{console.error("Load error:",err);setLoading(false);});
@@ -956,6 +999,6 @@ export default function HCPRecruit(){
     {modal?.t==="edit-job"&&<Modal title="Edit Job Order" onClose={()=>setModal(null)} wide><JobForm initial={modal.j} onSave={saveJob} onClose={()=>setModal(null)} activeUser={activeUser} team={team}/></Modal>}
     {modal?.t==="job"&&(()=>{const live=jobs.find(j=>j.id===modal.j.id)||modal.j;return <Modal title="Job Order Detail" onClose={()=>setModal(null)} wide><JobDetail job={live} candidates={cands} onEdit={()=>setModal({t:"edit-job",j:live})} onStatusChange={jobStatusChange} onAddNote={addJobNoteHandler} onRemove={removeFromJob} onOpenCand={c=>{setModal(null);setTimeout(()=>setModal({t:"cand",c}),40);}} activeUser={activeUser}/></Modal>;})()}
     {modal?.t==="report"&&<Modal title="Weekly Activity Report" subtitle={`Week of ${weekStart()} – ${weekEnd()}`} onClose={()=>setModal(null)} xl><WeeklyReport cands={cands} jobs={jobs}/></Modal>}
-    {modal?.t==="team"&&<Modal title="Team Management" subtitle="Add or update team members. New members need a Supabase login to sign in." onClose={()=>setModal(null)} wide><TeamManager team={team} onSave={async(m)=>{await upsertTeamMember(m);const t=await fetchTeam();TEAM=t;setTeam(t);}}/></Modal>}
+    {modal?.t==="team"&&<Modal title="Team Management" subtitle={activeUser?.is_admin?"Admin — full control":"View your team"} onClose={()=>setModal(null)} wide><TeamManager team={team} activeUser={activeUser} onSave={async(m)=>{await upsertTeamMember(m);const t=await fetchTeam();TEAM=t;setTeam(t);}} onRefresh={async()=>{const t=await fetchTeam();TEAM=t;setTeam(t);}}/></Modal>}
   </div>;
 }
