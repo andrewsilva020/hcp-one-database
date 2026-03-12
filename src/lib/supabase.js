@@ -29,46 +29,56 @@ export async function fetchCandidates() {
     .order("created_at", { ascending: false });
   if (error) throw error;
   return data.map((c) => ({
-    ...c,
+    id: c.id,
+    name: c.name,
+    email: c.email,
+    phone: c.phone,
+    linkedin: c.linkedin,
+    title: c.title,
+    seniority: c.seniority,
+    vertical: c.vertical,
+    stage: c.stage,
+    skills: c.skills || [],
+    salary: c.salary,
+    location: c.location,
+    experience: c.experience,
+    source: c.source,
+    collaborators: c.collaborators || [],
+    // camelCase aliases for the app
     ownerId: c.owner_id,
     workAuth: c.work_auth,
     addedDate: c.added_date,
     lastUpdated: c.updated_at?.split("T")[0],
+    // nested relations
     notes: c.candidate_notes || [],
     submittedTo: (c.candidate_jobs || []).map((r) => r.job_id),
-    collaborators: c.collaborators || [],
-    skills: c.skills || [],
   }));
 }
 
 export async function upsertCandidate(candidate) {
-  // Strip all app-side fields and camelCase keys, build clean DB row
+  const isNew = !candidate.id || typeof candidate.id === "number";
   const row = {
-    id: candidate.id,
     name: candidate.name,
     email: candidate.email,
-    phone: candidate.phone,
-    linkedin: candidate.linkedin,
-    title: candidate.title,
-    seniority: candidate.seniority,
-    vertical: candidate.vertical,
-    stage: candidate.stage,
+    phone: candidate.phone || "",
+    linkedin: candidate.linkedin || "",
+    title: candidate.title || "",
+    seniority: candidate.seniority || "",
+    vertical: candidate.vertical || "",
+    stage: candidate.stage || "Sourced",
     skills: candidate.skills || [],
-    salary: candidate.salary,
-    location: candidate.location,
+    salary: candidate.salary || "",
+    location: candidate.location || "",
     work_auth: candidate.workAuth || candidate.work_auth || "",
-    experience: candidate.experience,
-    source: candidate.source,
+    experience: candidate.experience || "",
+    source: candidate.source || "",
     owner_id: candidate.ownerId || candidate.owner_id || "",
     collaborators: candidate.collaborators || [],
     added_date: candidate.addedDate || candidate.added_date || new Date().toISOString().split("T")[0],
     updated_at: new Date().toISOString(),
   };
-  const { data, error } = await supabase
-    .from("candidates")
-    .upsert(row)
-    .select()
-    .single();
+  if (!isNew) row.id = candidate.id;
+  const { data, error } = await supabase.from("candidates").upsert(row).select().single();
   if (error) throw error;
   return data;
 }
@@ -82,11 +92,14 @@ export async function updateCandidateStage(id, stage) {
 }
 
 export async function addCandidateNote(candidateId, note) {
-  const { data, error } = await supabase
-    .from("candidate_notes")
-    .insert({ candidate_id: candidateId, ...note })
-    .select()
-    .single();
+  const row = {
+    candidate_id: candidateId,
+    author: note.author,
+    author_id: note.authorId,
+    text: note.text,
+    date: note.date,
+  };
+  const { data, error } = await supabase.from("candidate_notes").insert(row).select().single();
   if (error) throw error;
   return data;
 }
@@ -99,24 +112,49 @@ export async function fetchJobs() {
     .order("priority", { ascending: true });
   if (error) throw error;
   return data.map((j) => ({
-    ...j,
+    id: j.id,
+    title: j.title,
+    client: j.client,
+    spoc: j.spoc,
+    location: j.location,
+    salary: j.salary,
+    priority: j.priority,
+    status: j.status,
+    jd: j.jd,
+    submitted: j.submitted,
+    interviewed: j.interviewed,
+    offers: j.offers,
+    // camelCase aliases
+    empType: j.emp_type,
+    reqDate: j.req_date,
+    assignedRecruiters: j.assigned_recruiters || [],
+    // nested
     notes: j.job_notes || [],
     submittedCandidates: (j.candidate_jobs || []).map((r) => r.candidate_id),
-    assignedRecruiters: j.assigned_recruiters || [],
   }));
 }
 
 export async function upsertJob(job) {
-  const { notes, submittedCandidates, job_notes, candidate_jobs, ...row } = job;
-  const { data, error } = await supabase
-    .from("jobs")
-    .upsert({
-      ...row,
-      assigned_recruiters: row.assignedRecruiters || [],
-      updated_at: new Date().toISOString(),
-    })
-    .select()
-    .single();
+  const isNew = !job.id || typeof job.id === "number";
+  const row = {
+    title: job.title,
+    client: job.client,
+    spoc: job.spoc || "",
+    location: job.location || "",
+    salary: job.salary || "",
+    priority: job.priority || "P1",
+    status: job.status || "Open – Sourcing",
+    jd: job.jd || "",
+    submitted: job.submitted || 0,
+    interviewed: job.interviewed || 0,
+    offers: job.offers || 0,
+    emp_type: job.empType || job.emp_type || "Full-Time",
+    req_date: job.reqDate || job.req_date || null,
+    assigned_recruiters: job.assignedRecruiters || job.assigned_recruiters || [],
+    updated_at: new Date().toISOString(),
+  };
+  if (!isNew) row.id = job.id;
+  const { data, error } = await supabase.from("jobs").upsert(row).select().single();
   if (error) throw error;
   return data;
 }
@@ -130,11 +168,14 @@ export async function updateJobStatus(id, status) {
 }
 
 export async function addJobNote(jobId, note) {
-  const { data, error } = await supabase
-    .from("job_notes")
-    .insert({ job_id: jobId, ...note })
-    .select()
-    .single();
+  const row = {
+    job_id: jobId,
+    author: note.author,
+    author_id: note.authorId,
+    text: note.text,
+    date: note.date,
+  };
+  const { data, error } = await supabase.from("job_notes").insert(row).select().single();
   if (error) throw error;
   return data;
 }
