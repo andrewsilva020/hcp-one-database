@@ -338,13 +338,25 @@ function CandForm({initial,allCandidates,onSave,onClose,activeUser=TEAM_FALLBACK
       const {supabase}=await import("./lib/supabase");
       const {error:upErr}=await supabase.storage.from("HCP One Resumes").upload(path,file,{upsert:true});
       if(!upErr) s("resumePath",path);
-      // Now parse
+      // Now parse — determine media type
       const isPDF=file.type==="application/pdf"||file.name.endsWith(".pdf");
+      const isDOCX=file.name.match(/\.docx?$/i)||file.type.includes("word");
+      const isImage=file.type.startsWith("image/")||file.name.match(/\.(png|jpg|jpeg|webp)$/i);
       const base64=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result.split(",")[1]);r.onerror=()=>rej(new Error("Read failed"));r.readAsDataURL(file);});
       setPMsg("AI extracting details…");
-      const messages=isPDF
-        ?[{role:"user",content:[{type:"document",source:{type:"base64",media_type:"application/pdf",data:base64}},{type:"text",text:"Extract candidate info from this resume. Return ONLY valid JSON with these exact fields: name, email, phone, title, seniority (one of: Individual Contributor/Senior IC/Team Lead/Manager/Director/VP/SVP/C-Suite / Partner), experience, salary, location, workAuth (one of: US Citizen/Green Card/H-1B/H-4 EAD/L-1/TN Visa/OPT/CPT/EAD/EU Passport/EU Blue Card/Residence Permit/Requires Sponsorship/Other), skills (array of up to 8 most relevant skills), vertical (one of: Telecom / Wireless/AI / ML / Data/Cybersecurity/Software Engineering/Cloud / DevOps/Sales & Business Development/Directors & VPs/SVPs & C-Suite/Client Partners/Project / Program Mgmt/Network Engineering/Consulting). Only include fields you can confidently extract."}]}]
-        :[{role:"user",content:`Extract candidate info from this resume. Return ONLY valid JSON: name, email, phone, title, seniority, experience, salary, location, workAuth, skills (array max 8), vertical.\n\nResume:\n${atob(base64).substring(0,4000)}`}];
+      const extractPrompt="Extract candidate info from this resume. Return ONLY valid JSON with these exact fields: name, email, phone, title, seniority (one of: Individual Contributor/Senior IC/Team Lead/Manager/Director/VP/SVP/C-Suite / Partner), experience, salary, location, workAuth (one of: US Citizen/Green Card/H-1B/H-4 EAD/L-1/TN Visa/OPT/CPT/EAD/EU Passport/EU Blue Card/Residence Permit/Requires Sponsorship/Other), skills (array of up to 8 most relevant skills), vertical (one of: Telecom / Wireless/AI / ML / Data/Cybersecurity/Software Engineering/Cloud / DevOps/Sales & Business Development/Directors & VPs/SVPs & C-Suite/Client Partners/Project / Program Mgmt/Network Engineering/Consulting). Only include fields you can confidently extract.";
+      let messages;
+      if(isPDF){
+        messages=[{role:"user",content:[{type:"document",source:{type:"base64",media_type:"application/pdf",data:base64}},{type:"text",text:extractPrompt}]}];
+      } else if(isImage){
+        const imgType=file.type||"image/jpeg";
+        messages=[{role:"user",content:[{type:"image",source:{type:"base64",media_type:imgType,data:base64}},{type:"text",text:extractPrompt}]}];
+      } else if(isDOCX){
+        // Send DOCX as a document
+        messages=[{role:"user",content:[{type:"document",source:{type:"base64",media_type:"application/vnd.openxmlformats-officedocument.wordprocessingml.document",data:base64}},{type:"text",text:extractPrompt}]}];
+      } else {
+        messages=[{role:"user",content:`Extract candidate info. Return ONLY valid JSON: name, email, phone, title, seniority, experience, salary, location, workAuth, skills (array max 8), vertical.\n\nFile content (may be garbled if binary):\n${atob(base64).substring(0,3000)}`}];
+      }
       const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":import.meta.env.VITE_ANTHROPIC_API_KEY,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1200,messages})});
       const data=await res.json();
       if(data.error) throw new Error(data.error.message);
