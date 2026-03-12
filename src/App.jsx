@@ -699,7 +699,7 @@ export default function HCPRecruit(){
   const removeFromJob=async(jid,cid)=>{await removeCandidateFromJob(cid,jid);const data=await fetchJobs();setJobs(data);};
   const openCand=(c)=>setModal({t:"cand",c});
 
-  return <div style={{minHeight:"100vh",width:"100%",background:C.gray50,color:C.gray700,fontFamily:"'DM Sans',sans-serif"}}>
+  return <div style={{minHeight:"100vh",width:"100vw",background:C.gray50,color:C.gray700,fontFamily:"'DM Sans',sans-serif",position:"relative",overflowX:"hidden"}}>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Serif+Display&display=swap" rel="stylesheet"/>
 
     {/* TOP NAV */}
