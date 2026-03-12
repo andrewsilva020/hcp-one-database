@@ -1105,6 +1105,14 @@ export default function HCPRecruit(){
   const [js,setJs]=useState(""); const [jStat,setJStat]=useState("All"); const [jClient,setJClient]=useState("All"); const [jOwner,setJOwner]=useState("All");
 
   useEffect(()=>{getSession().then(s=>{setSession(s);setAuthChecked(true);});},[]);
+
+  // Prevent browser from opening dragged files in a new tab
+  useEffect(()=>{
+    const prevent=(e)=>{e.preventDefault();e.stopPropagation();};
+    window.addEventListener("dragover",prevent);
+    window.addEventListener("drop",prevent);
+    return()=>{window.removeEventListener("dragover",prevent);window.removeEventListener("drop",prevent);};
+  },[]);
   useEffect(()=>{
     if(!session) return;
     const email=session.user?.email;
