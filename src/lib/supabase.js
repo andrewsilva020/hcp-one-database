@@ -5,6 +5,48 @@ const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+// ── RESUME STORAGE ────────────────────────────────────────────────
+export async function uploadResume(candidateId, file) {
+  const ext = file.name.split(".").pop();
+  const path = `${candidateId}/${Date.now()}.${ext}`;
+  const { error } = await supabase.storage.from("resumes").upload(path, file, { upsert: true });
+  if (error) throw error;
+  // Save path to candidate record
+  const { error: updateError } = await supabase
+    .from("candidates")
+    .update({ resume_path: path, updated_at: new Date().toISOString() })
+    .eq("id", candidateId);
+  if (updateError) throw updateError;
+  return path;
+}
+
+export async function getResumeUrl(path) {
+  if (!path) return null;
+  const { data } = await supabase.storage.from("resumes").createSignedUrl(path, 3600);
+  return data?.signedUrl || null;
+}
+
+export async function deleteResume(path) {
+  const { error } = await supabase.storage.from("resumes").remove([path]);
+  if (error) throw error;
+}
+
+// ── DELETE ────────────────────────────────────────────────────────
+export async function deleteCandidate(id) {
+  // Delete related records first
+  await supabase.from("candidate_notes").delete().eq("candidate_id", id);
+  await supabase.from("candidate_jobs").delete().eq("candidate_id", id);
+  const { error } = await supabase.from("candidates").delete().eq("id", id);
+  if (error) throw error;
+}
+
+export async function deleteJob(id) {
+  await supabase.from("job_notes").delete().eq("job_id", id);
+  await supabase.from("candidate_jobs").delete().eq("job_id", id);
+  const { error } = await supabase.from("jobs").delete().eq("id", id);
+  if (error) throw error;
+}
+
 // ── TEAM ──────────────────────────────────────────────────────────
 export async function fetchTeam() {
   const { data, error } = await supabase
@@ -49,7 +91,7 @@ export async function fetchCandidates() {
     workAuth: c.work_auth,
     addedDate: c.added_date,
     lastUpdated: c.updated_at?.split("T")[0],
-    // nested relations
+    resumePath: c.resume_path || null,
     notes: c.candidate_notes || [],
     submittedTo: (c.candidate_jobs || []).map((r) => r.job_id),
   }));
@@ -75,6 +117,7 @@ export async function upsertCandidate(candidate) {
     owner_id: candidate.ownerId || candidate.owner_id || "",
     collaborators: candidate.collaborators || [],
     added_date: candidate.addedDate || candidate.added_date || new Date().toISOString().split("T")[0],
+    resume_path: candidate.resumePath || candidate.resume_path || null,
     updated_at: new Date().toISOString(),
   };
   if (!isNew) row.id = candidate.id;

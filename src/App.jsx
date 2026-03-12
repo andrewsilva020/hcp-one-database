@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { fetchCandidates, fetchJobs, fetchTeam, upsertTeamMember, upsertCandidate, upsertJob, updateCandidateStage, updateJobStatus, addCandidateNote, addJobNote as addJobNoteDB, submitCandidateToJob, removeCandidateFromJob, subscribeToChanges, signIn, signOut, getSession } from "./lib/supabase";
+import { fetchCandidates, fetchJobs, fetchTeam, upsertTeamMember, upsertCandidate, upsertJob, updateCandidateStage, updateJobStatus, addCandidateNote, addJobNote as addJobNoteDB, submitCandidateToJob, removeCandidateFromJob, subscribeToChanges, signIn, signOut, getSession, deleteCandidate, deleteJob, uploadResume, getResumeUrl } from "./lib/supabase";
 
 // ── DESIGN TOKENS ─────────────────────────────────────────────────
 const C = {
@@ -428,8 +428,31 @@ function CandForm({initial,allCandidates,onSave,onClose,activeUser=TEAM_FALLBACK
 }
 
 // ── CANDIDATE DETAIL ──────────────────────────────────────────────
-function CandDetail({c,jobs,onEdit,onStageChange,onAddNote,onSubmitToJob,activeUser=TEAM_FALLBACK[0]}){
+function CandDetail({c,jobs,onEdit,onStageChange,onAddNote,onSubmitToJob,activeUser=TEAM_FALLBACK[0],onDelete,onResumeUpload}){
   const [note,setNote]=useState("");
+  const [resumeUrl,setResumeUrl]=useState(null);
+  const [uploadingResume,setUploadingResume]=useState(false);
+  const [resumeMsg,setResumeMsg]=useState(null);
+  const [dragging,setDragging]=useState(false);
+  const resumeRef=useRef();
+
+  useEffect(()=>{
+    if(c.resumePath){
+      getResumeUrl(c.resumePath).then(setResumeUrl);
+    } else {
+      setResumeUrl(null);
+    }
+  },[c.resumePath]);
+
+  const handleResumeDrop=async(file)=>{
+    if(!file||!file.name.match(/\.(pdf|doc|docx)$/i)) return setResumeMsg("⚠ PDF, DOC or DOCX only.");
+    setUploadingResume(true);setResumeMsg("Uploading…");
+    try{
+      await onResumeUpload(c.id,file);
+      setResumeMsg("✓ Resume uploaded.");
+    }catch(e){setResumeMsg("⚠ Upload failed: "+e.message);}
+    setUploadingResume(false);
+  };
   const progress=STAGES.filter(s=>!["On Hold","Rejected"].includes(s));
   const si=STAGES.indexOf(c.stage);
   const assigned=jobs.filter(j=>j.submittedCandidates?.includes(c.id));
@@ -448,7 +471,7 @@ function CandDetail({c,jobs,onEdit,onStageChange,onAddNote,onSubmitToJob,activeU
           {c.vertical&&<Tag label={c.vertical} color={C.purple} bg={C.purpleL}/>}
         </div>
       </div>
-      <button onClick={onEdit} style={{background:C.navy,color:C.white,border:"none",borderRadius:8,padding:"8px 16px",fontSize:12,fontWeight:600,cursor:"pointer",flexShrink:0}}>✏ Edit</button>
+      <div style={{display:"flex",gap:8,flexShrink:0}}><button onClick={onEdit} style={{background:C.navy,color:C.white,border:"none",borderRadius:8,padding:"8px 16px",fontSize:12,fontWeight:600,cursor:"pointer"}}>✏ Edit</button>{onDelete&&<button onClick={()=>onDelete(c.id)} style={{background:C.dangerL,color:C.danger,border:`1px solid ${C.danger}30`,borderRadius:8,padding:"8px 14px",fontSize:12,fontWeight:600,cursor:"pointer"}}>🗑 Delete</button>}</div>
     </div>
     <div style={{background:owner?owner.color+"08":C.gray50,border:`1px solid ${owner?owner.color+"30":C.gray200}`,borderRadius:10,padding:"14px 16px",marginBottom:18}}>
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:12}}>
@@ -496,6 +519,30 @@ function CandDetail({c,jobs,onEdit,onStageChange,onAddNote,onSubmitToJob,activeU
       ))}
     </div>
     {c.linkedin&&<div style={{marginBottom:14}}><a href={`https://${c.linkedin.replace(/^https?:\/\//,"")}`} target="_blank" rel="noreferrer" style={{color:C.accent,fontSize:12,fontWeight:500}}>🔗 {c.linkedin}</a></div>}
+    {/* Resume section */}
+    <div style={{marginBottom:16}}>
+      <div style={{color:C.gray400,fontSize:10,fontWeight:600,letterSpacing:0.8,textTransform:"uppercase",marginBottom:8}}>Resume</div>
+      {c.resumePath?(
+        <div style={{background:C.successL,border:`1px solid ${C.success}30`,borderRadius:9,padding:"11px 14px",display:"flex",alignItems:"center",gap:10}}>
+          <span style={{fontSize:18}}>📄</span>
+          <div style={{flex:1}}>
+            <div style={{color:C.success,fontSize:12,fontWeight:600}}>Resume on file</div>
+            <div style={{color:C.gray400,fontSize:11}}>Uploaded</div>
+          </div>
+          {resumeUrl&&<a href={resumeUrl} target="_blank" rel="noreferrer" style={{background:C.success,color:C.white,borderRadius:7,padding:"6px 14px",fontSize:11,fontWeight:600,textDecoration:"none"}}>View PDF</a>}
+          {onResumeUpload&&<div onClick={()=>resumeRef.current?.click()} style={{background:C.white,color:C.gray500,border:`1px solid ${C.gray200}`,borderRadius:7,padding:"6px 12px",fontSize:11,fontWeight:500,cursor:"pointer"}}>Replace</div>}
+        </div>
+      ):(
+        <div onDragOver={e=>{e.preventDefault();setDragging(true);}} onDragLeave={()=>setDragging(false)} onDrop={e=>{e.preventDefault();setDragging(false);const f=e.dataTransfer.files[0];if(f)handleResumeDrop(f);}} onClick={()=>onResumeUpload&&resumeRef.current?.click()} style={{background:dragging?C.accentL:C.gray50,border:`2px dashed ${dragging?C.accent:C.danger+"50"}`,borderRadius:9,padding:"16px",textAlign:"center",cursor:onResumeUpload?"pointer":"default",transition:"all 0.15s"}}>
+          <div style={{fontSize:20,marginBottom:4}}>📎</div>
+          <div style={{color:C.danger,fontSize:12,fontWeight:600}}>No resume on file</div>
+          {onResumeUpload&&<div style={{color:C.gray400,fontSize:11,marginTop:2}}>{dragging?"Drop to upload":"Click or drag & drop a PDF"}</div>}
+        </div>
+      )}
+      <input ref={resumeRef} type="file" accept=".pdf,.doc,.docx" style={{display:"none"}} onChange={e=>{const f=e.target.files[0];if(f)handleResumeDrop(f);}}/>
+      {resumeMsg&&<div style={{marginTop:6,fontSize:11,fontWeight:600,color:resumeMsg.startsWith("✓")?C.success:C.warn}}>{resumeMsg}</div>}
+    </div>
+
     {c.skills?.length>0&&<div style={{marginBottom:16}}>
       <div style={{color:C.gray400,fontSize:10,fontWeight:600,letterSpacing:0.8,textTransform:"uppercase",marginBottom:7}}>Skills</div>
       <div style={{display:"flex",flexWrap:"wrap",gap:5}}>{c.skills.map(x=><span key={x} style={{background:C.accentL,color:C.accent,borderRadius:5,padding:"3px 9px",fontSize:11,fontWeight:500}}>{x}</span>)}</div>
@@ -589,7 +636,7 @@ function JobForm({initial,onSave,onClose,activeUser=TEAM_FALLBACK[0],team=TEAM_F
 }
 
 // ── JOB DETAIL ────────────────────────────────────────────────────
-function JobDetail({job,candidates,onEdit,onStatusChange,onAddNote,onRemove,onOpenCand,activeUser=TEAM_FALLBACK[0]}){
+function JobDetail({job,candidates,onEdit,onStatusChange,onAddNote,onRemove,onOpenCand,activeUser=TEAM_FALLBACK[0],onDelete}){
   const [note,setNote]=useState("");
   const [showJD,setShowJD]=useState(false);
   const submitted=candidates.filter(c=>job.submittedCandidates?.includes(c.id));
@@ -606,7 +653,7 @@ function JobDetail({job,candidates,onEdit,onStatusChange,onAddNote,onRemove,onOp
           {job.priority&&<span style={{color:PC[job.priority]||C.gray400,background:(PC[job.priority]||C.gray400)+"15",borderRadius:5,padding:"3px 8px",fontSize:11,fontWeight:700}}>{job.priority}</span>}
         </div>
       </div>
-      <button onClick={onEdit} style={{background:C.navy,color:C.white,border:"none",borderRadius:8,padding:"8px 16px",fontSize:12,fontWeight:600,cursor:"pointer",flexShrink:0}}>✏ Edit</button>
+      <div style={{display:"flex",gap:8,flexShrink:0}}><button onClick={onEdit} style={{background:C.navy,color:C.white,border:"none",borderRadius:8,padding:"8px 16px",fontSize:12,fontWeight:600,cursor:"pointer"}}>✏ Edit</button>{onDelete&&<button onClick={()=>onDelete(job.id)} style={{background:C.dangerL,color:C.danger,border:`1px solid ${C.danger}30`,borderRadius:8,padding:"8px 14px",fontSize:12,fontWeight:600,cursor:"pointer"}}>🗑 Delete</button>}</div>
     </div>
     {(job.assignedRecruiters||[]).length>0&&<div style={{background:C.gray50,border:`1px solid ${C.gray200}`,borderRadius:9,padding:"11px 14px",marginBottom:14}}>
       <div style={{fontSize:10,fontWeight:600,color:C.gray400,letterSpacing:0.8,textTransform:"uppercase",marginBottom:8}}>Assigned Recruiters</div>
@@ -846,6 +893,9 @@ export default function HCPRecruit(){
   const addJobNoteHandler=async(id,text)=>{await addJobNoteDB(id,{author:activeUser.name,authorId:activeUser.id,text,date:today()});const data=await fetchJobs();setJobs(data);};
   const submitToJob=async(cid,jid)=>{await submitCandidateToJob(cid,jid);await reload();};
   const removeFromJob=async(jid,cid)=>{await removeCandidateFromJob(cid,jid);const data=await fetchJobs();setJobs(data);};
+  const deleteCandHandler=async(id)=>{if(!window.confirm("Delete this candidate? This cannot be undone."))return;await deleteCandidate(id);await reload();setModal(null);};
+  const deleteJobHandler=async(id)=>{if(!window.confirm("Delete this job order? This cannot be undone."))return;await deleteJob(id);await reload();setModal(null);};
+  const handleResumeUpload=async(candidateId,file)=>{await uploadResume(candidateId,file);const data=await fetchCandidates();setCands(data);};
   const openCand=(c)=>setModal({t:"cand",c});
 
   return <div style={{minHeight:"100vh",width:"100vw",background:C.gray50,color:C.gray700,fontFamily:"'DM Sans',sans-serif",position:"relative",overflowX:"hidden"}}>
@@ -942,7 +992,14 @@ export default function HCPRecruit(){
                   <td style={{padding:"13px 16px"}}>{c.workAuth&&<Tag label={c.workAuth} color={C.success} bg={C.successL}/>}</td>
                   <td style={{padding:"13px 16px",color:C.navy,fontSize:12,fontWeight:600,whiteSpace:"nowrap"}}>{c.salary||"—"}</td>
                   <td style={{padding:"13px 16px"}}><StageBadge stage={c.stage}/></td>
-                  <td style={{padding:"13px 16px"}}><button onClick={e=>{e.stopPropagation();setModal({t:"edit-cand",c});}} style={{background:C.gray100,color:C.gray500,border:`1px solid ${C.gray200}`,borderRadius:6,padding:"4px 10px",fontSize:11,cursor:"pointer",fontWeight:500}}>Edit</button></td>
+                  <td style={{padding:"13px 16px",whiteSpace:"nowrap"}}>
+                    <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                      {c.resumePath
+                        ?<span title="Resume on file" style={{fontSize:14}}>📄</span>
+                        :<span title="No resume" style={{fontSize:12,color:C.danger,fontWeight:600}}>No CV</span>}
+                      <button onClick={e=>{e.stopPropagation();setModal({t:"edit-cand",c});}} style={{background:C.gray100,color:C.gray500,border:`1px solid ${C.gray200}`,borderRadius:6,padding:"4px 10px",fontSize:11,cursor:"pointer",fontWeight:500}}>Edit</button>
+                    </div>
+                  </td>
                 </tr>;
               })}
               {!fCands.length&&<tr><td colSpan={8} style={{textAlign:"center",padding:48,color:C.gray300,fontSize:13}}>No candidates match your filters.</td></tr>}
@@ -1022,10 +1079,10 @@ export default function HCPRecruit(){
     {/* MODALS */}
     {modal?.t==="add-cand"&&<Modal title="Add New Candidate" subtitle="Fill in details or upload a resume for AI auto-fill" onClose={()=>setModal(null)}><CandForm allCandidates={cands} onSave={saveCand} onClose={()=>setModal(null)} activeUser={activeUser} team={team}/></Modal>}
     {modal?.t==="edit-cand"&&<Modal title="Edit Candidate" onClose={()=>setModal(null)}><CandForm initial={modal.c} allCandidates={cands} onSave={saveCand} onClose={()=>setModal(null)} activeUser={activeUser} team={team}/></Modal>}
-    {modal?.t==="cand"&&(()=>{const live=cands.find(c=>c.id===modal.c.id)||modal.c;return <Modal title="Candidate Profile" onClose={()=>setModal(null)} wide><CandDetail c={live} jobs={jobs} onEdit={()=>setModal({t:"edit-cand",c:live})} onStageChange={stageChange} onAddNote={addCandNoteHandler} onSubmitToJob={submitToJob} activeUser={activeUser}/></Modal>;})()}
+    {modal?.t==="cand"&&(()=>{const live=cands.find(c=>c.id===modal.c.id)||modal.c;return <Modal title="Candidate Profile" onClose={()=>setModal(null)} wide><CandDetail c={live} jobs={jobs} onEdit={()=>setModal({t:"edit-cand",c:live})} onStageChange={stageChange} onAddNote={addCandNoteHandler} onSubmitToJob={submitToJob} activeUser={activeUser} onDelete={activeUser?.is_admin?deleteCandHandler:null} onResumeUpload={handleResumeUpload}/></Modal>;})()}
     {modal?.t==="add-job"&&<Modal title="New Job Order" subtitle="Create a job order and assign recruiters" onClose={()=>setModal(null)} wide><JobForm onSave={saveJob} onClose={()=>setModal(null)} activeUser={activeUser} team={team}/></Modal>}
     {modal?.t==="edit-job"&&<Modal title="Edit Job Order" onClose={()=>setModal(null)} wide><JobForm initial={modal.j} onSave={saveJob} onClose={()=>setModal(null)} activeUser={activeUser} team={team}/></Modal>}
-    {modal?.t==="job"&&(()=>{const live=jobs.find(j=>j.id===modal.j.id)||modal.j;return <Modal title="Job Order Detail" onClose={()=>setModal(null)} wide><JobDetail job={live} candidates={cands} onEdit={()=>setModal({t:"edit-job",j:live})} onStatusChange={jobStatusChange} onAddNote={addJobNoteHandler} onRemove={removeFromJob} onOpenCand={c=>{setModal(null);setTimeout(()=>setModal({t:"cand",c}),40);}} activeUser={activeUser}/></Modal>;})()}
+    {modal?.t==="job"&&(()=>{const live=jobs.find(j=>j.id===modal.j.id)||modal.j;return <Modal title="Job Order Detail" onClose={()=>setModal(null)} wide><JobDetail job={live} candidates={cands} onEdit={()=>setModal({t:"edit-job",j:live})} onStatusChange={jobStatusChange} onAddNote={addJobNoteHandler} onRemove={removeFromJob} onOpenCand={c=>{setModal(null);setTimeout(()=>setModal({t:"cand",c}),40);}} activeUser={activeUser} onDelete={activeUser?.is_admin?deleteJobHandler:null}/></Modal>;})()}
     {modal?.t==="report"&&<Modal title="Weekly Activity Report" subtitle={`Week of ${weekStart()} – ${weekEnd()}`} onClose={()=>setModal(null)} xl><WeeklyReport cands={cands} jobs={jobs} team={team}/></Modal>}
     {modal?.t==="team"&&<Modal title="Team Management" subtitle={activeUser?.is_admin?"Admin — full control":"View your team"} onClose={()=>setModal(null)} wide><TeamManager team={team} activeUser={activeUser} onSave={async(m)=>{await upsertTeamMember(m);const t=await fetchTeam();TEAM=t;setTeam(t);}} onRefresh={async()=>{const t=await fetchTeam();TEAM=t;setTeam(t);}}/></Modal>}
   </div>;
