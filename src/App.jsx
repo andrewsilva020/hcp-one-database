@@ -102,7 +102,7 @@ function detectDupes(candidates, email, phone, excludeId=null) {
   });
 }
 
-function generateWeeklyReport(cands, jobs, filterRecruiter="all") {
+function generateWeeklyReport(cands, jobs, filterRecruiter="all", team=TEAM_FALLBACK) {
   const ws=weekStart(),we=weekEnd();
   const fc=filterRecruiter==="all"?cands:cands.filter(c=>c.ownerId===filterRecruiter||(c.collaborators||[]).includes(filterRecruiter));
   const fj=filterRecruiter==="all"?jobs:jobs.filter(j=>(j.assignedRecruiters||[]).includes(filterRecruiter));
@@ -110,7 +110,7 @@ function generateWeeklyReport(cands, jobs, filterRecruiter="all") {
   const byClient={};jobs.forEach(j=>{if(!byClient[j.client])byClient[j.client]=[];});
   fc.forEach(c=>{c.submittedTo?.forEach(jid=>{const j=jobs.find(x=>x.id===jid);if(j){if(!byClient[j.client])byClient[j.client]=[];if(!byClient[j.client].find(x=>x.id===c.id))byClient[j.client].push(c);}});});
   const byRecruiter={};
-  TEAM.forEach(t=>{const owned=cands.filter(c=>c.ownerId===t.id);const collab=cands.filter(c=>(c.collaborators||[]).includes(t.id));byRecruiter[t.id]={name:t.name,color:t.color,owned:owned.length,active:owned.filter(c=>!["Placed","Rejected"].includes(c.stage)).length,offers:owned.filter(c=>c.stage==="Offer").length,placed:owned.filter(c=>c.stage==="Placed").length,interviews:owned.filter(c=>["Interview 1","Interview 2","Final Interview"].includes(c.stage)).length,collab:collab.length,jobs:jobs.filter(j=>(j.assignedRecruiters||[]).includes(t.id)).length};});
+  (team||TEAM_FALLBACK).forEach(t=>{const owned=cands.filter(c=>c.ownerId===t.id);const collab=cands.filter(c=>(c.collaborators||[]).includes(t.id));byRecruiter[t.id]={name:t.name,color:t.color,owned:owned.length,active:owned.filter(c=>!["Placed","Rejected"].includes(c.stage)).length,offers:owned.filter(c=>c.stage==="Offer").length,placed:owned.filter(c=>c.stage==="Placed").length,interviews:owned.filter(c=>["Interview 1","Interview 2","Final Interview"].includes(c.stage)).length,collab:collab.length,jobs:jobs.filter(j=>(j.assignedRecruiters||[]).includes(t.id)).length};});
   return {ws,we,active:fc.filter(c=>!["Placed","Rejected"].includes(c.stage)),byStage,byClient,byRecruiter,openJobs:fj.filter(j=>["Open – Sourcing","Active"].includes(j.status)),hotCands:fc.filter(c=>["Interview 1","Interview 2","Final Interview","Offer"].includes(c.stage)),total:fc.length,placed:fc.filter(c=>c.stage==="Placed").length};
 }
 
@@ -224,9 +224,9 @@ function LoginScreen({onLogin}){
 }
 
 // ── WEEKLY REPORT ─────────────────────────────────────────────────
-function WeeklyReport({cands,jobs}){
+function WeeklyReport({cands,jobs,team=TEAM_FALLBACK}){
   const [filterR,setFilterR]=useState("all");
-  const r=generateWeeklyReport(cands,jobs,filterR);
+  const r=generateWeeklyReport(cands,jobs,filterR,team);
   const printReport=()=>{
     const w=window.open("","_blank");
     const rows=Object.entries(r.byRecruiter).map(([,d])=>`<tr><td>${d.name}</td><td>${d.owned}</td><td>${d.active}</td><td>${d.interviews}</td><td>${d.offers}</td><td>${d.placed}</td><td>${d.collab}</td><td>${d.jobs}</td></tr>`).join("");
@@ -999,7 +999,7 @@ export default function HCPRecruit(){
     {modal?.t==="add-job"&&<Modal title="New Job Order" subtitle="Create a job order and assign recruiters" onClose={()=>setModal(null)} wide><JobForm onSave={saveJob} onClose={()=>setModal(null)} activeUser={activeUser} team={team}/></Modal>}
     {modal?.t==="edit-job"&&<Modal title="Edit Job Order" onClose={()=>setModal(null)} wide><JobForm initial={modal.j} onSave={saveJob} onClose={()=>setModal(null)} activeUser={activeUser} team={team}/></Modal>}
     {modal?.t==="job"&&(()=>{const live=jobs.find(j=>j.id===modal.j.id)||modal.j;return <Modal title="Job Order Detail" onClose={()=>setModal(null)} wide><JobDetail job={live} candidates={cands} onEdit={()=>setModal({t:"edit-job",j:live})} onStatusChange={jobStatusChange} onAddNote={addJobNoteHandler} onRemove={removeFromJob} onOpenCand={c=>{setModal(null);setTimeout(()=>setModal({t:"cand",c}),40);}} activeUser={activeUser}/></Modal>;})()}
-    {modal?.t==="report"&&<Modal title="Weekly Activity Report" subtitle={`Week of ${weekStart()} – ${weekEnd()}`} onClose={()=>setModal(null)} xl><WeeklyReport cands={cands} jobs={jobs}/></Modal>}
+    {modal?.t==="report"&&<Modal title="Weekly Activity Report" subtitle={`Week of ${weekStart()} – ${weekEnd()}`} onClose={()=>setModal(null)} xl><WeeklyReport cands={cands} jobs={jobs} team={team}/></Modal>}
     {modal?.t==="team"&&<Modal title="Team Management" subtitle={activeUser?.is_admin?"Admin — full control":"View your team"} onClose={()=>setModal(null)} wide><TeamManager team={team} activeUser={activeUser} onSave={async(m)=>{await upsertTeamMember(m);const t=await fetchTeam();TEAM=t;setTeam(t);}} onRefresh={async()=>{const t=await fetchTeam();TEAM=t;setTeam(t);}}/></Modal>}
   </div>;
 }
