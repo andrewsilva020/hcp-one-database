@@ -322,11 +322,16 @@ function CandForm({initial,allCandidates,onSave,onClose,activeUser=TEAM_FALLBACK
       setPMsg("AI extracting details…");
       const messages=isPDF
         ?[{role:"user",content:[{type:"document",source:{type:"base64",media_type:"application/pdf",data:base64}},{type:"text",text:"Extract candidate info from this resume. Return ONLY valid JSON with these exact fields: name, email, phone, title, seniority (one of: Individual Contributor/Senior IC/Team Lead/Manager/Director/VP/SVP/C-Suite / Partner), experience, salary, location, workAuth (one of: US Citizen/Green Card/H-1B/H-4 EAD/L-1/TN Visa/OPT/CPT/EAD/EU Passport/EU Blue Card/Residence Permit/Requires Sponsorship/Other), skills (array of up to 8 most relevant skills), vertical (one of: Telecom / Wireless/AI / ML / Data/Cybersecurity/Software Engineering/Cloud / DevOps/Sales & Business Development/Directors & VPs/SVPs & C-Suite/Client Partners/Project / Program Mgmt/Network Engineering/Consulting). Only include fields you can confidently extract."}]}]
-        :[{role:"user",content:`Extract candidate info from this resume text. Return ONLY valid JSON: name, email, phone, title, seniority, experience, salary, location, workAuth, skills (array max 8), vertical.\n\nResume:\n${atob(base64).substring(0,4000)}`}];
+        :[{role:"user",content:`Extract candidate info from this resume. Return ONLY valid JSON: name, email, phone, title, seniority, experience, salary, location, workAuth, skills (array max 8), vertical.\n\nResume:\n${atob(base64).substring(0,4000)}`}];
       const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":import.meta.env.VITE_ANTHROPIC_API_KEY,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1200,messages})});
       const data=await res.json();
+      console.log("API response:",JSON.stringify(data).substring(0,500));
       if(data.error) throw new Error(data.error.message);
-      const parsed=JSON.parse((data.content?.[0]?.text||"{}").replace(/```json|```/g,"").trim());
+      const rawText=data.content?.[0]?.text||"{}";
+      console.log("Raw text:",rawText.substring(0,500));
+      const cleaned=rawText.replace(/```json|```/g,"").trim();
+      const parsed=JSON.parse(cleaned);
+      console.log("Parsed:",parsed);
       const mapped={};
       if(parsed.name) mapped.name=parsed.name;
       if(parsed.email) mapped.email=parsed.email;
@@ -339,10 +344,14 @@ function CandForm({initial,allCandidates,onSave,onClose,activeUser=TEAM_FALLBACK
       if(parsed.workAuth||parsed.work_auth) mapped.workAuth=parsed.workAuth||parsed.work_auth;
       if(parsed.skills?.length) mapped.skills=parsed.skills;
       if(parsed.vertical) mapped.vertical=parsed.vertical;
-      if(!Object.keys(mapped).length) return setPMsg("⚠ Could not extract details. Fill manually.");
-      setF(p=>({...p,...mapped}));
-      setPMsg(`✓ Extracted ${Object.keys(mapped).length} fields — review below.`);
-    }catch(err){console.error(err);setPMsg("⚠ Parse failed: "+err.message);}
+      console.log("Mapped fields:",mapped);
+      if(!Object.keys(mapped).length){
+        setPMsg("⚠ Could not extract details. Fill manually.");
+      } else {
+        setF(prev=>{const updated={...prev,...mapped};console.log("Updated form:",updated);return updated;});
+        setPMsg(`✓ Extracted ${Object.keys(mapped).length} fields — review below.`);
+      }
+    }catch(err){console.error("Parse error:",err);setPMsg("⚠ Parse failed: "+err.message);}
     setParsing(false);
   };
   const submit=()=>{
