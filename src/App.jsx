@@ -870,8 +870,20 @@ export default function HCPRecruit(){
 
   if(!authChecked) return <div style={{minHeight:"100vh",background:C.navy,display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{color:C.accentL,fontSize:24}}>⚡</div></div>;
   if(!session) return <LoginScreen onLogin={()=>getSession().then(setSession)}/>;
-  if(loading) return <div style={{minHeight:"100vh",background:C.gray50,display:"flex",alignItems:"center",justifyContent:"center"}}>
-    <div style={{textAlign:"center"}}><div style={{fontSize:36,marginBottom:12}}>⚡</div><div style={{color:C.gray400,fontSize:14,fontWeight:500}}>Loading your workspace…</div></div>
+  if(loading) return <div style={{minHeight:"100vh",width:"100vw",background:`linear-gradient(135deg,${C.navy} 0%,#0d2444 60%,#1e4a8a 100%)`,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'DM Sans',sans-serif"}}>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Serif+Display&display=swap" rel="stylesheet"/>
+    <div style={{textAlign:"center"}}>
+      <div style={{width:72,height:72,borderRadius:20,background:"linear-gradient(135deg,#2563eb,#1d4ed8)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:34,margin:"0 auto 24px",boxShadow:"0 12px 40px rgba(37,99,235,0.5)"}}>⚡</div>
+      <div style={{fontFamily:"'DM Serif Display',serif",fontSize:36,color:C.white,letterSpacing:-0.5,marginBottom:6}}>HCP One Recruit</div>
+      <div style={{fontSize:13,color:"rgba(255,255,255,0.4)",letterSpacing:1,textTransform:"uppercase",marginBottom:40}}>INXL Digital</div>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
+        <div style={{width:8,height:8,borderRadius:"50%",background:C.accent2,animation:"bounce 1.2s infinite 0s"}}/>
+        <div style={{width:8,height:8,borderRadius:"50%",background:C.accent2,animation:"bounce 1.2s infinite 0.2s"}}/>
+        <div style={{width:8,height:8,borderRadius:"50%",background:C.accent2,animation:"bounce 1.2s infinite 0.4s"}}/>
+      </div>
+      <div style={{color:"rgba(255,255,255,0.3)",fontSize:12,marginTop:20,fontWeight:500}}>Loading your workspace…</div>
+    </div>
+    <style>{`@keyframes bounce{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-10px)}}@keyframes pulse{0%,100%{box-shadow:0 12px 40px rgba(37,99,235,0.5)}50%{box-shadow:0 12px 60px rgba(37,99,235,0.8)}}`}</style>
   </div>;
 
   const clients=[...new Set(jobs.map(j=>j.client).filter(Boolean))].sort();
