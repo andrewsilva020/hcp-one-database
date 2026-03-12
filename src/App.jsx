@@ -454,6 +454,7 @@ function CandDetail({c,jobs,onEdit,onStageChange,onAddNote,onSubmitToJob,activeU
   const [resumeMsg,setResumeMsg]=useState(null);
   const [dragging,setDragging]=useState(false);
   const resumeRef=useRef();
+  const dragCounter=useRef(0);
 
   useEffect(()=>{
     if(c.resumePath){
@@ -464,7 +465,9 @@ function CandDetail({c,jobs,onEdit,onStageChange,onAddNote,onSubmitToJob,activeU
   },[c.resumePath]);
 
   const handleResumeDrop=async(file)=>{
-    if(!file||!file.name.match(/\.(pdf|doc|docx)$/i)) return setResumeMsg("⚠ PDF, DOC or DOCX only.");
+    if(!file) return;
+    const ok=file.name.match(/\.(pdf|doc|docx|png|jpg|jpeg|webp)$/i)||file.type.startsWith("image/");
+    if(!ok) return setResumeMsg("⚠ PDF, DOCX, or image files only.");
     setUploadingResume(true);setResumeMsg("Uploading…");
     try{
       await onResumeUpload(c.id,file);
@@ -554,13 +557,19 @@ function CandDetail({c,jobs,onEdit,onStageChange,onAddNote,onSubmitToJob,activeU
           {onResumeUpload&&<div onClick={()=>resumeRef.current?.click()} style={{background:C.white,color:C.gray500,border:`1px solid ${C.gray200}`,borderRadius:7,padding:"6px 12px",fontSize:11,fontWeight:500,cursor:"pointer"}}>Replace</div>}
         </div>
       ):(
-        <div onDragOver={e=>{e.preventDefault();setDragging(true);}} onDragLeave={()=>setDragging(false)} onDrop={e=>{e.preventDefault();setDragging(false);const f=e.dataTransfer.files[0];if(f)handleResumeDrop(f);}} onClick={()=>onResumeUpload&&resumeRef.current?.click()} style={{background:dragging?C.accentL:C.gray50,border:`2px dashed ${dragging?C.accent:C.danger+"50"}`,borderRadius:9,padding:"16px",textAlign:"center",cursor:onResumeUpload?"pointer":"default",transition:"all 0.15s"}}>
-          <div style={{fontSize:20,marginBottom:4}}>📎</div>
+        <div
+          onDragEnter={e=>{e.preventDefault();dragCounter.current++;setDragging(true);}}
+          onDragOver={e=>e.preventDefault()}
+          onDragLeave={e=>{e.preventDefault();dragCounter.current--;if(dragCounter.current===0)setDragging(false);}}
+          onDrop={e=>{e.preventDefault();dragCounter.current=0;setDragging(false);const f=e.dataTransfer.files[0];if(f)handleResumeDrop(f);}}
+          onClick={()=>onResumeUpload&&resumeRef.current?.click()}
+          style={{background:dragging?C.accentL:C.gray50,border:`2px dashed ${dragging?C.accent:C.danger+"50"}`,borderRadius:9,padding:"20px",textAlign:"center",cursor:onResumeUpload?"pointer":"default",transition:"all 0.15s"}}>
+          <div style={{fontSize:24,marginBottom:6}}>📎</div>
           <div style={{color:C.danger,fontSize:12,fontWeight:600}}>No resume on file</div>
-          {onResumeUpload&&<div style={{color:C.gray400,fontSize:11,marginTop:2}}>{dragging?"Drop to upload":"Click or drag & drop a PDF"}</div>}
+          {onResumeUpload&&<div style={{color:C.gray400,fontSize:11,marginTop:4}}>{dragging?"Drop to upload":"Click or drag & drop — PDF, DOCX, or image"}</div>}
         </div>
       )}
-      <input ref={resumeRef} type="file" accept=".pdf,.doc,.docx" style={{display:"none"}} onChange={e=>{const f=e.target.files[0];if(f)handleResumeDrop(f);}}/>
+      <input ref={resumeRef} type="file" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.webp" style={{display:"none"}} onChange={e=>{const f=e.target.files[0];if(f)handleResumeDrop(f);}}/>
       {resumeMsg&&<div style={{marginTop:6,fontSize:11,fontWeight:600,color:resumeMsg.startsWith("✓")?C.success:C.warn}}>{resumeMsg}</div>}
     </div>
 
@@ -621,8 +630,32 @@ function JobForm({initial,onSave,onClose,activeUser=TEAM_FALLBACK[0],team=TEAM_F
   const E={title:"",client:"",spoc:"",location:"",empType:"Full-Time",salary:"",priority:"P1",status:"Open – Sourcing",reqDate:today(),submitted:0,interviewed:0,offers:0,jd:"",notes:[],submittedCandidates:[],assignedRecruiters:[activeUser.id]};
   const [f,setF]=useState(initial||E);
   const [gen,setGen]=useState(false);
+  const [jdDragging,setJdDragging]=useState(false);
+  const [jdMsg,setJdMsg]=useState(null);
+  const jdDragCounter=useRef(0);
+  const jdRef=useRef();
   const s=(k,v)=>setF(p=>({...p,[k]:v}));
   const toggleR=(id)=>{const cur=f.assignedRecruiters||[];s("assignedRecruiters",cur.includes(id)?cur.filter(x=>x!==id):[...cur,id]);};
+  const handleJDFile=async(file)=>{
+    if(!file) return;
+    setJdMsg("Extracting text…");
+    try{
+      const isPDF=file.type==="application/pdf"||file.name.endsWith(".pdf");
+      const base64=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result.split(",")[1]);r.onerror=()=>rej(r.error);r.readAsDataURL(file);});
+      if(isPDF){
+        const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":import.meta.env.VITE_ANTHROPIC_API_KEY,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:2000,messages:[{role:"user",content:[{type:"document",source:{type:"base64",media_type:"application/pdf",data:base64}},{type:"text",text:"Extract the full job description text from this document. Return only the plain text content, no commentary."}]}]})});
+        const data=await res.json();
+        if(data.error) throw new Error(data.error.message);
+        s("jd",data.content?.[0]?.text||"");
+        setJdMsg("✓ JD extracted from PDF.");
+      } else {
+        // For text/docx try reading as text
+        const text=await file.text().catch(()=>null);
+        if(text){s("jd",text);setJdMsg("✓ Text extracted.");}
+        else setJdMsg("⚠ Could not read file. Try a PDF or paste directly.");
+      }
+    }catch(e){setJdMsg("⚠ Failed: "+e.message);}
+  };
   const genJD=async()=>{
     if(!f.title||!f.client) return alert("Enter title and client first.");
     setGen(true);
@@ -655,9 +688,22 @@ function JobForm({initial,onSave,onClose,activeUser=TEAM_FALLBACK[0],team=TEAM_F
     <div style={{marginBottom:14}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
         <label style={{color:C.gray500,fontSize:11,fontWeight:600,letterSpacing:0.3}}>Job Description</label>
-        <button onClick={genJD} disabled={gen} style={{background:C.accentL,color:C.accent,border:`1px solid ${C.accent}30`,borderRadius:6,padding:"4px 12px",fontSize:11,cursor:"pointer",fontWeight:600}}>{gen?"Generating…":"✨ AI Generate"}</button>
+        <div style={{display:"flex",gap:6,alignItems:"center"}}>
+          {jdMsg&&<span style={{fontSize:11,fontWeight:600,color:jdMsg.startsWith("✓")?C.success:C.warn}}>{jdMsg}</span>}
+          <button onClick={()=>jdRef.current?.click()} style={{background:C.gray100,color:C.gray600,border:`1px solid ${C.gray200}`,borderRadius:6,padding:"4px 10px",fontSize:11,cursor:"pointer",fontWeight:500}}>📎 Drop File</button>
+          <button onClick={genJD} disabled={gen} style={{background:C.accentL,color:C.accent,border:`1px solid ${C.accent}30`,borderRadius:6,padding:"4px 12px",fontSize:11,cursor:"pointer",fontWeight:600}}>{gen?"Generating…":"✨ AI Generate"}</button>
+        </div>
       </div>
-      <textarea style={{...ta,minHeight:140,fontFamily:"monospace",fontSize:12}} value={f.jd} onChange={e=>s("jd",e.target.value)} placeholder="Paste JD or use AI Generate…"/>
+      <input ref={jdRef} type="file" accept=".pdf,.doc,.docx,.txt" style={{display:"none"}} onChange={e=>{const f=e.target.files[0];if(f)handleJDFile(f);}}/>
+      <div
+        onDragEnter={e=>{e.preventDefault();jdDragCounter.current++;setJdDragging(true);}}
+        onDragOver={e=>e.preventDefault()}
+        onDragLeave={e=>{e.preventDefault();jdDragCounter.current--;if(jdDragCounter.current===0)setJdDragging(false);}}
+        onDrop={e=>{e.preventDefault();jdDragCounter.current=0;setJdDragging(false);const file=e.dataTransfer.files[0];if(file)handleJDFile(file);}}
+        style={{position:"relative",borderRadius:8,border:`2px solid ${jdDragging?C.accent:C.gray200}`,transition:"border 0.15s",background:jdDragging?C.accentL:C.white}}>
+        {jdDragging&&<div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",background:C.accentL+"cc",borderRadius:7,zIndex:2,fontSize:13,fontWeight:600,color:C.accent,pointerEvents:"none"}}>Drop to extract JD</div>}
+        <textarea style={{...ta,minHeight:140,fontFamily:"monospace",fontSize:12,border:"none",borderRadius:8,background:"transparent",width:"100%",boxSizing:"border-box"}} value={f.jd} onChange={e=>s("jd",e.target.value)} placeholder="Paste JD, drop a PDF/DOCX, or use AI Generate…"/>
+      </div>
     </div>
     <div style={{display:"flex",gap:10}}>
       <button onClick={submit} style={{flex:1,background:C.navy,color:C.white,border:"none",borderRadius:9,padding:"12px",fontSize:13,fontWeight:700,cursor:"pointer"}}>{initial?.id?"Save Changes":"Create Job Order"}</button>
