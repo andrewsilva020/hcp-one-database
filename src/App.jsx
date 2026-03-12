@@ -617,7 +617,7 @@ function CandDetail({c,jobs,onEdit,onStageChange,onAddNote,onSubmitToJob,activeU
         <div><div style={{color:C.navy,fontSize:13,fontWeight:600}}>{j.title}</div><div style={{color:C.gray400,fontSize:11,marginTop:1}}>{j.client} · {j.location}</div></div>
         <JobBadge status={j.status}/>
       </div>)}
-      <select style={{...sel,fontSize:12,marginTop:6}} onChange={e=>{if(e.target.value){onSubmitToJob(c.id,parseInt(e.target.value));e.target.value="";}}} defaultValue="">
+      <select style={{...sel,fontSize:12,marginTop:6}} onChange={e=>{if(e.target.value){onSubmitToJob(c.id,e.target.value);e.target.value="";}}} defaultValue="">
         <option value="">+ Submit to another role…</option>
         {jobs.filter(j=>!j.submittedCandidates?.includes(c.id)&&!["Filled","Closed"].includes(j.status)).map(j=><option key={j.id} value={j.id}>{j.title} — {j.client}</option>)}
       </select>
