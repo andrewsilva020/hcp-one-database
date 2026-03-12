@@ -836,6 +836,8 @@ export default function HCPRecruit(){
   const [modal,setModal]=useState(null);
   const [cs,setCs]=useState(""); const [cStage,setCStage]=useState("All"); const [cVert,setCVert]=useState("All");
   const [cAuth,setCAuth]=useState("All"); const [cOwner,setCOwner]=useState("All"); const [cSort,setCSort]=useState("name");
+  const [cSeniority,setCSeniority]=useState("All"); const [cClient,setCClient]=useState("All"); const [cHasResume,setCHasResume]=useState("All");
+  const [cFiltersOpen,setCFiltersOpen]=useState(false);
   const [js,setJs]=useState(""); const [jStat,setJStat]=useState("All"); const [jClient,setJClient]=useState("All"); const [jOwner,setJOwner]=useState("All");
 
   useEffect(()=>{getSession().then(s=>{setSession(s);setAuthChecked(true);});},[]);
@@ -874,9 +876,28 @@ export default function HCPRecruit(){
 
   const clients=[...new Set(jobs.map(j=>j.client).filter(Boolean))].sort();
   const fCands=cands
-    .filter(c=>{const q=cs.toLowerCase();return !q||[c.name,c.title,c.email,c.location,c.vertical,...(c.skills||[])].some(v=>v?.toLowerCase().includes(q));})
-    .filter(c=>cStage==="All"||c.stage===cStage).filter(c=>cVert==="All"||c.vertical===cVert)
-    .filter(c=>cAuth==="All"||c.workAuth===cAuth).filter(c=>cOwner==="All"||c.ownerId===cOwner||(c.collaborators||[]).includes(cOwner))
+    .filter(c=>{
+      const q=cs.toLowerCase();
+      if(!q) return true;
+      const jobsForCand=jobs.filter(j=>(c.submittedTo||[]).includes(j.id));
+      return [
+        c.name, c.title, c.email, c.phone, c.location, c.vertical,
+        c.seniority, c.workAuth, c.salary, c.experience, c.source, c.linkedin,
+        ...(c.skills||[]),
+        ...(c.notes||[]).map(n=>n.text),
+        ...(c.collaborators||[]).map(id=>getTeamMember(id)?.name),
+        getTeamMember(c.ownerId)?.name,
+        ...jobsForCand.map(j=>j.title),
+        ...jobsForCand.map(j=>j.client),
+      ].some(v=>v?.toString().toLowerCase().includes(q));
+    })
+    .filter(c=>cStage==="All"||c.stage===cStage)
+    .filter(c=>cVert==="All"||c.vertical===cVert)
+    .filter(c=>cAuth==="All"||c.workAuth===cAuth)
+    .filter(c=>cOwner==="All"||c.ownerId===cOwner||(c.collaborators||[]).includes(cOwner))
+    .filter(c=>cSeniority==="All"||c.seniority===cSeniority)
+    .filter(c=>cClient==="All"||jobs.filter(j=>(c.submittedTo||[]).includes(j.id)).some(j=>j.client===cClient))
+    .filter(c=>cHasResume==="All"||(cHasResume==="yes"?!!c.resumePath:!c.resumePath))
     .sort((a,b)=>cSort==="stage"?STAGES.indexOf(a.stage)-STAGES.indexOf(b.stage):cSort==="salary"?parseInt((b.salary||"0").replace(/\D/g,""))-parseInt((a.salary||"0").replace(/\D/g,"")):(a.name||"").localeCompare(b.name||""));
   const fJobs=jobs
     .filter(j=>{const q=js.toLowerCase();return !q||[j.title,j.client,j.spoc].some(v=>v?.toLowerCase().includes(q));})
@@ -953,18 +974,84 @@ export default function HCPRecruit(){
 
       {/* CANDIDATES */}
       {tab==="candidates"&&<>
-        <div style={{background:C.white,border:`1px solid ${C.gray200}`,borderRadius:12,padding:"14px 16px",marginBottom:16,display:"flex",gap:8,flexWrap:"wrap",alignItems:"center",boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
-          <div style={{position:"relative",flex:"1 1 200px"}}>
-            <span style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",color:C.gray400,fontSize:13}}>🔍</span>
-            <input style={{...inp,paddingLeft:32}} value={cs} onChange={e=>setCs(e.target.value)} placeholder="Search name, title, skill, location…"/>
+        <div style={{background:C.white,border:`1px solid ${C.gray200}`,borderRadius:12,padding:"14px 16px",marginBottom:16,boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
+          {/* Search row */}
+          <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
+            <div style={{position:"relative",flex:"1 1 200px"}}>
+              <span style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",color:C.gray400,fontSize:13}}>🔍</span>
+              <input style={{...inp,paddingLeft:32}} value={cs} onChange={e=>setCs(e.target.value)} placeholder="Search name, title, skill, client, work auth, notes…"/>
+            </div>
+            <button onClick={()=>setCFiltersOpen(p=>!p)} style={{background:cFiltersOpen?C.navy:C.white,color:cFiltersOpen?C.white:C.gray600,border:`1px solid ${cFiltersOpen?C.navy:C.gray300}`,borderRadius:8,padding:"8px 14px",fontSize:12,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:6,flexShrink:0}}>
+              ⚙ Filters
+              {(cStage!=="All"||cVert!=="All"||cAuth!=="All"||cOwner!=="All"||cSeniority!=="All"||cClient!=="All"||cHasResume!=="All")&&<span style={{background:C.accent,color:C.white,borderRadius:10,padding:"1px 7px",fontSize:10,fontWeight:700}}>{[cStage,cVert,cAuth,cOwner,cSeniority,cClient,cHasResume].filter(x=>x!=="All").length}</span>}
+            </button>
+            <select style={{...sel,flex:"0 0 140px"}} value={cSort} onChange={e=>setCSort(e.target.value)}>
+              <option value="name">Sort: A–Z</option><option value="stage">Sort: Stage</option><option value="salary">Sort: Rate ↓</option>
+            </select>
+            <span style={{color:C.gray400,fontSize:12,flexShrink:0,fontWeight:500}}>{fCands.length}/{cands.length}</span>
+            {(cStage!=="All"||cVert!=="All"||cAuth!=="All"||cOwner!=="All"||cSeniority!=="All"||cClient!=="All"||cHasResume!=="All")&&
+              <button onClick={()=>{setCStage("All");setCVert("All");setCAuth("All");setCOwner("All");setCSeniority("All");setCClient("All");setCHasResume("All");}} style={{background:C.dangerL,color:C.danger,border:"none",borderRadius:7,padding:"6px 12px",fontSize:11,fontWeight:600,cursor:"pointer"}}>✕ Clear</button>}
           </div>
-          <select style={{...sel,flex:"0 0 140px"}} value={cStage} onChange={e=>setCStage(e.target.value)}><option value="All">All Stages</option>{STAGES.map(s=><option key={s}>{s}</option>)}</select>
-          <select style={{...sel,flex:"0 0 145px"}} value={cOwner} onChange={e=>setCOwner(e.target.value)}><option value="All">All Recruiters</option>{team.map(t=><option key={t.id} value={t.id}>{t.name.split(" ")[0]}</option>)}</select>
-          <select style={{...sel,flex:"0 0 130px"}} value={cAuth} onChange={e=>setCAuth(e.target.value)}><option value="All">All Auth</option>{WORK_AUTH.map(w=><option key={w}>{w}</option>)}</select>
-          <select style={{...sel,flex:"0 0 140px"}} value={cSort} onChange={e=>setCSort(e.target.value)}>
-            <option value="name">Sort: A–Z</option><option value="stage">Sort: Stage</option><option value="salary">Sort: Rate ↓</option>
-          </select>
-          <span style={{color:C.gray400,fontSize:12,flexShrink:0,fontWeight:500}}>{fCands.length}/{cands.length}</span>
+
+          {/* Filters panel */}
+          {cFiltersOpen&&<div style={{marginTop:14,paddingTop:14,borderTop:`1px solid ${C.gray100}`,display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(180px,1fr))",gap:"14px 20px"}}>
+            <div>
+              <label style={{display:"block",color:C.gray500,fontSize:10,fontWeight:700,letterSpacing:0.6,textTransform:"uppercase",marginBottom:6}}>Pipeline Stage</label>
+              <div style={{display:"flex",flexDirection:"column",gap:4}}>
+                {["All",...STAGES].map(s=><label key={s} style={{display:"flex",alignItems:"center",gap:7,cursor:"pointer",fontSize:12,color:cStage===s?C.navy:C.gray500,fontWeight:cStage===s?600:400}}>
+                  <input type="radio" name="stage" checked={cStage===s} onChange={()=>setCStage(s)} style={{accentColor:C.navy}}/>{s==="All"?"All Stages":s}
+                </label>)}
+              </div>
+            </div>
+            <div>
+              <label style={{display:"block",color:C.gray500,fontSize:10,fontWeight:700,letterSpacing:0.6,textTransform:"uppercase",marginBottom:6}}>Work Authorization</label>
+              <div style={{display:"flex",flexDirection:"column",gap:4}}>
+                {["All",...WORK_AUTH].map(w=><label key={w} style={{display:"flex",alignItems:"center",gap:7,cursor:"pointer",fontSize:12,color:cAuth===w?C.navy:C.gray500,fontWeight:cAuth===w?600:400}}>
+                  <input type="radio" name="auth" checked={cAuth===w} onChange={()=>setCAuth(w)} style={{accentColor:C.navy}}/>{w==="All"?"All Auth":w}
+                </label>)}
+              </div>
+            </div>
+            <div>
+              <label style={{display:"block",color:C.gray500,fontSize:10,fontWeight:700,letterSpacing:0.6,textTransform:"uppercase",marginBottom:6}}>Industry Vertical</label>
+              <div style={{display:"flex",flexDirection:"column",gap:4}}>
+                {["All",...VERTICALS].map(v=><label key={v} style={{display:"flex",alignItems:"center",gap:7,cursor:"pointer",fontSize:12,color:cVert===v?C.navy:C.gray500,fontWeight:cVert===v?600:400}}>
+                  <input type="radio" name="vert" checked={cVert===v} onChange={()=>setCVert(v)} style={{accentColor:C.navy}}/>{v==="All"?"All Verticals":v}
+                </label>)}
+              </div>
+            </div>
+            <div>
+              <label style={{display:"block",color:C.gray500,fontSize:10,fontWeight:700,letterSpacing:0.6,textTransform:"uppercase",marginBottom:6}}>Seniority</label>
+              <div style={{display:"flex",flexDirection:"column",gap:4}}>
+                {["All",...SENIORITY].map(s=><label key={s} style={{display:"flex",alignItems:"center",gap:7,cursor:"pointer",fontSize:12,color:cSeniority===s?C.navy:C.gray500,fontWeight:cSeniority===s?600:400}}>
+                  <input type="radio" name="sen" checked={cSeniority===s} onChange={()=>setCSeniority(s)} style={{accentColor:C.navy}}/>{s==="All"?"All Seniority":s}
+                </label>)}
+              </div>
+            </div>
+            <div>
+              <label style={{display:"block",color:C.gray500,fontSize:10,fontWeight:700,letterSpacing:0.6,textTransform:"uppercase",marginBottom:6}}>Recruiter</label>
+              <div style={{display:"flex",flexDirection:"column",gap:4}}>
+                {[{id:"All",name:"All Recruiters"},...team].map(t=><label key={t.id} style={{display:"flex",alignItems:"center",gap:7,cursor:"pointer",fontSize:12,color:cOwner===t.id?C.navy:C.gray500,fontWeight:cOwner===t.id?600:400}}>
+                  <input type="radio" name="owner" checked={cOwner===t.id} onChange={()=>setCOwner(t.id)} style={{accentColor:C.navy}}/>{t.name}
+                </label>)}
+              </div>
+            </div>
+            <div>
+              <label style={{display:"block",color:C.gray500,fontSize:10,fontWeight:700,letterSpacing:0.6,textTransform:"uppercase",marginBottom:6}}>Client</label>
+              <div style={{display:"flex",flexDirection:"column",gap:4}}>
+                {["All",...clients].map(cl=><label key={cl} style={{display:"flex",alignItems:"center",gap:7,cursor:"pointer",fontSize:12,color:cClient===cl?C.navy:C.gray500,fontWeight:cClient===cl?600:400}}>
+                  <input type="radio" name="client" checked={cClient===cl} onChange={()=>setCClient(cl)} style={{accentColor:C.navy}}/>{cl==="All"?"All Clients":cl}
+                </label>)}
+              </div>
+            </div>
+            <div>
+              <label style={{display:"block",color:C.gray500,fontSize:10,fontWeight:700,letterSpacing:0.6,textTransform:"uppercase",marginBottom:6}}>Resume</label>
+              <div style={{display:"flex",flexDirection:"column",gap:4}}>
+                {[["All","All Candidates"],["yes","Has Resume 📄"],["no","No Resume ⚠"]].map(([v,l])=><label key={v} style={{display:"flex",alignItems:"center",gap:7,cursor:"pointer",fontSize:12,color:cHasResume===v?C.navy:C.gray500,fontWeight:cHasResume===v?600:400}}>
+                  <input type="radio" name="resume" checked={cHasResume===v} onChange={()=>setCHasResume(v)} style={{accentColor:C.navy}}/>{l}
+                </label>)}
+              </div>
+            </div>
+          </div>}
         </div>
 
         {view==="list"&&<div style={{background:C.white,border:`1px solid ${C.gray200}`,borderRadius:12,overflow:"hidden",boxShadow:"0 1px 3px rgba(0,0,0,0.05)"}}>
