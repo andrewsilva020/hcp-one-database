@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { fetchCandidates, fetchJobs, fetchTeam, upsertTeamMember, upsertCandidate, upsertJob, updateCandidateStage, updateJobStatus, addCandidateNote, addJobNote as addJobNoteDB, submitCandidateToJob, removeCandidateFromJob, subscribeToChanges, signIn, signOut, getSession, deleteCandidate, deleteJob, uploadResume, getResumeUrl } from "./lib/supabase";
+import { fetchCandidates, fetchJobs, fetchTeam, upsertTeamMember, upsertCandidate, upsertJob, updateCandidateStage, updateJobStatus, addCandidateNote, addJobNote as addJobNoteDB, submitCandidateToJob, removeCandidateFromJob, subscribeToChanges, signIn, signOut, getSession, deleteCandidate, deleteJob, uploadResume, getResumeUrl, logActivity, fetchActivity, fetchScorecards, upsertScorecard, deleteScorecard } from "./lib/supabase";
 
 // ── DESIGN TOKENS ─────────────────────────────────────────────────
 const C = {
@@ -93,13 +93,27 @@ function exportCSV(cands, jobs) {
   const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`HCP_Recruit_${today()}.csv`;a.click();
 }
 
-function detectDupes(candidates, email, phone, excludeId=null) {
-  return candidates.filter(c=>{
+function similarity(a,b){
+  a=(a||"").toLowerCase().trim();b=(b||"").toLowerCase().trim();
+  if(!a||!b)return 0;if(a===b)return 1;
+  const la=a.length,lb=b.length;
+  const dp=Array.from({length:la+1},(_,i)=>Array.from({length:lb+1},(_,j)=>i===0?j:j===0?i:0));
+  for(let i=1;i<=la;i++)for(let j=1;j<=lb;j++)dp[i][j]=a[i-1]===b[j-1]?dp[i-1][j-1]:1+Math.min(dp[i-1][j],dp[i][j-1],dp[i-1][j-1]);
+  return 1-dp[la][lb]/Math.max(la,lb);
+}
+function detectDupes(candidates, email, phone, excludeId=null, name="") {
+  const exact=candidates.filter(c=>{
     if(c.id===excludeId) return false;
     const em=email&&c.email?.toLowerCase().trim()===email.toLowerCase().trim()&&email.trim().length>3;
     const ph=phone&&c.phone?.replace(/\D/g,"")===phone.replace(/\D/g,"")&&phone.replace(/\D/g,"").length>=10;
     return em||ph;
   });
+  const exactIds=new Set(exact.map(c=>c.id));
+  const fuzzy=name?candidates.filter(c=>{
+    if(c.id===excludeId||exactIds.has(c.id))return false;
+    return similarity(c.name,name)>0.82;
+  }):[];
+  return [...exact,...fuzzy.map(c=>({...c,_fuzzy:true}))];
 }
 
 function generateWeeklyReport(cands, jobs, filterRecruiter="all", team=TEAM_FALLBACK) {
@@ -311,7 +325,7 @@ function CandForm({initial,allCandidates,onSave,onClose,activeUser=TEAM_FALLBACK
   const [dupeOk,setDupeOk]=useState(false);
   const fr=useRef();
   const s=(k,v)=>setF(p=>({...p,[k]:v}));
-  const chkDupe=(em,ph)=>{if(dupeOk)return;setDupes(detectDupes(allCandidates,em,ph,f.id));};
+  const chkDupe=(em,ph,nm)=>{if(dupeOk)return;setDupes(detectDupes(allCandidates,em,ph,f.id,nm||f.name));};
   const addSkill=(sk)=>{const t=(sk||si).trim();if(t&&!f.skills.includes(t))s("skills",[...f.skills,t]);setSi("");};
   const toggleCollab=(id)=>{const cur=f.collaborators||[];if(cur.includes(id)){s("collaborators",cur.filter(x=>x!==id));}else{if(cur.length>=2)return;s("collaborators",[...cur,id]);}};
   const handleFile=async(e)=>{
@@ -363,8 +377,10 @@ function CandForm({initial,allCandidates,onSave,onClose,activeUser=TEAM_FALLBACK
   };
   return <div>
     {dupes.length>0&&!dupeOk&&<div style={{background:C.warnL,border:`1px solid ${C.warn}40`,borderRadius:9,padding:"12px 14px",marginBottom:16}}>
-      <div style={{color:C.warn,fontWeight:700,fontSize:12,marginBottom:6}}>⚠ Possible Duplicate</div>
-      {dupes.map(d=><div key={d.id} style={{color:C.gray600,fontSize:12,marginBottom:3}}>→ <b style={{color:C.navy}}>{d.name}</b> · {d.email} · <StageBadge stage={d.stage}/></div>)}
+      <div style={{color:C.warn,fontWeight:700,fontSize:12,marginBottom:6}}>⚠ Possible Duplicate{dupes.length>1?"s":""}</div>
+      {dupes.map(d=><div key={d.id} style={{color:C.gray600,fontSize:12,marginBottom:3}}>
+        {d._fuzzy?"≈ Similar name:":"→ Exact match:"} <b style={{color:C.navy}}>{d.name}</b> · {d.email} · <StageBadge stage={d.stage}/>
+      </div>)}
       <button onClick={()=>setDupeOk(true)} style={{marginTop:8,background:C.white,border:`1px solid ${C.warn}`,color:C.warn,borderRadius:6,padding:"4px 12px",fontSize:11,cursor:"pointer",fontWeight:600}}>Dismiss & Continue</button>
     </div>}
     <div onClick={()=>!parsing&&fr.current?.click()} style={{background:C.gray50,border:`2px dashed ${C.gray300}`,borderRadius:10,padding:"16px",textAlign:"center",marginBottom:18,cursor:"pointer"}} onMouseEnter={e=>{e.currentTarget.style.borderColor=C.accent;e.currentTarget.style.background=C.accentL;}} onMouseLeave={e=>{e.currentTarget.style.borderColor=C.gray300;e.currentTarget.style.background=C.gray50;}}>
@@ -374,7 +390,7 @@ function CandForm({initial,allCandidates,onSave,onClose,activeUser=TEAM_FALLBACK
       {pMsg&&<div style={{marginTop:6,fontSize:11,fontWeight:600,color:pMsg.startsWith("✓")?C.success:pMsg.startsWith("⚠")?C.warn:C.accent}}>{pMsg}</div>}
     </div>
     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"14px 16px"}}>
-      <F label="Full Name *"><input style={inp} value={f.name} onChange={e=>s("name",e.target.value)} placeholder="Full name"/></F>
+      <F label="Full Name *"><input style={inp} value={f.name} onChange={e=>{s("name",e.target.value);chkDupe(f.email,f.phone,e.target.value);}} placeholder="Full name"/></F>
       <F label="Email *"><input style={inp} value={f.email} onChange={e=>{s("email",e.target.value);chkDupe(e.target.value,f.phone);}} placeholder="email@domain.com"/></F>
       <F label="Phone"><input style={inp} value={f.phone} onChange={e=>{s("phone",e.target.value);chkDupe(f.email,e.target.value);}} placeholder="555-000-0000"/></F>
       <F label="LinkedIn"><input style={inp} value={f.linkedin} onChange={e=>s("linkedin",e.target.value)} placeholder="linkedin.com/in/…"/></F>
@@ -432,6 +448,7 @@ function CandForm({initial,allCandidates,onSave,onClose,activeUser=TEAM_FALLBACK
 // ── CANDIDATE DETAIL ──────────────────────────────────────────────
 function CandDetail({c,jobs,onEdit,onStageChange,onAddNote,onSubmitToJob,activeUser=TEAM_FALLBACK[0],onDelete,onResumeUpload}){
   const [note,setNote]=useState("");
+  const [detTab,setDetTab]=useState("Notes");
   const [resumeUrl,setResumeUrl]=useState(null);
   const [uploadingResume,setUploadingResume]=useState(false);
   const [resumeMsg,setResumeMsg]=useState(null);
@@ -516,7 +533,9 @@ function CandDetail({c,jobs,onEdit,onStageChange,onAddNote,onSubmitToJob,activeU
       {[["Email",c.email],["Phone",c.phone],["Location",c.location],["Salary/Rate",c.salary],["Experience",c.experience],["Source",c.source],["Work Auth",c.workAuth],["Seniority",c.seniority],["Added",c.addedDate]].map(([k,v])=>(
         <div key={k} style={{background:C.gray50,border:`1px solid ${C.gray200}`,borderRadius:8,padding:"10px 12px"}}>
           <div style={{color:C.gray400,fontSize:10,textTransform:"uppercase",letterSpacing:0.5,fontWeight:600,marginBottom:3}}>{k}</div>
-          <div style={{color:v?C.navy:C.gray300,fontSize:12,fontWeight:500,wordBreak:"break-all"}}>{v||"—"}</div>
+          {k==="Email"&&v
+            ?<a href={`mailto:${v}?subject=${encodeURIComponent(`Exciting Opportunity – ${c.title||"Role"}`)}&body=${encodeURIComponent(`Hi ${c.name?.split(" ")[0]||""},\n\nI hope you're doing well! I wanted to reach out regarding an exciting opportunity that I believe would be a great fit for your background.\n\nWould you be open to a quick call this week?\n\nBest regards,\n${activeUser.name}`)}`} onClick={()=>onAddNote&&onAddNote(c.id,`📧 Email sent to ${v}`)} style={{color:C.accent,fontSize:12,fontWeight:500,textDecoration:"none",wordBreak:"break-all"}}>{v} ✉</a>
+            :<div style={{color:v?C.navy:C.gray300,fontSize:12,fontWeight:500,wordBreak:"break-all"}}>{v||"—"}</div>}
         </div>
       ))}
     </div>
@@ -562,27 +581,37 @@ function CandDetail({c,jobs,onEdit,onStageChange,onAddNote,onSubmitToJob,activeU
       </select>
     </div>
     <div>
-      <div style={{color:C.gray400,fontSize:10,fontWeight:600,letterSpacing:0.8,textTransform:"uppercase",marginBottom:8}}>Team Notes · {c.notes?.length||0}</div>
-      <div style={{maxHeight:170,overflowY:"auto",marginBottom:8,display:"flex",flexDirection:"column",gap:6}}>
-        {!c.notes?.length&&<div style={{color:C.gray300,fontSize:12}}>No notes yet.</div>}
-        {c.notes?.map((n,i)=>{const t=getTeamMember(n.authorId);return <div key={i} style={{background:C.gray50,border:`1px solid ${C.gray200}`,borderRadius:8,padding:"10px 12px"}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
-            <div style={{display:"flex",alignItems:"center",gap:6}}>
-              {t&&<div style={{width:18,height:18,borderRadius:4,background:t.color,display:"flex",alignItems:"center",justifyContent:"center",fontSize:7.5,fontWeight:700,color:C.white}}>{t.initials}</div>}
-              <span style={{color:t?.color||C.accent,fontSize:11,fontWeight:600}}>{n.author}</span>
+      {/* Tab bar */}
+      <div style={{display:"flex",gap:0,borderBottom:`2px solid ${C.gray100}`,marginBottom:14}}>
+        {["Notes","Timeline","Scorecard"].map(t=><button key={t} onClick={()=>setDetTab(t)} style={{background:"none",border:"none",borderBottom:`2px solid ${detTab===t?C.accent:"transparent"}`,marginBottom:-2,padding:"8px 16px",fontSize:12,fontWeight:detTab===t?700:500,color:detTab===t?C.accent:C.gray400,cursor:"pointer"}}>{t==="Scorecard"?"📊 Scorecard":t==="Timeline"?"🕐 Timeline":"💬 Notes"}{t==="Notes"&&c.notes?.length?<span style={{background:C.accentL,color:C.accent,borderRadius:8,padding:"1px 6px",fontSize:10,marginLeft:5,fontWeight:700}}>{c.notes.length}</span>:null}</button>)}
+      </div>
+
+      {detTab==="Notes"&&<>
+        <div style={{maxHeight:200,overflowY:"auto",marginBottom:8,display:"flex",flexDirection:"column",gap:6}}>
+          {!c.notes?.length&&<div style={{color:C.gray300,fontSize:12}}>No notes yet.</div>}
+          {c.notes?.map((n,i)=>{const t=getTeamMember(n.authorId);return <div key={i} style={{background:C.gray50,border:`1px solid ${C.gray200}`,borderRadius:8,padding:"10px 12px"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+              <div style={{display:"flex",alignItems:"center",gap:6}}>
+                {t&&<div style={{width:18,height:18,borderRadius:4,background:t.color,display:"flex",alignItems:"center",justifyContent:"center",fontSize:7.5,fontWeight:700,color:C.white}}>{t.initials}</div>}
+                <span style={{color:t?.color||C.accent,fontSize:11,fontWeight:600}}>{n.author}</span>
+              </div>
+              <span style={{color:C.gray300,fontSize:10}}>{n.date}</span>
             </div>
-            <span style={{color:C.gray300,fontSize:10}}>{n.date}</span>
-          </div>
-          <div style={{color:C.gray600,fontSize:12,lineHeight:1.6}}>{n.text}</div>
-        </div>;})}
-      </div>
-      <div style={{display:"flex",gap:8}}>
-        <div style={{display:"flex",alignItems:"center",gap:7,flex:1}}>
-          <RecruiterBadge id={activeUser.id} size={24}/>
-          <input style={{...inp,flex:1}} value={note} onChange={e=>setNote(e.target.value)} onKeyDown={e=>e.key==="Enter"&&post()} placeholder={`Add note as ${activeUser.name}…`}/>
+            <div style={{color:C.gray600,fontSize:12,lineHeight:1.6}}>{n.text}</div>
+          </div>;})}
         </div>
-        <button onClick={post} style={{background:C.navy,color:C.white,border:"none",borderRadius:8,padding:"0 16px",fontSize:12,fontWeight:600,cursor:"pointer",flexShrink:0}}>Post</button>
-      </div>
+        <div style={{display:"flex",gap:8}}>
+          <div style={{display:"flex",alignItems:"center",gap:7,flex:1}}>
+            <RecruiterBadge id={activeUser.id} size={24}/>
+            <input style={{...inp,flex:1}} value={note} onChange={e=>setNote(e.target.value)} onKeyDown={e=>e.key==="Enter"&&post()} placeholder={`Add note as ${activeUser.name}…`}/>
+          </div>
+          <button onClick={post} style={{background:C.navy,color:C.white,border:"none",borderRadius:8,padding:"0 16px",fontSize:12,fontWeight:600,cursor:"pointer",flexShrink:0}}>Post</button>
+        </div>
+      </>}
+
+      {detTab==="Timeline"&&<div style={{maxHeight:320,overflowY:"auto"}}><ActivityTimeline candidateId={c.id}/></div>}
+
+      {detTab==="Scorecard"&&<ScorecardPanel candidateId={c.id} jobs={jobs} activeUser={activeUser}/>}
     </div>
   </div>;
 }
@@ -719,6 +748,118 @@ function JobDetail({job,candidates,onEdit,onStatusChange,onAddNote,onRemove,onOp
         <button onClick={post} style={{background:C.navy,color:C.white,border:"none",borderRadius:8,padding:"0 15px",fontSize:12,fontWeight:600,cursor:"pointer",flexShrink:0}}>Post</button>
       </div>
     </div>
+  </div>;
+}
+
+// ── ACTIVITY TIMELINE ─────────────────────────────────────────────
+const ACTIVITY_ICONS={created:"🌟",stage_change:"🔄",note:"💬",email:"📧",resume:"📄",job_submit:"📋",edit:"✏"};
+const ACTIVITY_COLORS={created:C.success,stage_change:C.accent,note:C.purple,email:C.orange,resume:C.warn,job_submit:C.pink,edit:C.gray400};
+function ActivityTimeline({candidateId}){
+  const [items,setItems]=useState([]);
+  const [loading,setLoading]=useState(true);
+  useEffect(()=>{
+    fetchActivity(candidateId).then(d=>{setItems(d);setLoading(false);}).catch(()=>setLoading(false));
+  },[candidateId]);
+  if(loading) return <div style={{color:C.gray400,fontSize:12,textAlign:"center",padding:16}}>Loading activity…</div>;
+  if(!items.length) return <div style={{color:C.gray400,fontSize:12,textAlign:"center",padding:16}}>No activity recorded yet.</div>;
+  return <div style={{display:"flex",flexDirection:"column",gap:0}}>
+    {items.map((item,i)=>{
+      const color=ACTIVITY_COLORS[item.type]||C.gray400;
+      const icon=ACTIVITY_ICONS[item.type]||"•";
+      const date=new Date(item.created_at);
+      const timeStr=date.toLocaleDateString("en-US",{month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"});
+      return <div key={item.id} style={{display:"flex",gap:12,position:"relative"}}>
+        {i<items.length-1&&<div style={{position:"absolute",left:15,top:28,bottom:0,width:2,background:C.gray100}}/>}
+        <div style={{width:30,height:30,borderRadius:"50%",background:color+"20",border:`2px solid ${color}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,flexShrink:0,zIndex:1}}>{icon}</div>
+        <div style={{flex:1,paddingBottom:14,paddingTop:4}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8}}>
+            <div style={{fontSize:12,color:C.navy,fontWeight:500,lineHeight:1.4}}>{item.detail}</div>
+            <div style={{fontSize:10,color:C.gray400,flexShrink:0,fontWeight:500}}>{timeStr}</div>
+          </div>
+          <div style={{fontSize:11,color:C.gray400,marginTop:2}}>{item.actor_name}</div>
+        </div>
+      </div>;
+    })}
+  </div>;
+}
+
+// ── SCORECARD ─────────────────────────────────────────────────────
+const RECOMMENDATIONS=["Strong Yes","Yes","Maybe","No"];
+const INTERVIEW_TYPES=["Phone Screen","Technical","Client Interview","Final Round","Reference Check"];
+const RATING_LABELS=["","Poor","Below Avg","Average","Good","Excellent"];
+function ScorecardPanel({candidateId,jobs,activeUser}){
+  const [cards,setCards]=useState([]);
+  const [loading,setLoading]=useState(true);
+  const [adding,setAdding]=useState(false);
+  const blank={candidateId,jobId:"",interviewType:"Phone Screen",rating:3,strengths:"",concerns:"",recommendation:"Yes",notes:""};
+  const [form,setForm]=useState(blank);
+  const [saving,setSaving]=useState(false);
+  const sf=(k,v)=>setForm(p=>({...p,[k]:v}));
+  useEffect(()=>{
+    fetchScorecards(candidateId).then(d=>{setCards(d);setLoading(false);}).catch(()=>setLoading(false));
+  },[candidateId]);
+  const save=async()=>{
+    setSaving(true);
+    try{
+      await upsertScorecard({...form,recruiterId:activeUser.id,recruiterName:activeUser.name});
+      const d=await fetchScorecards(candidateId);setCards(d);
+      setAdding(false);setForm(blank);
+    }catch(e){alert("Save failed: "+e.message);}
+    setSaving(false);
+  };
+  const del=async(id)=>{if(!window.confirm("Delete scorecard?"))return;await deleteScorecard(id);const d=await fetchScorecards(candidateId);setCards(d);};
+  const recColor={["Strong Yes"]:C.success,["Yes"]:C.accent,["Maybe"]:C.warn,["No"]:C.danger};
+  return <div>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+      <div style={{fontSize:13,fontWeight:600,color:C.navy}}>Scorecards <span style={{color:C.gray400,fontWeight:400}}>({cards.length})</span></div>
+      <button onClick={()=>setAdding(p=>!p)} style={{background:adding?C.gray100:C.navy,color:adding?C.gray600:C.white,border:`1px solid ${adding?C.gray300:"transparent"}`,borderRadius:7,padding:"6px 14px",fontSize:11,fontWeight:600,cursor:"pointer"}}>{adding?"Cancel":"+ Add Scorecard"}</button>
+    </div>
+    {adding&&<div style={{background:C.gray50,border:`1px solid ${C.gray200}`,borderRadius:10,padding:16,marginBottom:14}}>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"10px 14px",marginBottom:12}}>
+        <F label="Job Order"><select style={sel} value={form.jobId} onChange={e=>sf("jobId",e.target.value)}><option value="">No specific job</option>{jobs.map(j=><option key={j.id} value={j.id}>{j.title} @ {j.client}</option>)}</select></F>
+        <F label="Interview Type"><select style={sel} value={form.interviewType} onChange={e=>sf("interviewType",e.target.value)}>{INTERVIEW_TYPES.map(t=><option key={t}>{t}</option>)}</select></F>
+        <F label="Recommendation"><select style={sel} value={form.recommendation} onChange={e=>sf("recommendation",e.target.value)}>{RECOMMENDATIONS.map(r=><option key={r}>{r}</option>)}</select></F>
+        <F label={`Rating — ${RATING_LABELS[form.rating]}`}>
+          <div style={{display:"flex",gap:6,marginTop:4}}>
+            {[1,2,3,4,5].map(n=><div key={n} onClick={()=>sf("rating",n)} style={{width:32,height:32,borderRadius:8,background:n<=form.rating?C.accent:C.gray100,color:n<=form.rating?C.white:C.gray400,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,cursor:"pointer",fontWeight:700,border:`1px solid ${n<=form.rating?C.accent:C.gray200}`}}>★</div>)}
+          </div>
+        </F>
+      </div>
+      <F label="Strengths"><textarea style={{...inp,minHeight:60,resize:"vertical"}} value={form.strengths} onChange={e=>sf("strengths",e.target.value)} placeholder="What stood out positively…"/></F>
+      <div style={{marginTop:10}}><F label="Concerns"><textarea style={{...inp,minHeight:60,resize:"vertical"}} value={form.concerns} onChange={e=>sf("concerns",e.target.value)} placeholder="Any red flags or concerns…"/></F></div>
+      <div style={{marginTop:10}}><F label="Additional Notes"><textarea style={{...inp,minHeight:50,resize:"vertical"}} value={form.notes} onChange={e=>sf("notes",e.target.value)} placeholder="Other observations…"/></F></div>
+      <button onClick={save} disabled={saving} style={{marginTop:12,width:"100%",background:C.navy,color:C.white,border:"none",borderRadius:8,padding:"10px",fontSize:13,fontWeight:600,cursor:"pointer"}}>{saving?"Saving…":"Save Scorecard"}</button>
+    </div>}
+    {loading?<div style={{color:C.gray400,fontSize:12,textAlign:"center",padding:12}}>Loading…</div>:
+    !cards.length&&!adding?<div style={{color:C.gray400,fontSize:12,textAlign:"center",padding:12}}>No scorecards yet.</div>:
+    <div style={{display:"flex",flexDirection:"column",gap:8}}>
+      {cards.map(card=>{
+        const job=jobs.find(j=>j.id===card.job_id);
+        return <div key={card.id} style={{background:C.white,border:`1px solid ${C.gray200}`,borderRadius:10,padding:"12px 14px",boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
+            <div>
+              <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+                <span style={{background:(recColor[card.recommendation]||C.gray400)+"20",color:recColor[card.recommendation]||C.gray400,borderRadius:6,padding:"3px 9px",fontSize:11,fontWeight:700}}>{card.recommendation}</span>
+                <span style={{background:C.accentL,color:C.accent,borderRadius:6,padding:"3px 8px",fontSize:11,fontWeight:600}}>{card.interview_type}</span>
+                {job&&<span style={{color:C.gray500,fontSize:11}}>{job.title} @ {job.client}</span>}
+              </div>
+              <div style={{display:"flex",gap:3,marginTop:6}}>
+                {[1,2,3,4,5].map(n=><span key={n} style={{color:n<=card.rating?C.warn:"#e2e8f0",fontSize:16}}>★</span>)}
+                <span style={{color:C.gray400,fontSize:11,marginLeft:4}}>{RATING_LABELS[card.rating]}</span>
+              </div>
+            </div>
+            <div style={{textAlign:"right",flexShrink:0}}>
+              <div style={{fontSize:11,color:C.gray400}}>{card.recruiter_name}</div>
+              <div style={{fontSize:10,color:C.gray300}}>{new Date(card.created_at).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})}</div>
+              <button onClick={()=>del(card.id)} style={{marginTop:4,background:"none",border:"none",color:C.gray300,cursor:"pointer",fontSize:11}}>🗑</button>
+            </div>
+          </div>
+          {card.strengths&&<div style={{marginBottom:6}}><span style={{fontSize:10,fontWeight:700,color:C.success,textTransform:"uppercase",letterSpacing:0.5}}>Strengths</span><div style={{fontSize:12,color:C.gray600,marginTop:2}}>{card.strengths}</div></div>}
+          {card.concerns&&<div style={{marginBottom:6}}><span style={{fontSize:10,fontWeight:700,color:C.danger,textTransform:"uppercase",letterSpacing:0.5}}>Concerns</span><div style={{fontSize:12,color:C.gray600,marginTop:2}}>{card.concerns}</div></div>}
+          {card.notes&&<div><span style={{fontSize:10,fontWeight:700,color:C.gray400,textTransform:"uppercase",letterSpacing:0.5}}>Notes</span><div style={{fontSize:12,color:C.gray600,marginTop:2}}>{card.notes}</div></div>}
+        </div>;
+      })}
+    </div>}
   </div>;
 }
 
@@ -920,17 +1061,39 @@ export default function HCPRecruit(){
   const stats={total:cands.length,active:cands.filter(c=>!["Placed","Rejected","On Hold"].includes(c.stage)).length,hot:cands.filter(c=>["Interview 1","Interview 2","Final Interview","Offer"].includes(c.stage)).length,placed:cands.filter(c=>c.stage==="Placed").length,openJobs:jobs.filter(j=>["Open – Sourcing","Active"].includes(j.status)).length,filled:jobs.filter(j=>j.status==="Filled").length};
 
   const reload=async()=>{const[c,j]=await Promise.all([fetchCandidates(),fetchJobs()]);setCands(c);setJobs(j);};
-  const saveCand=async(c)=>{await upsertCandidate(c);await reload();setModal(null);};
+  const saveCand=async(c)=>{
+    const isNew=!c.id||typeof c.id==="number";
+    await upsertCandidate(c);
+    await logActivity(c.id||c.tempId,isNew?"created":"edit",activeUser.id,activeUser.name,isNew?`${c.name} added to system`:`Profile updated`);
+    await reload();setModal(null);
+  };
   const saveJob=async(j)=>{await upsertJob(j);await reload();setModal(null);};
-  const stageChange=async(id,stage)=>{await updateCandidateStage(id,stage);const data=await fetchCandidates();setCands(data);};
+  const stageChange=async(id,stage,prevStage)=>{
+    await updateCandidateStage(id,stage);
+    await logActivity(id,"stage_change",activeUser.id,activeUser.name,`Stage changed${prevStage?` from ${prevStage}`:""} to ${stage}`);
+    const data=await fetchCandidates();setCands(data);
+  };
   const jobStatusChange=async(id,status)=>{await updateJobStatus(id,status);const data=await fetchJobs();setJobs(data);};
-  const addCandNoteHandler=async(id,text)=>{await addCandidateNote(id,{author:activeUser.name,authorId:activeUser.id,text,date:today()});const data=await fetchCandidates();setCands(data);};
+  const addCandNoteHandler=async(id,text)=>{
+    await addCandidateNote(id,{author:activeUser.name,authorId:activeUser.id,text,date:today()});
+    await logActivity(id,"note",activeUser.id,activeUser.name,text);
+    const data=await fetchCandidates();setCands(data);
+  };
   const addJobNoteHandler=async(id,text)=>{await addJobNoteDB(id,{author:activeUser.name,authorId:activeUser.id,text,date:today()});const data=await fetchJobs();setJobs(data);};
-  const submitToJob=async(cid,jid)=>{await submitCandidateToJob(cid,jid);await reload();};
+  const submitToJobHandler=async(cid,jid)=>{
+    const job=jobs.find(j=>j.id===jid);
+    await submitCandidateToJob(cid,jid);
+    await logActivity(cid,"job_submit",activeUser.id,activeUser.name,`Submitted to ${job?.title||"job"}${job?.client?` @ ${job.client}`:""}`);
+    await reload();
+  };
   const removeFromJob=async(jid,cid)=>{await removeCandidateFromJob(cid,jid);const data=await fetchJobs();setJobs(data);};
   const deleteCandHandler=async(id)=>{if(!window.confirm("Delete this candidate? This cannot be undone."))return;await deleteCandidate(id);await reload();setModal(null);};
   const deleteJobHandler=async(id)=>{if(!window.confirm("Delete this job order? This cannot be undone."))return;await deleteJob(id);await reload();setModal(null);};
-  const handleResumeUpload=async(candidateId,file)=>{await uploadResume(candidateId,file);const data=await fetchCandidates();setCands(data);};
+  const handleResumeUpload=async(candidateId,file)=>{
+    await uploadResume(candidateId,file);
+    await logActivity(candidateId,"resume",activeUser.id,activeUser.name,"Resume uploaded");
+    const data=await fetchCandidates();setCands(data);
+  };
   const openCand=(c)=>setModal({t:"cand",c});
 
   return <div style={{minHeight:"100vh",width:"100vw",background:C.gray50,color:C.gray700,fontFamily:"'DM Sans',sans-serif",position:"relative",overflowX:"hidden"}}>
@@ -1180,7 +1343,7 @@ export default function HCPRecruit(){
     {/* MODALS */}
     {modal?.t==="add-cand"&&<Modal title="Add New Candidate" subtitle="Fill in details or upload a resume for AI auto-fill" onClose={()=>setModal(null)}><CandForm allCandidates={cands} onSave={saveCand} onClose={()=>setModal(null)} activeUser={activeUser} team={team}/></Modal>}
     {modal?.t==="edit-cand"&&<Modal title="Edit Candidate" onClose={()=>setModal(null)}><CandForm initial={modal.c} allCandidates={cands} onSave={saveCand} onClose={()=>setModal(null)} activeUser={activeUser} team={team}/></Modal>}
-    {modal?.t==="cand"&&(()=>{const live=cands.find(c=>c.id===modal.c.id)||modal.c;return <Modal title="Candidate Profile" onClose={()=>setModal(null)} wide><CandDetail c={live} jobs={jobs} onEdit={()=>setModal({t:"edit-cand",c:live})} onStageChange={stageChange} onAddNote={addCandNoteHandler} onSubmitToJob={submitToJob} activeUser={activeUser} onDelete={activeUser?.is_admin?deleteCandHandler:null} onResumeUpload={handleResumeUpload}/></Modal>;})()}
+    {modal?.t==="cand"&&(()=>{const live=cands.find(c=>c.id===modal.c.id)||modal.c;return <Modal title="Candidate Profile" onClose={()=>setModal(null)} wide><CandDetail c={live} jobs={jobs} onEdit={()=>setModal({t:"edit-cand",c:live})} onStageChange={stageChange} onAddNote={addCandNoteHandler} onSubmitToJob={submitToJobHandler} activeUser={activeUser} onDelete={activeUser?.is_admin?deleteCandHandler:null} onResumeUpload={handleResumeUpload}/></Modal>;})()}
     {modal?.t==="add-job"&&<Modal title="New Job Order" subtitle="Create a job order and assign recruiters" onClose={()=>setModal(null)} wide><JobForm onSave={saveJob} onClose={()=>setModal(null)} activeUser={activeUser} team={team}/></Modal>}
     {modal?.t==="edit-job"&&<Modal title="Edit Job Order" onClose={()=>setModal(null)} wide><JobForm initial={modal.j} onSave={saveJob} onClose={()=>setModal(null)} activeUser={activeUser} team={team}/></Modal>}
     {modal?.t==="job"&&(()=>{const live=jobs.find(j=>j.id===modal.j.id)||modal.j;return <Modal title="Job Order Detail" onClose={()=>setModal(null)} wide><JobDetail job={live} candidates={cands} onEdit={()=>setModal({t:"edit-job",j:live})} onStatusChange={jobStatusChange} onAddNote={addJobNoteHandler} onRemove={removeFromJob} onOpenCand={c=>{setModal(null);setTimeout(()=>setModal({t:"cand",c}),40);}} activeUser={activeUser} onDelete={activeUser?.is_admin?deleteJobHandler:null}/></Modal>;})()}

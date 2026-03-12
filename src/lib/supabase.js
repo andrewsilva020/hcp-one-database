@@ -276,3 +276,58 @@ export async function getSession() {
   const { data } = await supabase.auth.getSession();
   return data.session;
 }
+
+// ── ACTIVITY TIMELINE ─────────────────────────────────────────────
+export async function logActivity(candidateId, type, actorId, actorName, detail, meta={}) {
+  const { error } = await supabase.from("candidate_activity").insert({
+    candidate_id: candidateId, type, actor_id: actorId, actor_name: actorName, detail, meta,
+  });
+  if (error) console.error("Activity log error:", error);
+}
+
+export async function fetchActivity(candidateId) {
+  const { data, error } = await supabase
+    .from("candidate_activity")
+    .select("*")
+    .eq("candidate_id", candidateId)
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return data;
+}
+
+// ── SCORECARDS ────────────────────────────────────────────────────
+export async function fetchScorecards(candidateId) {
+  const { data, error } = await supabase
+    .from("scorecards")
+    .select("*")
+    .eq("candidate_id", candidateId)
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return data;
+}
+
+export async function upsertScorecard(scorecard) {
+  const isNew = !scorecard.id;
+  const row = {
+    candidate_id: scorecard.candidateId || scorecard.candidate_id,
+    job_id: scorecard.jobId || scorecard.job_id || null,
+    recruiter_id: scorecard.recruiterId || scorecard.recruiter_id,
+    recruiter_name: scorecard.recruiterName || scorecard.recruiter_name,
+    interview_type: scorecard.interviewType || scorecard.interview_type,
+    rating: scorecard.rating,
+    strengths: scorecard.strengths || "",
+    concerns: scorecard.concerns || "",
+    recommendation: scorecard.recommendation,
+    notes: scorecard.notes || "",
+    updated_at: new Date().toISOString(),
+  };
+  if (!isNew) row.id = scorecard.id;
+  const { data, error } = await supabase.from("scorecards").upsert(row).select().single();
+  if (error) throw error;
+  return data;
+}
+
+export async function deleteScorecard(id) {
+  const { error } = await supabase.from("scorecards").delete().eq("id", id);
+  if (error) throw error;
+}
