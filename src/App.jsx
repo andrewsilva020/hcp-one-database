@@ -322,7 +322,20 @@ function CandForm({initial,allCandidates,onSave,onClose,activeUser=TEAM_FALLBACK
       const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":import.meta.env.VITE_ANTHROPIC_API_KEY,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:900,messages:[{role:"user",content:`Extract candidate info. Return ONLY valid JSON: name, email, phone, title, seniority, experience, salary, location, workAuth, skills (array max 8), vertical. Resume:\n\n${text?text.substring(0,3500):"Unreadable."}`}]})});
       const data=await res.json();
       const parsed=JSON.parse((data.content?.[0]?.text||"{}").replace(/```json|```/g,"").trim());
-      setF(p=>({...p,...Object.fromEntries(Object.entries(parsed).filter(([,v])=>v&&(Array.isArray(v)?v.length:true)))}));
+      // Map any snake_case keys to camelCase and apply non-empty values
+      const mapped={};
+      if(parsed.name) mapped.name=parsed.name;
+      if(parsed.email) mapped.email=parsed.email;
+      if(parsed.phone) mapped.phone=parsed.phone;
+      if(parsed.title) mapped.title=parsed.title;
+      if(parsed.seniority) mapped.seniority=parsed.seniority;
+      if(parsed.experience) mapped.experience=parsed.experience;
+      if(parsed.salary) mapped.salary=parsed.salary;
+      if(parsed.location) mapped.location=parsed.location;
+      if(parsed.workAuth||parsed.work_auth) mapped.workAuth=parsed.workAuth||parsed.work_auth;
+      if(parsed.skills?.length) mapped.skills=parsed.skills;
+      if(parsed.vertical) mapped.vertical=parsed.vertical;
+      setF(p=>({...p,...mapped}));
       setPMsg("✓ Parsed — review fields below.");
     }catch{setPMsg("⚠ Parse failed. Fill manually.");}
     setParsing(false);

@@ -30,6 +30,7 @@ export async function fetchCandidates() {
   if (error) throw error;
   return data.map((c) => ({
     ...c,
+    ownerId: c.owner_id || c.ownerId,
     notes: c.candidate_notes || [],
     submittedTo: (c.candidate_jobs || []).map((r) => r.job_id),
     collaborators: c.collaborators || [],
@@ -38,10 +39,10 @@ export async function fetchCandidates() {
 }
 
 export async function upsertCandidate(candidate) {
-  const { notes, submittedTo, candidate_notes, candidate_jobs, ...row } = candidate;
+  const { notes, submittedTo, candidate_notes, candidate_jobs, ownerId, ...row } = candidate;
   const { data, error } = await supabase
     .from("candidates")
-    .upsert({ ...row, updated_at: new Date().toISOString() })
+    .upsert({ ...row, owner_id: ownerId || row.owner_id, updated_at: new Date().toISOString() })
     .select()
     .single();
   if (error) throw error;
