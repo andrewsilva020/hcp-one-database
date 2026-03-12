@@ -383,7 +383,16 @@ function CandForm({initial,allCandidates,onSave,onClose,activeUser=TEAM_FALLBACK
       </div>)}
       <button onClick={()=>setDupeOk(true)} style={{marginTop:8,background:C.white,border:`1px solid ${C.warn}`,color:C.warn,borderRadius:6,padding:"4px 12px",fontSize:11,cursor:"pointer",fontWeight:600}}>Dismiss & Continue</button>
     </div>}
-    <div onClick={()=>!parsing&&fr.current?.click()} style={{background:C.gray50,border:`2px dashed ${C.gray300}`,borderRadius:10,padding:"16px",textAlign:"center",marginBottom:18,cursor:"pointer"}} onMouseEnter={e=>{e.currentTarget.style.borderColor=C.accent;e.currentTarget.style.background=C.accentL;}} onMouseLeave={e=>{e.currentTarget.style.borderColor=C.gray300;e.currentTarget.style.background=C.gray50;}}>
+    <div
+      data-dropzone="true"
+      onClick={()=>!parsing&&fr.current?.click()}
+      onDragEnter={e=>{e.preventDefault();e.currentTarget.style.borderColor=C.accent;e.currentTarget.style.background=C.accentL;}}
+      onDragOver={e=>e.preventDefault()}
+      onDragLeave={e=>{e.preventDefault();e.currentTarget.style.borderColor=C.gray300;e.currentTarget.style.background=C.gray50;}}
+      onDrop={e=>{e.preventDefault();e.stopPropagation();e.currentTarget.style.borderColor=C.gray300;e.currentTarget.style.background=C.gray50;const file=e.dataTransfer.files[0];if(file&&!parsing){const fakeEvent={target:{files:[file]}};handleFile(fakeEvent);}}}
+      style={{background:C.gray50,border:`2px dashed ${C.gray300}`,borderRadius:10,padding:"16px",textAlign:"center",marginBottom:18,cursor:"pointer",transition:"all 0.15s"}}
+      onMouseEnter={e=>{e.currentTarget.style.borderColor=C.accent;e.currentTarget.style.background=C.accentL;}}
+      onMouseLeave={e=>{e.currentTarget.style.borderColor=C.gray300;e.currentTarget.style.background=C.gray50;}}>
       <input ref={fr} type="file" accept=".pdf,.doc,.docx,.txt" style={{display:"none"}} onChange={handleFile}/>
       <div style={{fontSize:20,marginBottom:4}}>{parsing?"⏳":"📄"}</div>
       <div style={{color:C.gray500,fontSize:12,fontWeight:500}}>{parsing?"Parsing…":"Upload Resume — AI Auto-Fill"}</div>
@@ -558,10 +567,11 @@ function CandDetail({c,jobs,onEdit,onStageChange,onAddNote,onSubmitToJob,activeU
         </div>
       ):(
         <div
+          data-dropzone="true"
           onDragEnter={e=>{e.preventDefault();dragCounter.current++;setDragging(true);}}
           onDragOver={e=>e.preventDefault()}
           onDragLeave={e=>{e.preventDefault();dragCounter.current--;if(dragCounter.current===0)setDragging(false);}}
-          onDrop={e=>{e.preventDefault();dragCounter.current=0;setDragging(false);const f=e.dataTransfer.files[0];if(f)handleResumeDrop(f);}}
+          onDrop={e=>{e.preventDefault();e.stopPropagation();dragCounter.current=0;setDragging(false);const f=e.dataTransfer.files[0];if(f)handleResumeDrop(f);}}
           onClick={()=>onResumeUpload&&resumeRef.current?.click()}
           style={{background:dragging?C.accentL:C.gray50,border:`2px dashed ${dragging?C.accent:C.danger+"50"}`,borderRadius:9,padding:"20px",textAlign:"center",cursor:onResumeUpload?"pointer":"default",transition:"all 0.15s"}}>
           <div style={{fontSize:24,marginBottom:6}}>📎</div>
@@ -696,10 +706,11 @@ function JobForm({initial,onSave,onClose,activeUser=TEAM_FALLBACK[0],team=TEAM_F
       </div>
       <input ref={jdRef} type="file" accept=".pdf,.doc,.docx,.txt" style={{display:"none"}} onChange={e=>{const f=e.target.files[0];if(f)handleJDFile(f);}}/>
       <div
+        data-dropzone="true"
         onDragEnter={e=>{e.preventDefault();jdDragCounter.current++;setJdDragging(true);}}
         onDragOver={e=>e.preventDefault()}
         onDragLeave={e=>{e.preventDefault();jdDragCounter.current--;if(jdDragCounter.current===0)setJdDragging(false);}}
-        onDrop={e=>{e.preventDefault();jdDragCounter.current=0;setJdDragging(false);const file=e.dataTransfer.files[0];if(file)handleJDFile(file);}}
+        onDrop={e=>{e.preventDefault();e.stopPropagation();jdDragCounter.current=0;setJdDragging(false);const file=e.dataTransfer.files[0];if(file)handleJDFile(file);}}
         style={{position:"relative",borderRadius:8,border:`2px solid ${jdDragging?C.accent:C.gray200}`,transition:"border 0.15s",background:jdDragging?C.accentL:C.white}}>
         {jdDragging&&<div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",background:C.accentL+"cc",borderRadius:7,zIndex:2,fontSize:13,fontWeight:600,color:C.accent,pointerEvents:"none"}}>Drop to extract JD</div>}
         <textarea style={{...ta,minHeight:140,fontFamily:"monospace",fontSize:12,border:"none",borderRadius:8,background:"transparent",width:"100%",boxSizing:"border-box"}} value={f.jd} onChange={e=>s("jd",e.target.value)} placeholder="Paste JD, drop a PDF/DOCX, or use AI Generate…"/>
@@ -1107,11 +1118,17 @@ export default function HCPRecruit(){
   useEffect(()=>{getSession().then(s=>{setSession(s);setAuthChecked(true);});},[]);
 
   // Prevent browser from opening dragged files in a new tab
+  // Only block drops that land outside designated drop zones
   useEffect(()=>{
-    const prevent=(e)=>{e.preventDefault();e.stopPropagation();};
-    window.addEventListener("dragover",prevent);
-    window.addEventListener("drop",prevent);
-    return()=>{window.removeEventListener("dragover",prevent);window.removeEventListener("drop",prevent);};
+    const preventDrag=(e)=>{e.preventDefault();};
+    const preventDrop=(e)=>{
+      // Allow drops on elements with data-dropzone attribute
+      if(e.target.closest("[data-dropzone]")) return;
+      e.preventDefault();
+    };
+    window.addEventListener("dragover",preventDrag);
+    window.addEventListener("drop",preventDrop);
+    return()=>{window.removeEventListener("dragover",preventDrag);window.removeEventListener("drop",preventDrop);};
   },[]);
   useEffect(()=>{
     if(!session) return;
