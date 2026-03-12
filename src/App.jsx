@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { fetchCandidates, fetchJobs, upsertCandidate, upsertJob, updateCandidateStage, updateJobStatus, addCandidateNote, addJobNote as addJobNoteDB, submitCandidateToJob, removeCandidateFromJob, subscribeToChanges, signIn, signOut, getSession } from "./lib/supabase";
+import { fetchCandidates, fetchJobs, fetchTeam, upsertTeamMember, upsertCandidate, upsertJob, updateCandidateStage, updateJobStatus, addCandidateNote, addJobNote as addJobNoteDB, submitCandidateToJob, removeCandidateFromJob, subscribeToChanges, signIn, signOut, getSession } from "./lib/supabase";
 
 // ── DESIGN TOKENS ─────────────────────────────────────────────────
 const C = {
@@ -34,7 +34,8 @@ const C = {
 };
 
 // ── TEAM ──────────────────────────────────────────────────────────
-const TEAM = [
+// Fallback team — replaced at runtime by Supabase team_members table
+const TEAM_FALLBACK = [
   { id:"andrew",  name:"Andrew Silva",     initials:"AS", color:"#1e56c8", role:"Senior Recruiter" },
   { id:"sarah",   name:"Sarah Kim",        initials:"SK", color:"#7c3aed", role:"Recruiter" },
   { id:"mike",    name:"Mike Rodriguez",   initials:"MR", color:"#16a34a", role:"Recruiter" },
@@ -43,7 +44,8 @@ const TEAM = [
   { id:"priya",   name:"Priya Patel",      initials:"PP", color:"#0891b2", role:"Recruiter" },
   { id:"enoch",   name:"Enoch Washington", initials:"EW", color:"#ea580c", role:"CEO / Managing Director" },
 ];
-const ACTIVE_USER = TEAM[0];
+let TEAM = TEAM_FALLBACK;
+const getTeamMember = id => TEAM.find(t=>t.id===id);
 
 // ── CONSTANTS ─────────────────────────────────────────────────────
 const STAGES = ["Sourced","Submitted","Client Review","Interview 1","Interview 2","Final Interview","Offer","Placed","On Hold","Rejected"];
@@ -78,7 +80,6 @@ const EMP_TYPES  = ["Full-Time","Contract","Contract-to-Hire","Part-Time"];
 const today    = () => new Date().toISOString().split("T")[0];
 const ini      = n  => (n||"?").split(" ").map(x=>x[0]).join("").substring(0,2).toUpperCase();
 const aHue     = name => [...(name||"A")].reduce((a,c)=>a+c.charCodeAt(0),0)%360;
-const getTeamMember = id => TEAM.find(t=>t.id===id);
 const weekStart = () => { const d=new Date(); d.setDate(d.getDate()-d.getDay()); return d.toISOString().split("T")[0]; };
 const weekEnd   = () => { const d=new Date(); d.setDate(d.getDate()+(6-d.getDay())); return d.toISOString().split("T")[0]; };
 
@@ -248,7 +249,7 @@ function WeeklyReport({cands,jobs}){
       <div style={{display:"flex",gap:10,alignItems:"center"}}>
         <span style={{fontSize:12,color:C.gray500,fontWeight:500}}>Filter:</span>
         <select style={{...sel,width:190,fontSize:12}} value={filterR} onChange={e=>setFilterR(e.target.value)}>
-          <option value="all">All Recruiters</option>{TEAM.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}
+          <option value="all">All Recruiters</option>{team.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}
         </select>
         <span style={{fontSize:12,color:C.gray400}}>Week: {r.ws} – {r.we}</span>
       </div>
@@ -298,8 +299,8 @@ function WeeklyReport({cands,jobs}){
 }
 
 // ── CANDIDATE FORM ────────────────────────────────────────────────
-function CandForm({initial,allCandidates,onSave,onClose}){
-  const E={name:"",email:"",phone:"",linkedin:"",title:"",seniority:"",vertical:"",stage:"Sourced",skills:[],salary:"",location:"",workAuth:"",experience:"",source:"",ownerId:ACTIVE_USER.id,collaborators:[],notes:[]};
+function CandForm({initial,allCandidates,onSave,onClose,activeUser=TEAM_FALLBACK[0],team=TEAM_FALLBACK}){
+  const E={name:"",email:"",phone:"",linkedin:"",title:"",seniority:"",vertical:"",stage:"Sourced",skills:[],salary:"",location:"",workAuth:"",experience:"",source:"",ownerId:activeUser.id,collaborators:[],notes:[]};
   const [f,setF]=useState(initial||E);
   const [si,setSi]=useState("");
   const [parsing,setParsing]=useState(false);
@@ -362,12 +363,12 @@ function CandForm({initial,allCandidates,onSave,onClose}){
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0 16px"}}>
         <div>
           <label style={{display:"block",color:C.gray600,fontSize:12,fontWeight:500,marginBottom:6}}>Primary Owner</label>
-          <select style={sel} value={f.ownerId} onChange={e=>s("ownerId",e.target.value)}>{TEAM.map(t=><option key={t.id} value={t.id}>{t.name} — {t.role}</option>)}</select>
+          <select style={sel} value={f.ownerId} onChange={e=>s("ownerId",e.target.value)}>{team.map(t=><option key={t.id} value={t.id}>{t.name} — {t.role}</option>)}</select>
         </div>
         <div>
           <label style={{display:"block",color:C.gray600,fontSize:12,fontWeight:500,marginBottom:6}}>Collaborators <span style={{color:(f.collaborators||[]).length>=2?C.pink:C.gray400}}>({(f.collaborators||[]).length}/2)</span></label>
           <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
-            {TEAM.filter(t=>t.id!==f.ownerId).map(t=>{
+            {team.filter(t=>t.id!==f.ownerId).map(t=>{
               const active=(f.collaborators||[]).includes(t.id);
               const atMax=(f.collaborators||[]).length>=2&&!active;
               return <div key={t.id} onClick={()=>!atMax&&toggleCollab(t.id)} style={{display:"flex",alignItems:"center",gap:5,background:active?t.color:C.white,border:`1px solid ${active?t.color:C.gray300}`,borderRadius:6,padding:"4px 9px",cursor:atMax?"not-allowed":"pointer",opacity:atMax?0.4:1,transition:"all 0.15s"}}>
@@ -399,7 +400,7 @@ function CandForm({initial,allCandidates,onSave,onClose}){
 }
 
 // ── CANDIDATE DETAIL ──────────────────────────────────────────────
-function CandDetail({c,jobs,onEdit,onStageChange,onAddNote,onSubmitToJob}){
+function CandDetail({c,jobs,onEdit,onStageChange,onAddNote,onSubmitToJob,activeUser=TEAM_FALLBACK[0]}){
   const [note,setNote]=useState("");
   const progress=STAGES.filter(s=>!["On Hold","Rejected"].includes(s));
   const si=STAGES.indexOf(c.stage);
@@ -500,8 +501,8 @@ function CandDetail({c,jobs,onEdit,onStageChange,onAddNote,onSubmitToJob}){
       </div>
       <div style={{display:"flex",gap:8}}>
         <div style={{display:"flex",alignItems:"center",gap:7,flex:1}}>
-          <RecruiterBadge id={ACTIVE_USER.id} size={24}/>
-          <input style={{...inp,flex:1}} value={note} onChange={e=>setNote(e.target.value)} onKeyDown={e=>e.key==="Enter"&&post()} placeholder={`Add note as ${ACTIVE_USER.name}…`}/>
+          <RecruiterBadge id={activeUser.id} size={24}/>
+          <input style={{...inp,flex:1}} value={note} onChange={e=>setNote(e.target.value)} onKeyDown={e=>e.key==="Enter"&&post()} placeholder={`Add note as ${activeUser.name}…`}/>
         </div>
         <button onClick={post} style={{background:C.navy,color:C.white,border:"none",borderRadius:8,padding:"0 16px",fontSize:12,fontWeight:600,cursor:"pointer",flexShrink:0}}>Post</button>
       </div>
@@ -510,8 +511,8 @@ function CandDetail({c,jobs,onEdit,onStageChange,onAddNote,onSubmitToJob}){
 }
 
 // ── JOB FORM ──────────────────────────────────────────────────────
-function JobForm({initial,onSave,onClose}){
-  const E={title:"",client:"",spoc:"",location:"",empType:"Full-Time",salary:"",priority:"P1",status:"Open – Sourcing",reqDate:today(),submitted:0,interviewed:0,offers:0,jd:"",notes:[],submittedCandidates:[],assignedRecruiters:[ACTIVE_USER.id]};
+function JobForm({initial,onSave,onClose,activeUser=TEAM_FALLBACK[0],team=TEAM_FALLBACK}){
+  const E={title:"",client:"",spoc:"",location:"",empType:"Full-Time",salary:"",priority:"P1",status:"Open – Sourcing",reqDate:today(),submitted:0,interviewed:0,offers:0,jd:"",notes:[],submittedCandidates:[],assignedRecruiters:[activeUser.id]};
   const [f,setF]=useState(initial||E);
   const [gen,setGen]=useState(false);
   const s=(k,v)=>setF(p=>({...p,[k]:v}));
@@ -539,7 +540,7 @@ function JobForm({initial,onSave,onClose}){
     <div style={{background:C.gray50,border:`1px solid ${C.gray200}`,borderRadius:9,padding:"13px 15px",marginBottom:14}}>
       <div style={{fontSize:11,fontWeight:600,color:C.gray500,letterSpacing:0.5,textTransform:"uppercase",marginBottom:10}}>Assigned Recruiters</div>
       <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-        {TEAM.map(t=>{const active=(f.assignedRecruiters||[]).includes(t.id);return <div key={t.id} onClick={()=>toggleR(t.id)} style={{display:"flex",alignItems:"center",gap:6,background:active?t.color:C.white,border:`1px solid ${active?t.color:C.gray300}`,borderRadius:7,padding:"5px 11px",cursor:"pointer",transition:"all 0.15s"}}>
+        {team.map(t=>{const active=(f.assignedRecruiters||[]).includes(t.id);return <div key={t.id} onClick={()=>toggleR(t.id)} style={{display:"flex",alignItems:"center",gap:6,background:active?t.color:C.white,border:`1px solid ${active?t.color:C.gray300}`,borderRadius:7,padding:"5px 11px",cursor:"pointer",transition:"all 0.15s"}}>
           <div style={{width:18,height:18,borderRadius:4,background:active?"rgba(255,255,255,0.3)":t.color,display:"flex",alignItems:"center",justifyContent:"center",fontSize:8,fontWeight:700,color:C.white}}>{t.initials}</div>
           <span style={{fontSize:11,color:active?C.white:C.gray600,fontWeight:active?600:400}}>{t.name.split(" ")[0]}</span>
         </div>;})}
@@ -560,7 +561,7 @@ function JobForm({initial,onSave,onClose}){
 }
 
 // ── JOB DETAIL ────────────────────────────────────────────────────
-function JobDetail({job,candidates,onEdit,onStatusChange,onAddNote,onRemove,onOpenCand}){
+function JobDetail({job,candidates,onEdit,onStatusChange,onAddNote,onRemove,onOpenCand,activeUser=TEAM_FALLBACK[0]}){
   const [note,setNote]=useState("");
   const [showJD,setShowJD]=useState(false);
   const submitted=candidates.filter(c=>job.submittedCandidates?.includes(c.id));
@@ -635,8 +636,8 @@ function JobDetail({job,candidates,onEdit,onStatusChange,onAddNote,onRemove,onOp
       </div>
       <div style={{display:"flex",gap:8}}>
         <div style={{display:"flex",alignItems:"center",gap:7,flex:1}}>
-          <RecruiterBadge id={ACTIVE_USER.id} size={22}/>
-          <input style={{...inp,flex:1}} value={note} onChange={e=>setNote(e.target.value)} onKeyDown={e=>e.key==="Enter"&&post()} placeholder={`Add note as ${ACTIVE_USER.name}…`}/>
+          <RecruiterBadge id={activeUser.id} size={22}/>
+          <input style={{...inp,flex:1}} value={note} onChange={e=>setNote(e.target.value)} onKeyDown={e=>e.key==="Enter"&&post()} placeholder={`Add note as ${activeUser.name}…`}/>
         </div>
         <button onClick={post} style={{background:C.navy,color:C.white,border:"none",borderRadius:8,padding:"0 15px",fontSize:12,fontWeight:600,cursor:"pointer",flexShrink:0}}>Post</button>
       </div>
@@ -644,10 +645,79 @@ function JobDetail({job,candidates,onEdit,onStatusChange,onAddNote,onRemove,onOp
   </div>;
 }
 
+// ── TEAM MANAGER ──────────────────────────────────────────────────
+function TeamManager({team,onSave}){
+  const blank={id:"",name:"",initials:"",color:"#1e56c8",role:"Recruiter",email:"",active:true};
+  const [form,setForm]=useState(blank);
+  const [editing,setEditing]=useState(null);
+  const [saving,setSaving]=useState(false);
+  const [msg,setMsg]=useState(null);
+  const colors=["#1e56c8","#7c3aed","#16a34a","#d97706","#dc2626","#0891b2","#ea580c","#db2777","#0f766e","#7c3aed"];
+  const s=(k,v)=>setForm(p=>({...p,[k]:v}));
+  const startEdit=(m)=>{setForm({...m});setEditing(m.id);setMsg(null);};
+  const startNew=()=>{setForm(blank);setEditing("new");setMsg(null);};
+  const save=async()=>{
+    if(!form.name.trim()||!form.id.trim()) return setMsg("Name and ID are required.");
+    setSaving(true);
+    try{
+      await onSave({...form,initials:form.initials||form.name.split(" ").map(x=>x[0]).join("").substring(0,2).toUpperCase()});
+      setMsg("✓ Saved successfully");
+      setEditing(null);setForm(blank);
+    }catch(e){setMsg("⚠ Save failed: "+e.message);}
+    setSaving(false);
+  };
+  return <div>
+    <div style={{marginBottom:16,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+      <div style={{fontSize:13,color:C.gray500}}>Manage your recruiting team. Set each member's email to match their Supabase login.</div>
+      <button onClick={startNew} style={{background:C.navy,color:C.white,border:"none",borderRadius:8,padding:"8px 16px",fontSize:12,fontWeight:600,cursor:"pointer"}}>+ Add Member</button>
+    </div>
+
+    {/* Team list */}
+    <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:20}}>
+      {team.map(m=><div key={m.id} style={{background:C.white,border:`1px solid ${C.gray200}`,borderRadius:10,padding:"12px 16px",display:"flex",alignItems:"center",gap:12,boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
+        <div style={{width:38,height:38,borderRadius:9,background:m.color,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:700,color:C.white,flexShrink:0}}>{m.initials}</div>
+        <div style={{flex:1}}>
+          <div style={{color:C.navy,fontSize:13,fontWeight:600}}>{m.name}</div>
+          <div style={{color:C.gray400,fontSize:11,marginTop:1}}>{m.role} · {m.email||<span style={{color:C.danger}}>No email set</span>}</div>
+        </div>
+        <span style={{background:m.active?C.successL:C.dangerL,color:m.active?C.success:C.danger,borderRadius:5,padding:"2px 8px",fontSize:11,fontWeight:600}}>{m.active?"Active":"Inactive"}</span>
+        <button onClick={()=>startEdit(m)} style={{background:C.gray100,color:C.gray600,border:`1px solid ${C.gray200}`,borderRadius:6,padding:"5px 12px",fontSize:11,cursor:"pointer",fontWeight:500}}>Edit</button>
+      </div>)}
+    </div>
+
+    {/* Edit / Add form */}
+    {editing&&<div style={{background:C.gray50,border:`1px solid ${C.gray200}`,borderRadius:12,padding:"20px"}}>
+      <div style={{fontSize:14,fontWeight:700,color:C.navy,marginBottom:16}}>{editing==="new"?"Add New Team Member":"Edit Team Member"}</div>
+      {msg&&<div style={{background:msg.startsWith("✓")?C.successL:C.dangerL,color:msg.startsWith("✓")?C.success:C.danger,borderRadius:7,padding:"8px 12px",marginBottom:14,fontSize:12,fontWeight:500}}>{msg}</div>}
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"12px 16px",marginBottom:16}}>
+        <F label="Full Name *"><input style={inp} value={form.name} onChange={e=>s("name",e.target.value)} placeholder="Sarah Kim"/></F>
+        <F label="ID * (no spaces, lowercase)" ><input style={inp} value={form.id} onChange={e=>s("id",e.target.value.toLowerCase().replace(/\s/g,""))} placeholder="sarah" disabled={editing!=="new"}/></F>
+        <F label="Role"><input style={inp} value={form.role} onChange={e=>s("role",e.target.value)} placeholder="Recruiter"/></F>
+        <F label="Email (must match Supabase login)"><input style={inp} value={form.email||""} onChange={e=>s("email",e.target.value)} placeholder="sarah@inxldigital.com" type="email"/></F>
+        <F label="Initials"><input style={inp} value={form.initials} onChange={e=>s("initials",e.target.value.toUpperCase().substring(0,2))} placeholder="SK" maxLength={2}/></F>
+        <F label="Status"><select style={sel} value={form.active?"active":"inactive"} onChange={e=>s("active",e.target.value==="active")}><option value="active">Active</option><option value="inactive">Inactive</option></select></F>
+      </div>
+      <div style={{marginBottom:16}}>
+        <label style={{display:"block",color:C.gray500,fontSize:11,fontWeight:600,letterSpacing:0.3,marginBottom:8}}>Avatar Color</label>
+        <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+          {colors.map(c=><div key={c} onClick={()=>s("color",c)} style={{width:28,height:28,borderRadius:7,background:c,cursor:"pointer",border:form.color===c?`3px solid ${C.navy}`:"3px solid transparent",transition:"border 0.15s"}}/>)}
+          <input type="color" value={form.color} onChange={e=>s("color",e.target.value)} style={{width:28,height:28,borderRadius:7,border:"none",cursor:"pointer",padding:0}}/>
+        </div>
+      </div>
+      <div style={{display:"flex",gap:10}}>
+        <button onClick={save} disabled={saving} style={{flex:1,background:C.navy,color:C.white,border:"none",borderRadius:8,padding:"11px",fontSize:13,fontWeight:600,cursor:"pointer"}}>{saving?"Saving…":"Save Member"}</button>
+        <button onClick={()=>{setEditing(null);setForm(blank);setMsg(null);}} style={{background:C.white,color:C.gray500,border:`1px solid ${C.gray300}`,borderRadius:8,padding:"11px 18px",fontSize:13,cursor:"pointer"}}>Cancel</button>
+      </div>
+    </div>}
+  </div>;
+}
+
 // ── MAIN APP ──────────────────────────────────────────────────────
 export default function HCPRecruit(){
   const [cands,setCands]=useState([]);
   const [jobs,setJobs]=useState([]);
+  const [team,setTeam]=useState(TEAM_FALLBACK);
+  const [activeUser,setActiveUser]=useState(TEAM_FALLBACK[0]);
   const [loading,setLoading]=useState(true);
   const [session,setSession]=useState(null);
   const [authChecked,setAuthChecked]=useState(false);
@@ -661,8 +731,16 @@ export default function HCPRecruit(){
   useEffect(()=>{getSession().then(s=>{setSession(s);setAuthChecked(true);});},[]);
   useEffect(()=>{
     if(!session) return;
-    Promise.all([fetchCandidates(),fetchJobs()])
-      .then(([c,j])=>{setCands(c);setJobs(j);setLoading(false);})
+    Promise.all([fetchCandidates(),fetchJobs(),fetchTeam()])
+      .then(([c,j,t])=>{
+        setCands(c);setJobs(j);
+        TEAM=t; setTeam(t);
+        // Match logged-in email to team member
+        const email=session.user?.email;
+        const matched=t.find(m=>m.email&&m.email.toLowerCase()===email?.toLowerCase());
+        if(matched) setActiveUser(matched);
+        setLoading(false);
+      })
       .catch(err=>{console.error("Load error:",err);setLoading(false);});
     const unsub=subscribeToChanges(()=>fetchCandidates().then(setCands),()=>fetchJobs().then(setJobs));
     return unsub;
@@ -693,8 +771,8 @@ export default function HCPRecruit(){
   const saveJob=async(j)=>{await upsertJob(j);await reload();setModal(null);};
   const stageChange=async(id,stage)=>{await updateCandidateStage(id,stage);const data=await fetchCandidates();setCands(data);};
   const jobStatusChange=async(id,status)=>{await updateJobStatus(id,status);const data=await fetchJobs();setJobs(data);};
-  const addCandNoteHandler=async(id,text)=>{await addCandidateNote(id,{author:ACTIVE_USER.name,authorId:ACTIVE_USER.id,text,date:today()});const data=await fetchCandidates();setCands(data);};
-  const addJobNoteHandler=async(id,text)=>{await addJobNoteDB(id,{author:ACTIVE_USER.name,authorId:ACTIVE_USER.id,text,date:today()});const data=await fetchJobs();setJobs(data);};
+  const addCandNoteHandler=async(id,text)=>{await addCandidateNote(id,{author:activeUser.name,authorId:activeUser.id,text,date:today()});const data=await fetchCandidates();setCands(data);};
+  const addJobNoteHandler=async(id,text)=>{await addJobNoteDB(id,{author:activeUser.name,authorId:activeUser.id,text,date:today()});const data=await fetchJobs();setJobs(data);};
   const submitToJob=async(cid,jid)=>{await submitCandidateToJob(cid,jid);await reload();};
   const removeFromJob=async(jid,cid)=>{await removeCandidateFromJob(cid,jid);const data=await fetchJobs();setJobs(data);};
   const openCand=(c)=>setModal({t:"cand",c});
@@ -727,10 +805,11 @@ export default function HCPRecruit(){
             + {tab==="candidates"?"Candidate":"Job Order"}
           </button>
           <button onClick={()=>setModal({t:"report"})} style={{background:"rgba(255,255,255,0.08)",color:"rgba(255,255,255,0.65)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:8,padding:"7px 13px",fontSize:12,cursor:"pointer",fontWeight:500}}>📊 Report</button>
+          <button onClick={()=>setModal({t:"team"})} style={{background:"rgba(255,255,255,0.08)",color:"rgba(255,255,255,0.65)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:8,padding:"7px 13px",fontSize:12,cursor:"pointer",fontWeight:500}}>👥 Team</button>
           <button onClick={()=>exportCSV(cands,jobs)} style={{background:"rgba(255,255,255,0.07)",color:"rgba(255,255,255,0.45)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:8,padding:"7px 11px",fontSize:12,cursor:"pointer"}}>⬇ CSV</button>
           <div style={{display:"flex",alignItems:"center",gap:7,background:"rgba(255,255,255,0.07)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:8,padding:"5px 12px"}}>
-            <RecruiterBadge id={ACTIVE_USER.id} size={22}/>
-            <span style={{fontSize:11,color:"rgba(255,255,255,0.55)",fontWeight:500}}>{ACTIVE_USER.name}</span>
+            <RecruiterBadge id={activeUser.id} size={22}/>
+            <span style={{fontSize:11,color:"rgba(255,255,255,0.55)",fontWeight:500}}>{activeUser.name}</span>
             <span onClick={()=>signOut().then(()=>setSession(null))} style={{fontSize:10,color:"rgba(255,255,255,0.25)",cursor:"pointer",marginLeft:2,fontWeight:600,padding:"2px 4px"}} title="Sign out">✕</span>
           </div>
         </div>
@@ -757,7 +836,7 @@ export default function HCPRecruit(){
             <input style={{...inp,paddingLeft:32}} value={cs} onChange={e=>setCs(e.target.value)} placeholder="Search name, title, skill, location…"/>
           </div>
           <select style={{...sel,flex:"0 0 140px"}} value={cStage} onChange={e=>setCStage(e.target.value)}><option value="All">All Stages</option>{STAGES.map(s=><option key={s}>{s}</option>)}</select>
-          <select style={{...sel,flex:"0 0 145px"}} value={cOwner} onChange={e=>setCOwner(e.target.value)}><option value="All">All Recruiters</option>{TEAM.map(t=><option key={t.id} value={t.id}>{t.name.split(" ")[0]}</option>)}</select>
+          <select style={{...sel,flex:"0 0 145px"}} value={cOwner} onChange={e=>setCOwner(e.target.value)}><option value="All">All Recruiters</option>{team.map(t=><option key={t.id} value={t.id}>{t.name.split(" ")[0]}</option>)}</select>
           <select style={{...sel,flex:"0 0 130px"}} value={cAuth} onChange={e=>setCAuth(e.target.value)}><option value="All">All Auth</option>{WORK_AUTH.map(w=><option key={w}>{w}</option>)}</select>
           <select style={{...sel,flex:"0 0 140px"}} value={cSort} onChange={e=>setCSort(e.target.value)}>
             <option value="name">Sort: A–Z</option><option value="stage">Sort: Stage</option><option value="salary">Sort: Rate ↓</option>
@@ -831,7 +910,7 @@ export default function HCPRecruit(){
           </div>
           <select style={{...sel,flex:"0 0 155px"}} value={jStat} onChange={e=>setJStat(e.target.value)}><option value="All">All Statuses</option>{JOB_STATUSES.map(s=><option key={s}>{s}</option>)}</select>
           <select style={{...sel,flex:"0 0 145px"}} value={jClient} onChange={e=>setJClient(e.target.value)}><option value="All">All Clients</option>{clients.map(c=><option key={c}>{c}</option>)}</select>
-          <select style={{...sel,flex:"0 0 145px"}} value={jOwner} onChange={e=>setJOwner(e.target.value)}><option value="All">All Recruiters</option>{TEAM.map(t=><option key={t.id} value={t.id}>{t.name.split(" ")[0]}</option>)}</select>
+          <select style={{...sel,flex:"0 0 145px"}} value={jOwner} onChange={e=>setJOwner(e.target.value)}><option value="All">All Recruiters</option>{team.map(t=><option key={t.id} value={t.id}>{t.name.split(" ")[0]}</option>)}</select>
           <span style={{color:C.gray400,fontSize:12,fontWeight:500,flexShrink:0}}>{fJobs.length} role{fJobs.length!==1?"s":""}</span>
         </div>
         <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(320px,1fr))",gap:12}}>
@@ -870,12 +949,13 @@ export default function HCPRecruit(){
     </div>
 
     {/* MODALS */}
-    {modal?.t==="add-cand"&&<Modal title="Add New Candidate" subtitle="Fill in details or upload a resume for AI auto-fill" onClose={()=>setModal(null)}><CandForm allCandidates={cands} onSave={saveCand} onClose={()=>setModal(null)}/></Modal>}
-    {modal?.t==="edit-cand"&&<Modal title="Edit Candidate" onClose={()=>setModal(null)}><CandForm initial={modal.c} allCandidates={cands} onSave={saveCand} onClose={()=>setModal(null)}/></Modal>}
-    {modal?.t==="cand"&&(()=>{const live=cands.find(c=>c.id===modal.c.id)||modal.c;return <Modal title="Candidate Profile" onClose={()=>setModal(null)} wide><CandDetail c={live} jobs={jobs} onEdit={()=>setModal({t:"edit-cand",c:live})} onStageChange={stageChange} onAddNote={addCandNoteHandler} onSubmitToJob={submitToJob}/></Modal>;})()}
-    {modal?.t==="add-job"&&<Modal title="New Job Order" subtitle="Create a job order and assign recruiters" onClose={()=>setModal(null)} wide><JobForm onSave={saveJob} onClose={()=>setModal(null)}/></Modal>}
-    {modal?.t==="edit-job"&&<Modal title="Edit Job Order" onClose={()=>setModal(null)} wide><JobForm initial={modal.j} onSave={saveJob} onClose={()=>setModal(null)}/></Modal>}
-    {modal?.t==="job"&&(()=>{const live=jobs.find(j=>j.id===modal.j.id)||modal.j;return <Modal title="Job Order Detail" onClose={()=>setModal(null)} wide><JobDetail job={live} candidates={cands} onEdit={()=>setModal({t:"edit-job",j:live})} onStatusChange={jobStatusChange} onAddNote={addJobNoteHandler} onRemove={removeFromJob} onOpenCand={c=>{setModal(null);setTimeout(()=>setModal({t:"cand",c}),40);}}/></Modal>;})()}
+    {modal?.t==="add-cand"&&<Modal title="Add New Candidate" subtitle="Fill in details or upload a resume for AI auto-fill" onClose={()=>setModal(null)}><CandForm allCandidates={cands} onSave={saveCand} onClose={()=>setModal(null)} activeUser={activeUser} team={team}/></Modal>}
+    {modal?.t==="edit-cand"&&<Modal title="Edit Candidate" onClose={()=>setModal(null)}><CandForm initial={modal.c} allCandidates={cands} onSave={saveCand} onClose={()=>setModal(null)} activeUser={activeUser} team={team}/></Modal>}
+    {modal?.t==="cand"&&(()=>{const live=cands.find(c=>c.id===modal.c.id)||modal.c;return <Modal title="Candidate Profile" onClose={()=>setModal(null)} wide><CandDetail c={live} jobs={jobs} onEdit={()=>setModal({t:"edit-cand",c:live})} onStageChange={stageChange} onAddNote={addCandNoteHandler} onSubmitToJob={submitToJob} activeUser={activeUser}/></Modal>;})()}
+    {modal?.t==="add-job"&&<Modal title="New Job Order" subtitle="Create a job order and assign recruiters" onClose={()=>setModal(null)} wide><JobForm onSave={saveJob} onClose={()=>setModal(null)} activeUser={activeUser} team={team}/></Modal>}
+    {modal?.t==="edit-job"&&<Modal title="Edit Job Order" onClose={()=>setModal(null)} wide><JobForm initial={modal.j} onSave={saveJob} onClose={()=>setModal(null)} activeUser={activeUser} team={team}/></Modal>}
+    {modal?.t==="job"&&(()=>{const live=jobs.find(j=>j.id===modal.j.id)||modal.j;return <Modal title="Job Order Detail" onClose={()=>setModal(null)} wide><JobDetail job={live} candidates={cands} onEdit={()=>setModal({t:"edit-job",j:live})} onStatusChange={jobStatusChange} onAddNote={addJobNoteHandler} onRemove={removeFromJob} onOpenCand={c=>{setModal(null);setTimeout(()=>setModal({t:"cand",c}),40);}} activeUser={activeUser}/></Modal>;})()}
     {modal?.t==="report"&&<Modal title="Weekly Activity Report" subtitle={`Week of ${weekStart()} – ${weekEnd()}`} onClose={()=>setModal(null)} xl><WeeklyReport cands={cands} jobs={jobs}/></Modal>}
+    {modal?.t==="team"&&<Modal title="Team Management" subtitle="Add or update team members. New members need a Supabase login to sign in." onClose={()=>setModal(null)} wide><TeamManager team={team} onSave={async(m)=>{await upsertTeamMember(m);const t=await fetchTeam();TEAM=t;setTeam(t);}}/></Modal>}
   </div>;
 }

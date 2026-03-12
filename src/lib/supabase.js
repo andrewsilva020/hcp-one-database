@@ -1,28 +1,33 @@
-// ─────────────────────────────────────────────────────────────────
-// HCP One Recruit — Supabase Client Module
-// Drop this file into your project as: src/lib/supabase.js
-// ─────────────────────────────────────────────────────────────────
-// SETUP: Replace the two values below with your Supabase project credentials
-// Found at: https://supabase.com → Your Project → Settings → API
-
 import { createClient } from "@supabase/supabase-js";
 
 const SUPABASE_URL = "https://hshhhrkkbzgvmlyuwhtj.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhzaGhocmtrYnpndm1seXV3aHRqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyNzQ4MjIsImV4cCI6MjA4ODg1MDgyMn0.W8Ff6YaUMnxSNyhLTlyLtjvfYCwPLBespxxU7xKVjgg";
+
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// ─────────────────────────────────────────────────────────────────
-// CANDIDATES
-// ─────────────────────────────────────────────────────────────────
+// ── TEAM ──────────────────────────────────────────────────────────
+export async function fetchTeam() {
+  const { data, error } = await supabase
+    .from("team_members")
+    .select("*")
+    .eq("active", true)
+    .order("name");
+  if (error) throw error;
+  return data;
+}
 
+export async function upsertTeamMember(member) {
+  const { error } = await supabase.from("team_members").upsert(member);
+  if (error) throw error;
+}
+
+// ── CANDIDATES ────────────────────────────────────────────────────
 export async function fetchCandidates() {
   const { data, error } = await supabase
     .from("candidates")
     .select("*, candidate_notes(*), candidate_jobs(job_id)")
     .order("created_at", { ascending: false });
   if (error) throw error;
-
-  // Reshape to match the app's existing data shape
   return data.map((c) => ({
     ...c,
     notes: c.candidate_notes || [],
@@ -34,13 +39,11 @@ export async function fetchCandidates() {
 
 export async function upsertCandidate(candidate) {
   const { notes, submittedTo, candidate_notes, candidate_jobs, ...row } = candidate;
-
   const { data, error } = await supabase
     .from("candidates")
     .upsert({ ...row, updated_at: new Date().toISOString() })
     .select()
     .single();
-
   if (error) throw error;
   return data;
 }
@@ -63,17 +66,13 @@ export async function addCandidateNote(candidateId, note) {
   return data;
 }
 
-// ─────────────────────────────────────────────────────────────────
-// JOB ORDERS
-// ─────────────────────────────────────────────────────────────────
-
+// ── JOB ORDERS ────────────────────────────────────────────────────
 export async function fetchJobs() {
   const { data, error } = await supabase
     .from("jobs")
     .select("*, job_notes(*), candidate_jobs(candidate_id)")
     .order("priority", { ascending: true });
   if (error) throw error;
-
   return data.map((j) => ({
     ...j,
     notes: j.job_notes || [],
@@ -84,7 +83,6 @@ export async function fetchJobs() {
 
 export async function upsertJob(job) {
   const { notes, submittedCandidates, job_notes, candidate_jobs, ...row } = job;
-
   const { data, error } = await supabase
     .from("jobs")
     .upsert({
@@ -94,7 +92,6 @@ export async function upsertJob(job) {
     })
     .select()
     .single();
-
   if (error) throw error;
   return data;
 }
@@ -117,17 +114,12 @@ export async function addJobNote(jobId, note) {
   return data;
 }
 
-// ─────────────────────────────────────────────────────────────────
-// CANDIDATE ↔ JOB LINKING
-// ─────────────────────────────────────────────────────────────────
-
+// ── CANDIDATE ↔ JOB ───────────────────────────────────────────────
 export async function submitCandidateToJob(candidateId, jobId) {
   const { error } = await supabase
     .from("candidate_jobs")
     .upsert({ candidate_id: candidateId, job_id: jobId });
   if (error) throw error;
-
-  // Also update the candidate's stage to Submitted
   await updateCandidateStage(candidateId, "Submitted");
 }
 
@@ -140,57 +132,26 @@ export async function removeCandidateFromJob(candidateId, jobId) {
   if (error) throw error;
 }
 
-// ─────────────────────────────────────────────────────────────────
-// REAL-TIME SUBSCRIPTIONS
-// Subscribe to live updates so all team members see changes instantly
-// Usage: call subscribeToChanges(onCandidateChange, onJobChange) on mount
-// ─────────────────────────────────────────────────────────────────
-
+// ── REALTIME ──────────────────────────────────────────────────────
 export function subscribeToChanges(onCandidateChange, onJobChange) {
   const candChannel = supabase
     .channel("candidates-realtime")
-    .on(
-      "postgres_changes",
-      { event: "*", schema: "public", table: "candidates" },
-      (payload) => onCandidateChange(payload)
-    )
-    .on(
-      "postgres_changes",
-      { event: "*", schema: "public", table: "candidate_notes" },
-      (payload) => onCandidateChange(payload)
-    )
-    .on(
-      "postgres_changes",
-      { event: "*", schema: "public", table: "candidate_jobs" },
-      (payload) => onCandidateChange(payload)
-    )
+    .on("postgres_changes", { event: "*", schema: "public", table: "candidates" }, onCandidateChange)
+    .on("postgres_changes", { event: "*", schema: "public", table: "candidate_notes" }, onCandidateChange)
+    .on("postgres_changes", { event: "*", schema: "public", table: "candidate_jobs" }, onCandidateChange)
     .subscribe();
-
   const jobChannel = supabase
     .channel("jobs-realtime")
-    .on(
-      "postgres_changes",
-      { event: "*", schema: "public", table: "jobs" },
-      (payload) => onJobChange(payload)
-    )
-    .on(
-      "postgres_changes",
-      { event: "*", schema: "public", table: "job_notes" },
-      (payload) => onJobChange(payload)
-    )
+    .on("postgres_changes", { event: "*", schema: "public", table: "jobs" }, onJobChange)
+    .on("postgres_changes", { event: "*", schema: "public", table: "job_notes" }, onJobChange)
     .subscribe();
-
-  // Return cleanup function — call this on component unmount
   return () => {
     supabase.removeChannel(candChannel);
     supabase.removeChannel(jobChannel);
   };
 }
 
-// ─────────────────────────────────────────────────────────────────
-// AUTH HELPERS (for future login support)
-// ─────────────────────────────────────────────────────────────────
-
+// ── AUTH ──────────────────────────────────────────────────────────
 export async function signIn(email, password) {
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) throw error;
