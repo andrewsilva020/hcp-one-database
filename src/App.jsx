@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from "react";
-import { fetchCandidates, fetchJobs, upsertCandidate, upsertJob, updateCandidateStage, updateJobStatus, addCandidateNote, addJobNote as addJobNoteDB, submitCandidateToJob, removeCandidateFromJob, subscribeToChanges } from "./lib/supabase";
+import { fetchCandidates, fetchJobs, upsertCandidate, upsertJob, updateCandidateStage, updateJobStatus, addCandidateNote, addJobNote as addJobNoteDB, submitCandidateToJob, removeCandidateFromJob, subscribeToChanges, signIn, signOut, getSession } from "./lib/supabase";
 
 const TEAM = [
   { id: "andrew",  name: "Andrew Silva",    initials: "AS", color: "#3b82f6", role: "Senior Recruiter" },
@@ -573,10 +573,56 @@ function JobDetail({job,candidates,onEdit,onStatusChange,onAddNote,onRemove,onOp
   </div>;
 }
 
+function LoginScreen({onLogin}){
+  const [email,setEmail]=useState("");
+  const [password,setPassword]=useState("");
+  const [error,setError]=useState("");
+  const [loading,setLoading]=useState(false);
+
+  const submit=async()=>{
+    if(!email.trim()||!password.trim()) return setError("Email and password required.");
+    setLoading(true);setError("");
+    try{
+      await signIn(email.trim(),password);
+      onLogin();
+    }catch(e){
+      setError("Invalid email or password. Try again.");
+    }
+    setLoading(false);
+  };
+
+  return <div style={{minHeight:"100vh",background:"#03070f",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Instrument Sans',sans-serif"}}>
+    <link href="https://fonts.googleapis.com/css2?family=Cabinet+Grotesk:wght@700;800;900&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+    <div style={{width:"100%",maxWidth:380,padding:"0 20px"}}>
+      <div style={{textAlign:"center",marginBottom:36}}>
+        <div style={{width:52,height:52,borderRadius:14,background:"linear-gradient(135deg,#1c4fc4,#0d3598)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,margin:"0 auto 14px"}}>⚡</div>
+        <div style={{fontFamily:"'Cabinet Grotesk',sans-serif",fontWeight:900,fontSize:22,color:"#d0e0f8",letterSpacing:-0.5}}>HCP One Recruit</div>
+        <div style={{fontSize:11,color:"#2a4060",marginTop:3}}>INXL Digital · Sign in to continue</div>
+      </div>
+      <div style={{background:"#070c18",border:"1px solid #111d2e",borderRadius:14,padding:"24px"}}>
+        {error&&<div style={{background:"#1a0606",border:"1px solid #f8717130",borderRadius:7,padding:"9px 12px",marginBottom:14,color:"#f87171",fontSize:12}}>{error}</div>}
+        <div style={{marginBottom:14}}>
+          <label style={{display:"block",color:"#243040",fontSize:9,fontWeight:700,letterSpacing:0.8,textTransform:"uppercase",marginBottom:5}}>Email</label>
+          <input style={{width:"100%",background:"#050a14",border:"1px solid #162030",borderRadius:8,padding:"10px 12px",color:"#b8cce0",fontSize:13,outline:"none",boxSizing:"border-box",fontFamily:"inherit"}} value={email} onChange={e=>setEmail(e.target.value)} onKeyDown={e=>e.key==="Enter"&&submit()} placeholder="you@inxldigital.com" type="email" autoFocus/>
+        </div>
+        <div style={{marginBottom:20}}>
+          <label style={{display:"block",color:"#243040",fontSize:9,fontWeight:700,letterSpacing:0.8,textTransform:"uppercase",marginBottom:5}}>Password</label>
+          <input style={{width:"100%",background:"#050a14",border:"1px solid #162030",borderRadius:8,padding:"10px 12px",color:"#b8cce0",fontSize:13,outline:"none",boxSizing:"border-box",fontFamily:"inherit"}} value={password} onChange={e=>setPassword(e.target.value)} onKeyDown={e=>e.key==="Enter"&&submit()} placeholder="••••••••" type="password"/>
+        </div>
+        <button onClick={submit} disabled={loading} style={{width:"100%",background:"linear-gradient(135deg,#1c4fc4,#0d3598)",color:"white",border:"none",borderRadius:8,padding:"12px",fontSize:14,fontWeight:800,cursor:loading?"not-allowed":"pointer",fontFamily:"'Cabinet Grotesk',sans-serif",opacity:loading?0.7:1}}>
+          {loading?"Signing in…":"Sign In"}
+        </button>
+      </div>
+    </div>
+  </div>;
+}
+
 export default function HCPRecruit(){
   const [cands,setCands]=useState([]);
   const [jobs,setJobs]=useState([]);
   const [loading,setLoading]=useState(true);
+  const [session,setSession]=useState(null);
+  const [authChecked,setAuthChecked]=useState(false);
   const [tab,setTab]=useState("candidates");
   const [view,setView]=useState("list");
   const [modal,setModal]=useState(null);
@@ -585,6 +631,11 @@ export default function HCPRecruit(){
   const [js,setJs]=useState(""); const [jStat,setJStat]=useState("All"); const [jClient,setJClient]=useState("All"); const [jOwner,setJOwner]=useState("All");
 
   useEffect(()=>{
+    getSession().then(s=>{setSession(s);setAuthChecked(true);});
+  },[]);
+
+  useEffect(()=>{
+    if(!session) return;
     Promise.all([fetchCandidates(),fetchJobs()])
       .then(([c,j])=>{setCands(c);setJobs(j);setLoading(false);})
       .catch(err=>{console.error("Load error:",err);setLoading(false);});
@@ -593,7 +644,7 @@ export default function HCPRecruit(){
       ()=>fetchJobs().then(setJobs)
     );
     return unsub;
-  },[]);
+  },[session]);
 
   const clients=[...new Set(jobs.map(j=>j.client).filter(Boolean))].sort();
 
@@ -633,6 +684,9 @@ export default function HCPRecruit(){
 
   const pc={"P1":"#f472b6","P2":"#fb923c","P3":"#94a3b8"};
 
+  if(!authChecked) return <div style={{minHeight:"100vh",background:"#03070f",display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{color:"#2a4060",fontSize:14}}>⚡</div></div>;
+  if(!session) return <LoginScreen onLogin={()=>getSession().then(setSession)}/>;
+
   if(loading) return <div style={{minHeight:"100vh",background:"#03070f",display:"flex",alignItems:"center",justifyContent:"center"}}>
     <div style={{textAlign:"center"}}>
       <div style={{fontSize:32,marginBottom:12}}>⚡</div>
@@ -655,6 +709,7 @@ export default function HCPRecruit(){
           <div style={{display:"flex",alignItems:"center",gap:6,background:"#070c18",border:"1px solid #111d2e",borderRadius:7,padding:"4px 10px",marginRight:4}}>
             <RecruiterBadge id={ACTIVE_USER.id} size={20}/>
             <span style={{fontSize:10,color:"#2a4060",fontWeight:600}}>{ACTIVE_USER.name}</span>
+            <span onClick={()=>signOut().then(()=>setSession(null))} style={{fontSize:9,color:"#1a2a3a",cursor:"pointer",marginLeft:4,fontWeight:700}} title="Sign out">✕</span>
           </div>
           <div style={{display:"flex",background:"#070c18",border:"1px solid #111d2e",borderRadius:7,overflow:"hidden",marginRight:3}}>
             {[["candidates","👤 Candidates"],["jobs","💼 Job Orders"]].map(([t,l])=>(
