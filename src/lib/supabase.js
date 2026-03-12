@@ -42,20 +42,28 @@ export async function fetchCandidates() {
 }
 
 export async function upsertCandidate(candidate) {
-  const { notes, submittedTo, candidate_notes, candidate_jobs, ownerId, workAuth, addedDate, lastUpdated, submittedTo: _st, ...rest } = candidate;
+  // Strip all app-side fields and camelCase keys, build clean DB row
   const row = {
-    ...rest,
-    owner_id: ownerId || candidate.owner_id,
-    work_auth: workAuth || candidate.work_auth,
-    added_date: addedDate || candidate.added_date || new Date().toISOString().split("T")[0],
+    id: candidate.id,
+    name: candidate.name,
+    email: candidate.email,
+    phone: candidate.phone,
+    linkedin: candidate.linkedin,
+    title: candidate.title,
+    seniority: candidate.seniority,
+    vertical: candidate.vertical,
+    stage: candidate.stage,
+    skills: candidate.skills || [],
+    salary: candidate.salary,
+    location: candidate.location,
+    work_auth: candidate.workAuth || candidate.work_auth || "",
+    experience: candidate.experience,
+    source: candidate.source,
+    owner_id: candidate.ownerId || candidate.owner_id || "",
+    collaborators: candidate.collaborators || [],
+    added_date: candidate.addedDate || candidate.added_date || new Date().toISOString().split("T")[0],
     updated_at: new Date().toISOString(),
   };
-  // Remove any camelCase keys that don't exist in DB
-  delete row.ownerId;
-  delete row.workAuth;
-  delete row.addedDate;
-  delete row.lastUpdated;
-  delete row.assignedRecruiters;
   const { data, error } = await supabase
     .from("candidates")
     .upsert(row)
