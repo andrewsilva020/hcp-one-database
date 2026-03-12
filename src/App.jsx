@@ -194,30 +194,31 @@ function LoginScreen({onLogin}){
     catch{setError("Invalid email or password.");}
     setLoading(false);
   };
-  return <div style={{minHeight:"100vh",background:`linear-gradient(135deg,${C.navy} 0%,${C.navy3} 100%)`,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'DM Sans',sans-serif",padding:20}}>
+  return <div style={{minHeight:"100vh",width:"100vw",background:`linear-gradient(135deg,${C.navy} 0%,${C.navy3} 60%,#1e4a8a 100%)`,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'DM Sans',sans-serif",padding:20}}>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Serif+Display&display=swap" rel="stylesheet"/>
-    <div style={{width:"100%",maxWidth:420}}>
-      <div style={{textAlign:"center",marginBottom:36}}>
-        <div style={{width:56,height:56,borderRadius:14,background:"linear-gradient(135deg,#2563eb,#1d4ed8)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,margin:"0 auto 16px",boxShadow:"0 8px 24px rgba(37,99,235,0.4)"}}>⚡</div>
-        <div style={{fontFamily:"'DM Serif Display',serif",fontSize:28,color:C.white,letterSpacing:-0.5,marginBottom:6}}>HCP One Recruit</div>
-        <div style={{fontSize:13,color:"rgba(255,255,255,0.45)"}}>INXL Digital · Recruitment Platform</div>
+    <div style={{width:"100%",maxWidth:440}}>
+      <div style={{textAlign:"center",marginBottom:40}}>
+        <div style={{width:60,height:60,borderRadius:16,background:"linear-gradient(135deg,#2563eb,#1d4ed8)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,margin:"0 auto 18px",boxShadow:"0 8px 32px rgba(37,99,235,0.45)"}}>⚡</div>
+        <div style={{fontFamily:"'DM Serif Display',serif",fontSize:32,color:C.white,letterSpacing:-0.5,marginBottom:8}}>HCP One Recruit</div>
+        <div style={{fontSize:14,color:"rgba(255,255,255,0.45)"}}>INXL Digital · Recruitment Platform</div>
       </div>
-      <div style={{background:C.white,borderRadius:16,padding:"32px",boxShadow:"0 32px 80px rgba(0,0,0,0.3)"}}>
-        <div style={{fontSize:18,fontWeight:700,color:C.navy,marginBottom:4}}>Welcome back</div>
-        <div style={{fontSize:13,color:C.gray400,marginBottom:24}}>Sign in to your account to continue</div>
+      <div style={{background:"rgba(255,255,255,0.97)",borderRadius:20,padding:"36px",boxShadow:"0 32px 80px rgba(0,0,0,0.25)"}}>
+        <div style={{fontSize:20,fontWeight:700,color:C.navy,marginBottom:4}}>Welcome back</div>
+        <div style={{fontSize:13,color:C.gray400,marginBottom:28}}>Sign in to your account to continue</div>
         {error&&<div style={{background:C.dangerL,border:`1px solid ${C.danger}30`,borderRadius:8,padding:"10px 13px",marginBottom:18,color:C.danger,fontSize:13}}>{error}</div>}
-        <div style={{marginBottom:16}}>
-          <label style={{display:"block",color:C.gray600,fontSize:12,fontWeight:600,marginBottom:5}}>Email address</label>
-          <input style={inp} value={email} onChange={e=>setEmail(e.target.value)} onKeyDown={e=>e.key==="Enter"&&submit()} placeholder="you@inxldigital.com" type="email" autoFocus/>
+        <div style={{marginBottom:18}}>
+          <label style={{display:"block",color:C.gray600,fontSize:12,fontWeight:600,marginBottom:6}}>Email address</label>
+          <input style={{...inp,padding:"11px 14px",fontSize:14}} value={email} onChange={e=>setEmail(e.target.value)} onKeyDown={e=>e.key==="Enter"&&submit()} placeholder="you@hcpone.com" type="email" autoFocus/>
         </div>
-        <div style={{marginBottom:24}}>
-          <label style={{display:"block",color:C.gray600,fontSize:12,fontWeight:600,marginBottom:5}}>Password</label>
-          <input style={inp} value={password} onChange={e=>setPassword(e.target.value)} onKeyDown={e=>e.key==="Enter"&&submit()} placeholder="••••••••" type="password"/>
+        <div style={{marginBottom:28}}>
+          <label style={{display:"block",color:C.gray600,fontSize:12,fontWeight:600,marginBottom:6}}>Password</label>
+          <input style={{...inp,padding:"11px 14px",fontSize:14}} value={password} onChange={e=>setPassword(e.target.value)} onKeyDown={e=>e.key==="Enter"&&submit()} placeholder="••••••••" type="password"/>
         </div>
-        <button onClick={submit} disabled={loading} style={{width:"100%",background:`linear-gradient(135deg,${C.accent2},${C.accent})`,color:C.white,border:"none",borderRadius:9,padding:"13px",fontSize:14,fontWeight:700,cursor:loading?"not-allowed":"pointer",opacity:loading?0.7:1,fontFamily:"'DM Sans',sans-serif"}}>
+        <button onClick={submit} disabled={loading} style={{width:"100%",background:`linear-gradient(135deg,${C.accent2},${C.accent})`,color:C.white,border:"none",borderRadius:10,padding:"14px",fontSize:15,fontWeight:700,cursor:loading?"not-allowed":"pointer",opacity:loading?0.7:1,fontFamily:"'DM Sans',sans-serif",boxShadow:"0 4px 16px rgba(37,99,235,0.3)"}}>
           {loading?"Signing in…":"Sign In →"}
         </button>
       </div>
+      <div style={{textAlign:"center",marginTop:20,fontSize:12,color:"rgba(255,255,255,0.25)"}}>HCP One Recruit · INXL Digital</div>
     </div>
   </div>;
 }
@@ -318,7 +319,7 @@ function CandForm({initial,allCandidates,onSave,onClose,activeUser=TEAM_FALLBACK
     try{
       const text=await file.text().catch(()=>null);
       setPMsg("AI extracting details…");
-      const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:900,messages:[{role:"user",content:`Extract candidate info. Return ONLY valid JSON: name, email, phone, title, seniority, experience, salary, location, workAuth, skills (array max 8), vertical. Resume:\n\n${text?text.substring(0,3500):"Unreadable."}`}]})});
+      const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":import.meta.env.VITE_ANTHROPIC_API_KEY,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:900,messages:[{role:"user",content:`Extract candidate info. Return ONLY valid JSON: name, email, phone, title, seniority, experience, salary, location, workAuth, skills (array max 8), vertical. Resume:\n\n${text?text.substring(0,3500):"Unreadable."}`}]})});
       const data=await res.json();
       const parsed=JSON.parse((data.content?.[0]?.text||"{}").replace(/```json|```/g,"").trim());
       setF(p=>({...p,...Object.fromEntries(Object.entries(parsed).filter(([,v])=>v&&(Array.isArray(v)?v.length:true)))}));
@@ -520,7 +521,7 @@ function JobForm({initial,onSave,onClose,activeUser=TEAM_FALLBACK[0],team=TEAM_F
   const genJD=async()=>{
     if(!f.title||!f.client) return alert("Enter title and client first.");
     setGen(true);
-    try{const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:900,messages:[{role:"user",content:`Write a professional job description. Role: ${f.title}. Client: ${f.client}. Location: ${f.location||"TBD"}. Pay: ${f.salary||"Competitive"}. Type: ${f.empType}. Sections: About the Role, Responsibilities (4 bullets), Required Qualifications (4 bullets), Nice to Have, Compensation. Plain text, use • for bullets.`}]})});const d=await res.json();s("jd",d.content?.[0]?.text||"");}
+    try{const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":import.meta.env.VITE_ANTHROPIC_API_KEY,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:900,messages:[{role:"user",content:`Write a professional job description. Role: ${f.title}. Client: ${f.client}. Location: ${f.location||"TBD"}. Pay: ${f.salary||"Competitive"}. Type: ${f.empType}. Sections: About the Role, Responsibilities (4 bullets), Required Qualifications (4 bullets), Nice to Have, Compensation. Plain text, use • for bullets.`}]})});const d=await res.json();s("jd",d.content?.[0]?.text||"");}
     catch{alert("JD generation failed.");}
     setGen(false);
   };
