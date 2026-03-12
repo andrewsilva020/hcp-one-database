@@ -670,9 +670,46 @@ function JobForm({initial,onSave,onClose,activeUser=TEAM_FALLBACK[0],team=TEAM_F
 function JobDetail({job,candidates,onEdit,onStatusChange,onAddNote,onRemove,onOpenCand,activeUser=TEAM_FALLBACK[0],onDelete}){
   const [note,setNote]=useState("");
   const [showJD,setShowJD]=useState(false);
+  const [matching,setMatching]=useState(false);
+  const [matches,setMatches]=useState(null);
   const submitted=candidates.filter(c=>job.submittedCandidates?.includes(c.id));
   const PC={"P1":C.danger,"P2":C.warn,"P3":C.gray400};
   const post=()=>{if(!note.trim())return;onAddNote(job.id,note.trim());setNote("");};
+
+  const findMatches=async()=>{
+    setMatching(true);setMatches(null);
+    try{
+      // Build a lean candidate list for the prompt (no resumes, just key fields)
+      const candList=candidates
+        .filter(c=>!["Placed","Rejected"].includes(c.stage))
+        .map(c=>({id:c.id,name:c.name,title:c.title,seniority:c.seniority,skills:(c.skills||[]).join(", "),workAuth:c.workAuth,location:c.location,experience:c.experience,vertical:c.vertical,stage:c.stage,salary:c.salary}));
+      const prompt=`You are a recruiting AI. Match candidates to this job and return ONLY valid JSON — an array of exactly 5 objects, no markdown.
+
+JOB:
+Title: ${job.title}
+Client: ${job.client}
+Location: ${job.location||"Flexible"}
+Type: ${job.empType}
+Salary: ${job.salary||"Not specified"}
+JD: ${job.jd||"Not provided"}
+
+CANDIDATES (${candList.length} total):
+${JSON.stringify(candList)}
+
+Return JSON array of top 5 matches:
+[{"id":"candidate_uuid","name":"name","matchScore":85,"reason":"2-sentence reason why they fit","strengths":["skill1","skill2"],"concerns":"any concern or null"}]
+
+Score 0-100. Consider: title match, skills, seniority, work auth, location, experience. Be specific in reasons.`;
+
+      const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":import.meta.env.VITE_ANTHROPIC_API_KEY,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1500,messages:[{role:"user",content:prompt}]})});
+      const data=await res.json();
+      if(data.error) throw new Error(data.error.message);
+      const raw=data.content?.[0]?.text||"[]";
+      const parsed=JSON.parse(raw.replace(/```json|```/g,"").trim());
+      setMatches(parsed);
+    }catch(e){setMatches([{error:e.message}]);}
+    setMatching(false);
+  };
   return <div>
     <div style={{display:"flex",gap:12,alignItems:"flex-start",marginBottom:18}}>
       <div style={{flex:1}}>
@@ -724,6 +761,46 @@ function JobDetail({job,candidates,onEdit,onStatusChange,onAddNote,onRemove,onOp
         {o&&<RecruiterBadge id={c.ownerId} size={20}/>}
         <button onClick={e=>{e.stopPropagation();onRemove(job.id,c.id);}} style={{background:"transparent",color:C.gray300,border:"none",fontSize:16,cursor:"pointer",padding:"2px 6px"}}>×</button>
       </div>;})}
+    </div>
+    {/* AI Matching */}
+    <div style={{background:`linear-gradient(135deg,${C.navy}08,${C.accent}08)`,border:`1px solid ${C.accent}30`,borderRadius:12,padding:"14px 16px",marginBottom:14}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:matches?12:0}}>
+        <div>
+          <div style={{fontSize:12,fontWeight:700,color:C.navy}}>🤖 AI Candidate Matching</div>
+          <div style={{fontSize:11,color:C.gray400,marginTop:1}}>Surfaces your top 5 pipeline matches for this role</div>
+        </div>
+        <button onClick={findMatches} disabled={matching} style={{background:matching?C.gray100:C.navy,color:matching?C.gray400:C.white,border:"none",borderRadius:8,padding:"8px 16px",fontSize:12,fontWeight:600,cursor:matching?"not-allowed":"pointer",flexShrink:0,display:"flex",alignItems:"center",gap:6}}>
+          {matching?<><span style={{animation:"spin 1s linear infinite",display:"inline-block"}}>⟳</span> Matching…</>:"✨ Find Matches"}
+        </button>
+      </div>
+      {matches&&matches[0]?.error&&<div style={{color:C.danger,fontSize:12,marginTop:8}}>⚠ {matches[0].error}</div>}
+      {matches&&!matches[0]?.error&&<div style={{display:"flex",flexDirection:"column",gap:8}}>
+        {matches.map((m,i)=>{
+          const cand=candidates.find(c=>c.id===m.id);
+          const scoreColor=m.matchScore>=80?C.success:m.matchScore>=60?C.warn:C.danger;
+          return <div key={m.id||i} onClick={()=>cand&&onOpenCand(cand)} style={{background:C.white,border:`1px solid ${C.gray200}`,borderRadius:10,padding:"12px 14px",cursor:cand?"pointer":"default",transition:"all 0.15s"}} onMouseEnter={e=>{if(cand){e.currentTarget.style.borderColor=C.accent;e.currentTarget.style.boxShadow=`0 2px 10px ${C.accent}15`;}}} onMouseLeave={e=>{e.currentTarget.style.borderColor=C.gray200;e.currentTarget.style.boxShadow="none";}}>
+            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:6}}>
+              <div style={{width:28,height:28,borderRadius:7,background:scoreColor+"20",border:`2px solid ${scoreColor}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:800,color:scoreColor,flexShrink:0}}>{i+1}</div>
+              <div style={{flex:1}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                  <div style={{color:C.navy,fontSize:13,fontWeight:700}}>{m.name}</div>
+                  <div style={{display:"flex",alignItems:"center",gap:6}}>
+                    <div style={{background:scoreColor+"20",color:scoreColor,borderRadius:6,padding:"2px 8px",fontSize:11,fontWeight:700}}>{m.matchScore}% match</div>
+                    {cand&&<StageBadge stage={cand.stage}/>}
+                  </div>
+                </div>
+                {cand&&<div style={{color:C.gray400,fontSize:11,marginTop:1}}>{cand.title} · {cand.workAuth} · {cand.location}</div>}
+              </div>
+            </div>
+            <div style={{fontSize:12,color:C.gray600,lineHeight:1.5,marginBottom:m.strengths?.length?6:0}}>{m.reason}</div>
+            {m.strengths?.length>0&&<div style={{display:"flex",gap:4,flexWrap:"wrap",marginBottom:m.concerns?4:0}}>
+              {m.strengths.map(s=><span key={s} style={{background:C.successL,color:C.success,borderRadius:5,padding:"2px 7px",fontSize:10,fontWeight:600}}>✓ {s}</span>)}
+            </div>}
+            {m.concerns&&<div style={{fontSize:11,color:C.warn,marginTop:2}}>⚠ {m.concerns}</div>}
+          </div>;
+        })}
+      </div>}
+      <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
     </div>
     <div>
       <div style={{fontSize:10,fontWeight:600,color:C.gray400,letterSpacing:0.8,textTransform:"uppercase",marginBottom:8}}>Team Notes · {job.notes?.length||0}</div>
