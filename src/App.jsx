@@ -325,6 +325,7 @@ function CandForm({initial,allCandidates,onSave,onClose,activeUser=TEAM_FALLBACK
   const [si,setSi]=useState("");
   const [parsing,setParsing]=useState(false);
   const [pMsg,setPMsg]=useState(null);
+  const [liText,setLiText]=useState("");
   const [dupes,setDupes]=useState([]);
   const [dupeOk,setDupeOk]=useState(false);
   const fr=useRef();
@@ -332,6 +333,48 @@ function CandForm({initial,allCandidates,onSave,onClose,activeUser=TEAM_FALLBACK
   const chkDupe=(em,ph,nm)=>{if(dupeOk)return;setDupes(detectDupes(allCandidates,em,ph,f.id,nm||f.name));};
   const addSkill=(sk)=>{const t=(sk||si).trim();if(t&&!f.skills.includes(t))s("skills",[...f.skills,t]);setSi("");};
   const toggleCollab=(id)=>{const cur=f.collaborators||[];if(cur.includes(id)){s("collaborators",cur.filter(x=>x!==id));}else{if(cur.length>=2)return;s("collaborators",[...cur,id]);}};
+  const mapParsedCandidate=(parsed={})=>{
+    const mapped={};
+    if(parsed.name) mapped.name=parsed.name;
+    if(parsed.email) mapped.email=parsed.email;
+    if(parsed.phone) mapped.phone=parsed.phone;
+    if(parsed.linkedin) mapped.linkedin=parsed.linkedin;
+    if(parsed.title) mapped.title=parsed.title;
+    if(parsed.seniority) mapped.seniority=parsed.seniority;
+    if(parsed.experience) mapped.experience=parsed.experience;
+    if(parsed.salary) mapped.salary=parsed.salary;
+    if(parsed.location) mapped.location=parsed.location;
+    if(parsed.workAuth||parsed.work_auth) mapped.workAuth=parsed.workAuth||parsed.work_auth;
+    if(parsed.skills?.length) mapped.skills=parsed.skills;
+    if(parsed.vertical) mapped.vertical=parsed.vertical;
+    if(parsed.source) mapped.source=parsed.source;
+    return mapped;
+  };
+  const parseCandidateText=async(rawText, originLabel)=>{
+    const text=(rawText||"").trim();
+    if(!text) return setPMsg(`⚠ Paste ${originLabel} text first.`);
+    setParsing(true);
+    setPMsg(`AI reading ${originLabel.toLowerCase()} text…`);
+    try{
+      const extractPrompt=`Extract candidate info from this ${originLabel.toLowerCase()} text. Return ONLY valid JSON with these exact fields when present: name, email, phone, linkedin, title, seniority (one of: Individual Contributor/Senior IC/Team Lead/Manager/Director/VP/SVP/C-Suite / Partner), experience, salary, location, workAuth (one of: US Citizen/Green Card/H-1B/H-4 EAD/L-1/TN Visa/OPT/CPT/EAD/EU Passport/EU Blue Card/Residence Permit/Requires Sponsorship/Other), skills (array of up to 8 most relevant skills), vertical (one of: Telecom / Wireless/AI / ML / Data/Cybersecurity/Software Engineering/Cloud / DevOps/Sales & Business Development/Directors & VPs/SVPs & C-Suite/Client Partners/Project / Program Mgmt/Network Engineering/Consulting), source. Infer only when strongly supported by the text. Use "LinkedIn" as source if this appears to be a LinkedIn profile.`;
+      const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":import.meta.env.VITE_ANTHROPIC_API_KEY,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1200,messages:[{role:"user",content:`${extractPrompt}\n\nProfile text:\n${text.substring(0,18000)}`}]})});
+      const data=await res.json();
+      if(data.error) throw new Error(data.error.message);
+      const parsed=JSON.parse((data.content?.[0]?.text||"{}").replace(/```json|```/g,"").trim());
+      const mapped=mapParsedCandidate(parsed);
+      if(!Object.keys(mapped).length){
+        setPMsg(`⚠ Could not extract fields from ${originLabel.toLowerCase()} text.`);
+      } else {
+        setF(prev=>({...prev,...mapped,source:prev.source||mapped.source||"LinkedIn"}));
+        if(mapped.email||mapped.phone||mapped.name) chkDupe(mapped.email||f.email,mapped.phone||f.phone,mapped.name||f.name);
+        setPMsg(`✓ ${Object.keys(mapped).length} fields extracted from ${originLabel.toLowerCase()} text.`);
+      }
+    }catch(err){
+      console.error("Profile parse error:",err);
+      setPMsg("⚠ Failed: "+err.message);
+    }
+    setParsing(false);
+  };
   const handleFile=async(e)=>{
     const file=e.target.files[0];if(!file)return;
     setParsing(true);setPMsg("Uploading & reading resume…");
@@ -376,18 +419,7 @@ function CandForm({initial,allCandidates,onSave,onClose,activeUser=TEAM_FALLBACK
       const data=await res.json();
       if(data.error) throw new Error(data.error.message);
       const parsed=JSON.parse((data.content?.[0]?.text||"{}").replace(/```json|```/g,"").trim());
-      const mapped={};
-      if(parsed.name) mapped.name=parsed.name;
-      if(parsed.email) mapped.email=parsed.email;
-      if(parsed.phone) mapped.phone=parsed.phone;
-      if(parsed.title) mapped.title=parsed.title;
-      if(parsed.seniority) mapped.seniority=parsed.seniority;
-      if(parsed.experience) mapped.experience=parsed.experience;
-      if(parsed.salary) mapped.salary=parsed.salary;
-      if(parsed.location) mapped.location=parsed.location;
-      if(parsed.workAuth||parsed.work_auth) mapped.workAuth=parsed.workAuth||parsed.work_auth;
-      if(parsed.skills?.length) mapped.skills=parsed.skills;
-      if(parsed.vertical) mapped.vertical=parsed.vertical;
+      const mapped=mapParsedCandidate(parsed);
       if(!Object.keys(mapped).length){
         setPMsg(upErr?"⚠ Could not extract. Fill manually.":"✓ Resume saved. Could not extract details — fill manually.");
       } else {
@@ -424,6 +456,17 @@ function CandForm({initial,allCandidates,onSave,onClose,activeUser=TEAM_FALLBACK
       <div style={{fontSize:20,marginBottom:4}}>{parsing?"...":"◇"}</div>
       <div style={{color:C.gray500,fontSize:12,fontWeight:500}}>{parsing?"Parsing…":"Upload Resume — AI Auto-Fill"}</div>
       {pMsg&&<div style={{marginTop:6,fontSize:11,fontWeight:600,color:pMsg.startsWith("✓")?C.success:pMsg.startsWith("⚠")?C.warn:C.accent}}>{pMsg}</div>}
+    </div>
+    <div style={{background:C.gray50,border:`1px solid ${C.gray200}`,borderRadius:10,padding:"14px 16px",marginBottom:18}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:12,marginBottom:8}}>
+        <div>
+          <div style={{color:C.navy,fontSize:12,fontWeight:700}}>Paste LinkedIn/Profile Text</div>
+          <div style={{color:C.gray500,fontSize:11}}>Paste copied profile text and let AI organize it into candidate fields.</div>
+        </div>
+        <button onClick={()=>parseCandidateText(liText,"LinkedIn")} disabled={parsing} style={{background:C.white,color:C.accent,border:`1px solid ${C.accent}55`,borderRadius:8,padding:"9px 12px",fontSize:12,fontWeight:700,cursor:parsing?"not-allowed":"pointer",opacity:parsing?0.6:1,whiteSpace:"nowrap"}}>AI Parse Text</button>
+      </div>
+      <textarea style={{...ta,minHeight:140,marginBottom:8}} value={liText} onChange={e=>setLiText(e.target.value)} placeholder={"Paste the LinkedIn profile text here.\n\nExample:\nName\nHeadline\nLocation\nAbout\nExperience\nSkills"} />
+      <div style={{fontSize:11,color:C.gray400}}>Tip: paste the full copied profile page text. The LinkedIn URL can still go in the field below.</div>
     </div>
     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"14px 16px"}}>
       <F label="Full Name *"><input style={inp} value={f.name} onChange={e=>{s("name",e.target.value);chkDupe(f.email,f.phone,e.target.value);}} placeholder="Full name"/></F>
