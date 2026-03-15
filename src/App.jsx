@@ -1184,7 +1184,7 @@ function DashboardHome({cands,jobs,team,onOpenCand,onOpenJob,setPage}){
 
     <div style={{display:"grid",gridTemplateColumns:"1.4fr 1fr",gap:20}}>
       {/* Hiring Pipeline */}
-      <div style={{background:"#fff",border:`1px solid ${B.muted}`,borderRadius:16,padding:"24px 28px"}}>
+      <div style={{background:"#fff",border:`1px solid ${B.muted}`,borderRadius:16,padding:"24px 28px",width:"100%",boxSizing:"border-box"}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:24}}>
           <div style={{fontSize:16,fontWeight:700,color:B.ink}}>Hiring Pipeline</div>
           <div style={{background:B.accentLight,color:B.accent,padding:"4px 12px",borderRadius:8,fontSize:11,fontWeight:600}}>This Month</div>
@@ -1201,7 +1201,7 @@ function DashboardHome({cands,jobs,team,onOpenCand,onOpenJob,setPage}){
       </div>
 
       {/* Recent Activity */}
-      <div style={{background:"#fff",border:`1px solid ${B.muted}`,borderRadius:16,padding:"24px 28px"}}>
+      <div style={{background:"#fff",border:`1px solid ${B.muted}`,borderRadius:16,padding:"24px 28px",width:"100%",boxSizing:"border-box"}}>
         <div style={{fontSize:16,fontWeight:700,color:B.ink,marginBottom:20}}>Recent Activity</div>
         <div style={{display:"flex",flexDirection:"column",gap:0}}>
           {recentCands.map((c,i)=>{const o=getTeamMember(c.ownerId);return <div key={c.id} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 0",borderBottom:i<recentCands.length-1?`1px solid ${B.muted}`:"none"}}>
@@ -1216,7 +1216,7 @@ function DashboardHome({cands,jobs,team,onOpenCand,onOpenJob,setPage}){
 
     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:20,marginTop:4}}>
       {/* Current Openings */}
-      <div style={{background:"#fff",border:`1px solid ${B.muted}`,borderRadius:16,padding:"24px 28px"}}>
+      <div style={{background:"#fff",border:`1px solid ${B.muted}`,borderRadius:16,padding:"24px 28px",width:"100%",boxSizing:"border-box"}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
           <div style={{fontSize:16,fontWeight:700,color:B.ink}}>Current Openings ({openJobs.length})</div>
           <span onClick={()=>setPage("jobs")} style={{fontSize:12,color:B.accent,fontWeight:600,cursor:"pointer"}}>See all</span>
@@ -1232,7 +1232,7 @@ function DashboardHome({cands,jobs,team,onOpenCand,onOpenJob,setPage}){
       </div>
 
       {/* Top Candidates */}
-      <div style={{background:"#fff",border:`1px solid ${B.muted}`,borderRadius:16,padding:"24px 28px"}}>
+      <div style={{background:"#fff",border:`1px solid ${B.muted}`,borderRadius:16,padding:"24px 28px",width:"100%",boxSizing:"border-box"}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
           <div style={{fontSize:16,fontWeight:700,color:B.ink}}>Hot Candidates</div>
           <span onClick={()=>setPage("candidates")} style={{fontSize:12,color:B.accent,fontWeight:600,cursor:"pointer"}}>View all</span>
@@ -1402,7 +1402,7 @@ export default function HCPRecruit(){
     </div>
 
     {/* ═══ MAIN CONTENT ═══ */}
-    <div style={{flex:1,marginLeft:sW,transition:"margin-left 0.2s ease"}}>
+    <div style={{flex:1,marginLeft:sW,width:0,transition:"margin-left 0.2s ease"}}>
       {/* Top bar */}
       <div style={{background:"#fff",borderBottom:`1px solid ${B.muted}`,padding:"0 28px",position:"sticky",top:0,zIndex:40,display:"flex",alignItems:"center",justifyContent:"space-between",height:56}}>
         <div style={{fontSize:18,fontWeight:700,color:B.ink,textTransform:"capitalize"}}>{page}</div>
@@ -1414,7 +1414,7 @@ export default function HCPRecruit(){
       </div>
 
       {/* Page content */}
-      <div style={{padding:"24px 28px"}}>
+      <div style={{padding:"24px 28px",width:"100%",boxSizing:"border-box"}}>
 
         {/* DASHBOARD */}
         {page==="dashboard"&&<DashboardHome cands={cands} jobs={jobs} team={team} onOpenCand={openCand} onOpenJob={j=>setModal({t:"job",j})} setPage={setPage}/>}
