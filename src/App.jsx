@@ -1266,7 +1266,7 @@ export default function HCPRecruit(){
   const [js,setJs]=useState(""); const [jStat,setJStat]=useState("All"); const [jClient,setJClient]=useState("All"); const [jOwner,setJOwner]=useState("All");
   const [sidebarCollapsed,setSidebarCollapsed]=useState(false);
 
-  useEffect(()=>{getSession().then(s=>{setSession(s);setAuthChecked(true);});},[]);
+  useEffect(()=>{document.title="Talyntry";getSession().then(s=>{setSession(s);setAuthChecked(true);});},[]);
   useEffect(()=>{
     const preventDrag=(e)=>{e.preventDefault();};
     const preventDrop=(e)=>{if(e.target.closest("[data-dropzone]")) return;e.preventDefault();};
@@ -1362,11 +1362,7 @@ export default function HCPRecruit(){
     <div style={{width:sW,minHeight:"100vh",background:"#fff",borderRight:`1px solid ${B.muted}`,display:"flex",flexDirection:"column",position:"fixed",left:0,top:0,bottom:0,zIndex:50,transition:"width 0.2s ease",overflow:"hidden"}}>
       {/* Logo */}
       <div style={{padding:sidebarCollapsed?"20px 16px":"20px 24px",borderBottom:`1px solid ${B.muted}`,display:"flex",alignItems:"center",gap:10,minHeight:64}}>
-        <img src="/favicon.ico" alt="" style={{height:28,width:28,borderRadius:8,flexShrink:0}}/>
-        {!sidebarCollapsed&&<div>
-          <div style={{fontFamily:"'DM Serif Display',serif",fontSize:18,color:B.ink,letterSpacing:-0.3,lineHeight:1}}>Talyntry</div>
-          <div style={{fontSize:9,color:"#A09A93",letterSpacing:0.5,textTransform:"uppercase"}}>Talent Intelligence</div>
-        </div>}
+        <img src="/logo-dark.png" alt="Talyntry" style={{height:sidebarCollapsed?28:22,width:"auto"}} onError={e=>{e.target.style.display="none"}}/>
       </div>
 
       {/* Nav items */}
@@ -1410,13 +1406,13 @@ export default function HCPRecruit(){
       <div style={{background:"#fff",borderBottom:`1px solid ${B.muted}`,padding:"0 28px",position:"sticky",top:0,zIndex:40,display:"flex",alignItems:"center",justifyContent:"space-between",height:56}}>
         <div style={{fontSize:18,fontWeight:700,color:B.ink,textTransform:"capitalize"}}>{page}</div>
         <div style={{display:"flex",gap:8,alignItems:"center"}}>
-          <div style={{position:"relative",width:260}}>
+          {page!=="dashboard"&&<div style={{position:"relative",width:240}}>
             <span style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",color:"#A09A93",display:"flex"}}>{IC.search}</span>
-            <input style={{width:"100%",background:B.surface,border:`1px solid ${B.muted}`,borderRadius:8,padding:"8px 12px 8px 34px",fontSize:13,color:B.ink,outline:"none",fontFamily:"inherit"}} placeholder="Search candidates or jobs..." value={page==="jobs"?js:cs} onChange={e=>page==="jobs"?setJs(e.target.value):setCs(e.target.value)}/>
-          </div>
-          {(page==="candidates"||page==="pipeline")&&<button onClick={()=>setModal({t:"add-cand"})} style={{display:"flex",alignItems:"center",gap:6,background:B.accent,color:"#fff",border:"none",borderRadius:8,padding:"8px 16px",fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit",boxShadow:"0 2px 8px rgba(255,122,89,0.25)"}}>{IC.plus} Add Candidate</button>}
-          {page==="jobs"&&<button onClick={()=>setModal({t:"add-job"})} style={{display:"flex",alignItems:"center",gap:6,background:B.accent,color:"#fff",border:"none",borderRadius:8,padding:"8px 16px",fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit",boxShadow:"0 2px 8px rgba(255,122,89,0.25)"}}>{IC.plus} Add Job Order</button>}
-          <button onClick={()=>exportCSV(cands,jobs)} style={{display:"flex",alignItems:"center",gap:5,background:B.surface,color:B.ink,border:`1px solid ${B.muted}`,borderRadius:8,padding:"8px 12px",fontSize:12,cursor:"pointer",fontFamily:"inherit",opacity:0.7}}>{IC.download} CSV</button>
+            <input style={{width:"100%",background:B.surface,border:`1px solid ${B.muted}`,borderRadius:8,padding:"8px 12px 8px 34px",fontSize:13,color:B.ink,outline:"none",fontFamily:"inherit"}} placeholder={page==="jobs"?"Search jobs...":"Search candidates..."} value={page==="jobs"?js:cs} onChange={e=>page==="jobs"?setJs(e.target.value):setCs(e.target.value)}/>
+          </div>}
+          {(page==="candidates"||page==="pipeline")&&<button onClick={()=>setModal({t:"add-cand"})} style={{display:"flex",alignItems:"center",gap:6,background:B.accent,color:"#fff",border:"none",borderRadius:8,padding:"8px 16px",fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit",boxShadow:"0 2px 8px rgba(255,122,89,0.25)",whiteSpace:"nowrap"}}>{IC.plus} Add Candidate</button>}
+          {page==="jobs"&&<button onClick={()=>setModal({t:"add-job"})} style={{display:"flex",alignItems:"center",gap:6,background:B.accent,color:"#fff",border:"none",borderRadius:8,padding:"8px 16px",fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit",boxShadow:"0 2px 8px rgba(255,122,89,0.25)",whiteSpace:"nowrap"}}>{IC.plus} Add Job Order</button>}
+          <button onClick={()=>exportCSV(cands,jobs)} style={{display:"flex",alignItems:"center",gap:5,background:B.surface,color:B.ink,border:`1px solid ${B.muted}`,borderRadius:8,padding:"8px 12px",fontSize:12,cursor:"pointer",fontFamily:"inherit",opacity:0.7,whiteSpace:"nowrap"}}>{IC.download} CSV</button>
         </div>
       </div>
 
@@ -1430,7 +1426,7 @@ export default function HCPRecruit(){
         {page==="candidates"&&<>
           <div style={{background:"#fff",border:`1px solid ${B.muted}`,borderRadius:12,padding:"14px 16px",marginBottom:16}}>
             <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
-              <button onClick={()=>setCFiltersOpen(p=>!p)} style={{background:cFiltersOpen?B.ink:"#fff",color:cFiltersOpen?"#fff":B.ink,border:`1px solid ${cFiltersOpen?B.ink:B.muted}`,borderRadius:8,padding:"8px 14px",fontSize:12,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:6}}>
+              <button onClick={()=>setCFiltersOpen(p=>!p)} style={{background:cFiltersOpen?B.accent:"#fff",color:cFiltersOpen?"#fff":B.ink,border:`1px solid ${cFiltersOpen?B.accent:B.muted}`,borderRadius:8,padding:"8px 14px",fontSize:12,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:6}}>
                 {IC.filter} Filters
                 {(cStage!=="All"||cVert!=="All"||cAuth!=="All"||cOwner!=="All"||cSeniority!=="All"||cClient!=="All"||cHasResume!=="All")&&<span style={{background:B.accent,color:"#fff",borderRadius:10,padding:"1px 7px",fontSize:10,fontWeight:700}}>{[cStage,cVert,cAuth,cOwner,cSeniority,cClient,cHasResume].filter(x=>x!=="All").length}</span>}
               </button>
