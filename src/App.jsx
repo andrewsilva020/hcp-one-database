@@ -1295,7 +1295,7 @@ export default function HCPRecruit(){
   const [js,setJs]=useState(""); const [jStat,setJStat]=useState("All"); const [jClient,setJClient]=useState("All"); const [jOwner,setJOwner]=useState("All");
   const [sidebarCollapsed,setSidebarCollapsed]=useState(false);
 
-  useEffect(()=>{document.title="Talyntry";getSession().then(s=>{setSession(s);setAuthChecked(true);});},[]);
+  useEffect(()=>{document.title="Talyntry";if(window.location.pathname!=="/")window.history.replaceState(null,"","/");getSession().then(s=>{setSession(s);setAuthChecked(true);});},[]);
   useEffect(()=>{
     const preventDrag=(e)=>{e.preventDefault();};
     const preventDrop=(e)=>{if(e.target.closest("[data-dropzone]")) return;e.preventDefault();};
