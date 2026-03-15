@@ -1404,11 +1404,11 @@ export default function HCPRecruit(){
     <div style={{flex:1,marginLeft:sW,transition:"margin-left 0.2s ease"}}>
       {/* Top bar */}
       <div style={{background:"#fff",borderBottom:`1px solid ${B.muted}`,padding:"0 28px",position:"sticky",top:0,zIndex:40,display:"flex",alignItems:"center",justifyContent:"space-between",height:56}}>
-        <div style={{fontSize:18,fontWeight:700,color:B.ink,textTransform:"capitalize"}}>{page}</div>
-        <div style={{display:"flex",gap:8,alignItems:"center"}}>
-          {page!=="dashboard"&&<div style={{position:"relative",width:240}}>
+        <div style={{fontSize:18,fontWeight:700,color:B.ink,textTransform:"capitalize",flexShrink:0}}>{page}</div>
+        <div style={{display:"flex",gap:8,alignItems:"center",flexShrink:0}}>
+          {page!=="dashboard"&&<div style={{position:"relative"}}>
             <span style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",color:"#A09A93",display:"flex"}}>{IC.search}</span>
-            <input style={{width:"100%",background:B.surface,border:`1px solid ${B.muted}`,borderRadius:8,padding:"8px 12px 8px 34px",fontSize:13,color:B.ink,outline:"none",fontFamily:"inherit"}} placeholder={page==="jobs"?"Search jobs...":"Search candidates..."} value={page==="jobs"?js:cs} onChange={e=>page==="jobs"?setJs(e.target.value):setCs(e.target.value)}/>
+            <input style={{width:200,background:B.surface,border:`1px solid ${B.muted}`,borderRadius:8,padding:"8px 12px 8px 34px",fontSize:13,color:B.ink,outline:"none",fontFamily:"inherit",boxSizing:"border-box"}} placeholder={page==="jobs"?"Search jobs...":"Search candidates..."} value={page==="jobs"?js:cs} onChange={e=>page==="jobs"?setJs(e.target.value):setCs(e.target.value)}/>
           </div>}
           {(page==="candidates"||page==="pipeline")&&<button onClick={()=>setModal({t:"add-cand"})} style={{display:"flex",alignItems:"center",gap:6,background:B.accent,color:"#fff",border:"none",borderRadius:8,padding:"8px 16px",fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit",boxShadow:"0 2px 8px rgba(255,122,89,0.25)",whiteSpace:"nowrap"}}>{IC.plus} Add Candidate</button>}
           {page==="jobs"&&<button onClick={()=>setModal({t:"add-job"})} style={{display:"flex",alignItems:"center",gap:6,background:B.accent,color:"#fff",border:"none",borderRadius:8,padding:"8px 16px",fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit",boxShadow:"0 2px 8px rgba(255,122,89,0.25)",whiteSpace:"nowrap"}}>{IC.plus} Add Job Order</button>}
