@@ -1,3 +1,4 @@
+// TALYNTRY-V7-FIXED
 import { useState, useRef, useEffect } from "react";
 import { fetchCandidates, fetchJobs, fetchTeam, upsertTeamMember, upsertCandidate, upsertJob, updateCandidateStage, updateJobStatus, addCandidateNote, addJobNote as addJobNoteDB, submitCandidateToJob, removeCandidateFromJob, subscribeToChanges, signIn, signOut, getSession, deleteCandidate, deleteJob, uploadResume, getResumeUrl, logActivity, fetchActivity, fetchScorecards, upsertScorecard, deleteScorecard } from "./lib/supabase";
 
