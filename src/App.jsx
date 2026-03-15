@@ -1401,7 +1401,7 @@ export default function HCPRecruit(){
     </div>
 
     {/* ═══ MAIN CONTENT ═══ */}
-    <div style={{marginLeft:sW,transition:"margin-left 0.2s ease"}}>
+    <div style={{marginLeft:sW,width:`calc(100vw - ${sW}px)`,transition:"margin-left 0.2s ease"}}>
       {/* Top bar */}
       <div style={{background:"#fff",borderBottom:`1px solid ${B.muted}`,padding:"0 28px",position:"sticky",top:0,zIndex:40,display:"flex",alignItems:"center",justifyContent:"space-between",height:56}}>
         <div style={{fontSize:18,fontWeight:700,color:B.ink,textTransform:"capitalize"}}>{page}</div>
