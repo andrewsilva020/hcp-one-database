@@ -564,9 +564,9 @@ function CandDetail({c,jobs,onEdit,onStageChange,onAddNote,onSubmitToJob,activeU
           </div>;
         })}
       </div>
-      {["On Hold","Rejected"].includes(c.stage)&&<div style={{display:"flex",gap:6,marginTop:8}}>
-        {["On Hold","Rejected"].map(st=><span key={st} onClick={()=>onStageChange(c.id,st)} style={{cursor:"pointer",background:c.stage===st?SM[st].bg:C.white,color:SM[st].c,border:`1px solid ${SM[st].c}40`,borderRadius:6,padding:"4px 12px",fontSize:11,fontWeight:600}}>{st}{c.stage===st?" ←":""}</span>)}
-      </div>}
+      <div style={{display:"flex",gap:6,marginTop:8}}>
+        {["On Hold","Rejected"].map(st=><span key={st} onClick={()=>onStageChange(c.id,st,c.stage)} style={{cursor:"pointer",background:c.stage===st?SM[st].bg:C.white,color:SM[st].c,border:`1px solid ${SM[st].c}40`,borderRadius:6,padding:"4px 12px",fontSize:11,fontWeight:600}}>{st}{c.stage===st?" ✓":""}</span>)}
+      </div>
     </div>
     <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:16}}>
       {[["Email",c.email],["Phone",c.phone],["Location",c.location],["Salary/Rate",c.salary],["Experience",c.experience],["Source",c.source],["Work Auth",c.workAuth],["Seniority",c.seniority],["Added",c.addedDate]].map(([k,v])=>(
@@ -1213,7 +1213,7 @@ function DashboardHome({cands,jobs,team,onOpenCand,onOpenJob,setPage}){
       </div>
     </div>
 
-    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:20}}>
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:20,marginTop:4}}>
       {/* Current Openings */}
       <div style={{background:"#fff",border:`1px solid ${B.muted}`,borderRadius:16,padding:"24px 28px"}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
@@ -1236,7 +1236,7 @@ function DashboardHome({cands,jobs,team,onOpenCand,onOpenJob,setPage}){
           <div style={{fontSize:16,fontWeight:700,color:B.ink}}>Hot Candidates</div>
           <span onClick={()=>setPage("candidates")} style={{fontSize:12,color:B.accent,fontWeight:600,cursor:"pointer"}}>View all</span>
         </div>
-        {[...interviews,...offers].slice(0,4).map((c,i)=>{const o=getTeamMember(c.ownerId);return <div key={c.id} onClick={()=>onOpenCand(c)} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 0",borderBottom:i<3?`1px solid ${B.muted}`:"none",cursor:"pointer"}}>
+        {[...interviews,...offers].slice(0,6).map((c,i)=>{const o=getTeamMember(c.ownerId);return <div key={c.id} onClick={()=>onOpenCand(c)} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 0",borderBottom:`1px solid ${B.muted}`,cursor:"pointer"}}>
           <Avatar name={c.name} size={32} color={o?.color}/>
           <div style={{flex:1}}><div style={{fontSize:13,fontWeight:600,color:B.ink}}>{c.name}</div><div style={{fontSize:11,color:"#A09A93"}}>{c.title}</div></div>
           <StageBadge stage={c.stage}/>
@@ -1404,15 +1404,11 @@ export default function HCPRecruit(){
     <div style={{flex:1,marginLeft:sW,transition:"margin-left 0.2s ease"}}>
       {/* Top bar */}
       <div style={{background:"#fff",borderBottom:`1px solid ${B.muted}`,padding:"0 28px",position:"sticky",top:0,zIndex:40,display:"flex",alignItems:"center",justifyContent:"space-between",height:56}}>
-        <div style={{fontSize:18,fontWeight:700,color:B.ink,textTransform:"capitalize",flexShrink:0}}>{page}</div>
-        <div style={{display:"flex",gap:8,alignItems:"center",flexShrink:0}}>
-          {page!=="dashboard"&&<div style={{position:"relative"}}>
-            <span style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",color:"#A09A93",display:"flex"}}>{IC.search}</span>
-            <input style={{width:200,maxWidth:200,flexShrink:0,background:B.surface,border:`1px solid ${B.muted}`,borderRadius:8,padding:"8px 12px 8px 34px",fontSize:13,color:B.ink,outline:"none",fontFamily:"inherit",boxSizing:"border-box"}} placeholder={page==="jobs"?"Search jobs...":"Search candidates..."} value={page==="jobs"?js:cs} onChange={e=>page==="jobs"?setJs(e.target.value):setCs(e.target.value)}/>
-          </div>}
-          {(page==="candidates"||page==="pipeline")&&<button onClick={()=>setModal({t:"add-cand"})} style={{display:"flex",alignItems:"center",gap:6,background:B.accent,color:"#fff",border:"none",borderRadius:8,padding:"8px 16px",fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit",boxShadow:"0 2px 8px rgba(255,122,89,0.25)",whiteSpace:"nowrap"}}>{IC.plus} Add Candidate</button>}
-          {page==="jobs"&&<button onClick={()=>setModal({t:"add-job"})} style={{display:"flex",alignItems:"center",gap:6,background:B.accent,color:"#fff",border:"none",borderRadius:8,padding:"8px 16px",fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit",boxShadow:"0 2px 8px rgba(255,122,89,0.25)",whiteSpace:"nowrap"}}>{IC.plus} Add Job Order</button>}
-          <button onClick={()=>exportCSV(cands,jobs)} style={{display:"flex",alignItems:"center",gap:5,background:B.surface,color:B.ink,border:`1px solid ${B.muted}`,borderRadius:8,padding:"8px 12px",fontSize:12,cursor:"pointer",fontFamily:"inherit",opacity:0.7,whiteSpace:"nowrap"}}>{IC.download} CSV</button>
+        <div style={{fontSize:18,fontWeight:700,color:B.ink,textTransform:"capitalize"}}>{page}</div>
+        <div style={{display:"flex",gap:8,alignItems:"center"}}>
+          {(page==="candidates"||page==="pipeline")&&<button onClick={()=>setModal({t:"add-cand"})} style={{display:"flex",alignItems:"center",gap:6,background:B.accent,color:"#fff",border:"none",borderRadius:8,padding:"8px 16px",fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit",boxShadow:"0 2px 8px rgba(255,122,89,0.25)"}}>{IC.plus} Add Candidate</button>}
+          {page==="jobs"&&<button onClick={()=>setModal({t:"add-job"})} style={{display:"flex",alignItems:"center",gap:6,background:B.accent,color:"#fff",border:"none",borderRadius:8,padding:"8px 16px",fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit",boxShadow:"0 2px 8px rgba(255,122,89,0.25)"}}>{IC.plus} Add Job Order</button>}
+          <button onClick={()=>exportCSV(cands,jobs)} style={{display:"flex",alignItems:"center",gap:5,background:B.surface,color:B.ink,border:`1px solid ${B.muted}`,borderRadius:8,padding:"8px 12px",fontSize:12,cursor:"pointer",fontFamily:"inherit",opacity:0.7}}>{IC.download} CSV</button>
         </div>
       </div>
 
@@ -1426,6 +1422,10 @@ export default function HCPRecruit(){
         {page==="candidates"&&<>
           <div style={{background:"#fff",border:`1px solid ${B.muted}`,borderRadius:12,padding:"14px 16px",marginBottom:16}}>
             <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
+              <div style={{position:"relative",flex:"1 1 200px",minWidth:180}}>
+                <span style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",color:"#A09A93",display:"flex"}}>{IC.search}</span>
+                <input style={{...inp,paddingLeft:32}} value={cs} onChange={e=>setCs(e.target.value)} placeholder="Search name, title, skill, client, work auth, notes…"/>
+              </div>
               <button onClick={()=>setCFiltersOpen(p=>!p)} style={{background:cFiltersOpen?B.accent:"#fff",color:cFiltersOpen?"#fff":B.ink,border:`1px solid ${cFiltersOpen?B.accent:B.muted}`,borderRadius:8,padding:"8px 14px",fontSize:12,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:6}}>
                 {IC.filter} Filters
                 {(cStage!=="All"||cVert!=="All"||cAuth!=="All"||cOwner!=="All"||cSeniority!=="All"||cClient!=="All"||cHasResume!=="All")&&<span style={{background:B.accent,color:"#fff",borderRadius:10,padding:"1px 7px",fontSize:10,fontWeight:700}}>{[cStage,cVert,cAuth,cOwner,cSeniority,cClient,cHasResume].filter(x=>x!=="All").length}</span>}
@@ -1479,12 +1479,18 @@ export default function HCPRecruit(){
         {page==="pipeline"&&<div style={{display:"flex",gap:10,overflowX:"auto",paddingBottom:16,alignItems:"flex-start"}}>
           {STAGES.map(stage=>{
             const col=fCands.filter(c=>c.stage===stage);const m=SM[stage];
-            return <div key={stage} style={{flex:"0 0 200px",minWidth:200}}>
+            return <div key={stage} style={{flex:"0 0 200px",minWidth:200}}
+              onDragOver={e=>{e.preventDefault();e.currentTarget.style.background=`${m.c}08`;}}
+              onDragLeave={e=>{e.currentTarget.style.background="transparent";}}
+              onDrop={e=>{e.preventDefault();e.currentTarget.style.background="transparent";const cid=e.dataTransfer.getData("text/plain");if(cid){const cand=cands.find(x=>x.id===cid);stageChange(cid,stage,cand?.stage);}}}>
               <div style={{background:m.bg,border:`1px solid ${m.c}40`,borderRadius:9,padding:"8px 12px",marginBottom:8,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                 <span style={{color:m.t||m.c,fontWeight:700,fontSize:11}}>{stage}</span>
                 <span style={{background:m.c,color:"#fff",borderRadius:10,padding:"2px 8px",fontSize:11,fontWeight:700}}>{col.length}</span>
               </div>
-              {col.map(c=>{const o=getTeamMember(c.ownerId);return <div key={c.id} onClick={()=>openCand(c)} style={{background:"#fff",border:`1px solid ${B.muted}`,borderRadius:9,padding:"11px 12px",marginBottom:6,cursor:"pointer",transition:"all 0.15s"}} onMouseEnter={e=>{e.currentTarget.style.borderColor=m.c;}} onMouseLeave={e=>{e.currentTarget.style.borderColor=B.muted;}}>
+              {col.map(c=>{const o=getTeamMember(c.ownerId);return <div key={c.id} draggable
+                onDragStart={e=>{e.dataTransfer.setData("text/plain",c.id);e.currentTarget.style.opacity="0.5";}}
+                onDragEnd={e=>{e.currentTarget.style.opacity="1";}}
+                onClick={()=>openCand(c)} style={{background:"#fff",border:`1px solid ${B.muted}`,borderRadius:9,padding:"11px 12px",marginBottom:6,cursor:"grab",transition:"all 0.15s"}} onMouseEnter={e=>{e.currentTarget.style.borderColor=m.c;}} onMouseLeave={e=>{e.currentTarget.style.borderColor=B.muted;}}>
                 <div style={{display:"flex",gap:7,alignItems:"center",marginBottom:5,justifyContent:"space-between"}}>
                   <div style={{display:"flex",gap:7,alignItems:"center"}}><Avatar name={c.name} size={26} color={o?.color}/><div style={{fontWeight:600,fontSize:12,color:B.ink,lineHeight:1.3}}>{c.name}</div></div>
                   {c.ownerId&&<RecruiterBadge id={c.ownerId} size={18}/>}
@@ -1492,7 +1498,7 @@ export default function HCPRecruit(){
                 <div style={{fontSize:11,color:"#A09A93",marginBottom:4}}>{c.title}</div>
                 {c.salary&&<div style={{fontSize:11,color:"#34d399",fontWeight:600}}>{c.salary}</div>}
               </div>;})}
-              {!col.length&&<div style={{background:"#fff",border:`2px dashed ${B.muted}`,borderRadius:9,padding:20,textAlign:"center",color:"#A09A93",fontSize:11}}>Empty</div>}
+              {!col.length&&<div style={{background:"#fff",border:`2px dashed ${B.muted}`,borderRadius:9,padding:20,textAlign:"center",color:"#A09A93",fontSize:11}}>Drop here</div>}
             </div>;
           })}
         </div>}
@@ -1500,6 +1506,10 @@ export default function HCPRecruit(){
         {/* JOBS */}
         {page==="jobs"&&<>
           <div style={{background:"#fff",border:`1px solid ${B.muted}`,borderRadius:12,padding:"14px 16px",marginBottom:16,display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}}>
+            <div style={{position:"relative",flex:"1 1 200px",minWidth:180}}>
+              <span style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",color:"#A09A93",display:"flex"}}>{IC.search}</span>
+              <input style={{...inp,paddingLeft:32}} value={js} onChange={e=>setJs(e.target.value)} placeholder="Search role, client, SPOC…"/>
+            </div>
             <select style={{...sel,flex:"0 0 155px"}} value={jStat} onChange={e=>setJStat(e.target.value)}><option value="All">All Statuses</option>{JOB_STATUSES.map(s=><option key={s}>{s}</option>)}</select>
             <select style={{...sel,flex:"0 0 145px"}} value={jClient} onChange={e=>setJClient(e.target.value)}><option value="All">All Clients</option>{clients.map(c=><option key={c}>{c}</option>)}</select>
             <select style={{...sel,flex:"0 0 145px"}} value={jOwner} onChange={e=>setJOwner(e.target.value)}><option value="All">All Recruiters</option>{team.map(t=><option key={t.id} value={t.id}>{t.name.split(" ")[0]}</option>)}</select>
