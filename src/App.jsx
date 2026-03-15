@@ -208,31 +208,35 @@ function LoginScreen({onLogin}){
     catch{setError("Invalid email or password.");}
     setLoading(false);
   };
-  return <div style={{minHeight:"100vh",width:"100vw",background:`linear-gradient(135deg,${C.navy} 0%,${C.navy3} 60%,#1e4a8a 100%)`,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'DM Sans',sans-serif",padding:20}}>
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Serif+Display&display=swap" rel="stylesheet"/>
-    <div style={{width:"100%",maxWidth:440}}>
-      <div style={{textAlign:"center",marginBottom:40}}>
-        <div style={{width:60,height:60,borderRadius:16,background:"linear-gradient(135deg,#2563eb,#1d4ed8)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,margin:"0 auto 18px",boxShadow:"0 8px 32px rgba(37,99,235,0.45)"}}>⚡</div>
-        <div style={{fontFamily:"'DM Serif Display',serif",fontSize:32,color:C.white,letterSpacing:-0.5,marginBottom:8}}>HCP One Recruit</div>
-        <div style={{fontSize:14,color:"rgba(255,255,255,0.45)"}}>INXL Digital · Recruitment Platform</div>
+  const T={primary:"#22313F",accent:"#FF7A59",surface:"#FFF8F4",ink:"#1A242E",muted:"#E9E5E0",accentHover:"#E8674A",accentLight:"#FFF0EB"};
+  return <div style={{minHeight:"100vh",width:"100vw",background:`linear-gradient(135deg, ${T.ink} 0%, ${T.primary} 40%, #2C3E50 70%, #1A242E 100%)`,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Outfit',sans-serif",padding:20,position:"relative",overflow:"hidden"}}>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+    {/* Ambient glow effects */}
+    <div style={{position:"absolute",top:"-20%",right:"-10%",width:"600px",height:"600px",borderRadius:"50%",background:"radial-gradient(circle, rgba(255,122,89,0.08) 0%, transparent 70%)",pointerEvents:"none"}}/>
+    <div style={{position:"absolute",bottom:"-20%",left:"-10%",width:"500px",height:"500px",borderRadius:"50%",background:"radial-gradient(circle, rgba(255,122,89,0.05) 0%, transparent 70%)",pointerEvents:"none"}}/>
+    {/* Subtle grid pattern */}
+    <div style={{position:"absolute",inset:0,backgroundImage:"radial-gradient(rgba(255,255,255,0.03) 1px, transparent 1px)",backgroundSize:"40px 40px",pointerEvents:"none"}}/>
+    <div style={{width:"100%",maxWidth:420,position:"relative",zIndex:1}}>
+      <div style={{textAlign:"center",marginBottom:36}}>
+        <img src="/logo-light.png" alt="Talyntry" style={{height:28,marginBottom:20}} onError={e=>{e.target.style.display="none"}}/>
+        <div style={{fontFamily:"'DM Serif Display',serif",fontSize:36,color:"#fff",letterSpacing:-1,lineHeight:1.1,marginBottom:10}}>Welcome back</div>
+        <div style={{fontSize:14,color:"rgba(255,255,255,0.35)",fontWeight:400}}>Sign in to your Talyntry account</div>
       </div>
-      <div style={{background:"rgba(255,255,255,0.97)",borderRadius:20,padding:"36px",boxShadow:"0 32px 80px rgba(0,0,0,0.25)"}}>
-        <div style={{fontSize:20,fontWeight:700,color:C.navy,marginBottom:4}}>Welcome back</div>
-        <div style={{fontSize:13,color:C.gray400,marginBottom:28}}>Sign in to your account to continue</div>
-        {error&&<div style={{background:C.dangerL,border:`1px solid ${C.danger}30`,borderRadius:8,padding:"10px 13px",marginBottom:18,color:C.danger,fontSize:13}}>{error}</div>}
-        <div style={{marginBottom:18}}>
-          <label style={{display:"block",color:C.gray600,fontSize:12,fontWeight:600,marginBottom:6}}>Email address</label>
-          <input style={{...inp,padding:"11px 14px",fontSize:14}} value={email} onChange={e=>setEmail(e.target.value)} onKeyDown={e=>e.key==="Enter"&&submit()} placeholder="you@hcpone.com" type="email" autoFocus/>
+      <div style={{background:"rgba(255,248,244,0.97)",borderRadius:20,padding:"40px 36px",boxShadow:"0 32px 80px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.05)",backdropFilter:"blur(20px)"}}>
+        {error&&<div style={{background:"#FEE2E2",border:"1px solid rgba(220,38,38,0.2)",borderRadius:10,padding:"11px 14px",marginBottom:20,color:"#DC2626",fontSize:13,fontWeight:500}}>{error}</div>}
+        <div style={{marginBottom:20}}>
+          <label style={{display:"block",color:T.primary,fontSize:11,fontWeight:600,marginBottom:7,textTransform:"uppercase",letterSpacing:"0.5px"}}>Email address</label>
+          <input style={{width:"100%",background:"#fff",border:`1.5px solid ${T.muted}`,borderRadius:10,padding:"13px 16px",color:T.ink,fontSize:14,outline:"none",boxSizing:"border-box",fontFamily:"inherit",transition:"border-color 0.2s"}} value={email} onChange={e=>setEmail(e.target.value)} onKeyDown={e=>e.key==="Enter"&&submit()} onFocus={e=>e.target.style.borderColor=T.accent} onBlur={e=>e.target.style.borderColor=T.muted} placeholder="you@company.com" type="email" autoFocus/>
         </div>
         <div style={{marginBottom:28}}>
-          <label style={{display:"block",color:C.gray600,fontSize:12,fontWeight:600,marginBottom:6}}>Password</label>
-          <input style={{...inp,padding:"11px 14px",fontSize:14}} value={password} onChange={e=>setPassword(e.target.value)} onKeyDown={e=>e.key==="Enter"&&submit()} placeholder="••••••••" type="password"/>
+          <label style={{display:"block",color:T.primary,fontSize:11,fontWeight:600,marginBottom:7,textTransform:"uppercase",letterSpacing:"0.5px"}}>Password</label>
+          <input style={{width:"100%",background:"#fff",border:`1.5px solid ${T.muted}`,borderRadius:10,padding:"13px 16px",color:T.ink,fontSize:14,outline:"none",boxSizing:"border-box",fontFamily:"inherit",transition:"border-color 0.2s"}} value={password} onChange={e=>setPassword(e.target.value)} onKeyDown={e=>e.key==="Enter"&&submit()} onFocus={e=>e.target.style.borderColor=T.accent} onBlur={e=>e.target.style.borderColor=T.muted} placeholder="••••••••" type="password"/>
         </div>
-        <button onClick={submit} disabled={loading} style={{width:"100%",background:`linear-gradient(135deg,${C.accent2},${C.accent})`,color:C.white,border:"none",borderRadius:10,padding:"14px",fontSize:15,fontWeight:700,cursor:loading?"not-allowed":"pointer",opacity:loading?0.7:1,fontFamily:"'DM Sans',sans-serif",boxShadow:"0 4px 16px rgba(37,99,235,0.3)"}}>
-          {loading?"Signing in…":"Sign In →"}
+        <button onClick={submit} disabled={loading} onMouseEnter={e=>{if(!loading)e.target.style.background=T.accentHover;e.target.style.transform="translateY(-1px)";e.target.style.boxShadow="0 8px 28px rgba(255,122,89,0.4)"}} onMouseLeave={e=>{e.target.style.background=T.accent;e.target.style.transform="translateY(0)";e.target.style.boxShadow="0 4px 20px rgba(255,122,89,0.3)"}} style={{width:"100%",background:T.accent,color:"#fff",border:"none",borderRadius:10,padding:"14px",fontSize:15,fontWeight:700,cursor:loading?"not-allowed":"pointer",opacity:loading?0.7:1,fontFamily:"'Outfit',sans-serif",boxShadow:"0 4px 20px rgba(255,122,89,0.3)",transition:"all 0.25s cubic-bezier(0.16,1,0.3,1)",letterSpacing:"-0.01em"}}>
+          {loading?"Signing in…":"Sign In"}
         </button>
       </div>
-      <div style={{textAlign:"center",marginTop:20,fontSize:12,color:"rgba(255,255,255,0.25)"}}>HCP One Recruit · INXL Digital</div>
+      <div style={{textAlign:"center",marginTop:24,fontSize:12,color:"rgba(255,255,255,0.18)",letterSpacing:"0.3px"}}>Talyntry · INXL Digital</div>
     </div>
   </div>;
 }
@@ -247,8 +251,8 @@ function WeeklyReport({cands,jobs,team=TEAM_FALLBACK}){
     const hotRows=r.hotCands.map(c=>{const o=getTeamMember(c.ownerId);return `<tr><td>${c.name}</td><td>${c.title}</td><td>${c.stage}</td><td>${c.salary||"—"}</td><td>${o?.name||"—"}</td></tr>`;}).join("");
     const jobRows=r.openJobs.map(j=>`<tr><td>${j.title}</td><td>${j.client}</td><td>${j.salary||"—"}</td><td>${j.status}</td><td>${(j.submittedCandidates||[]).length}</td></tr>`).join("");
     const clientRows=Object.entries(r.byClient).filter(([,c])=>c.length>0).map(([client,cs])=>`<tr><td><b>${client}</b></td><td>${cs.length}</td><td>${cs.filter(c=>["Interview 1","Interview 2","Final Interview"].includes(c.stage)).length}</td><td>${cs.filter(c=>c.stage==="Offer").length}</td><td>${cs.filter(c=>c.stage==="Placed").length}</td></tr>`).join("");
-    w.document.write(`<!DOCTYPE html><html><head><title>HCP One Weekly Report</title><style>body{font-family:'DM Sans',Arial,sans-serif;padding:40px;color:#0a1628;max-width:960px;margin:0 auto}h1{color:#1e56c8;font-size:22px;border-bottom:3px solid #1e56c8;padding-bottom:10px}h2{color:#1e56c8;margin-top:32px;font-size:13px;text-transform:uppercase;letter-spacing:1px}table{width:100%;border-collapse:collapse;margin-top:12px;font-size:12px}th{background:#0a1628;color:white;padding:9px 12px;text-align:left}td{padding:8px 12px;border-bottom:1px solid #e2e8f0}.summary{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:20px 0}.card{background:#f1f5f9;border-radius:10px;padding:16px;text-align:center}.num{font-size:28px;font-weight:800;color:#1e56c8}.lbl{font-size:11px;color:#64748b;margin-top:3px}@media print{button{display:none}}</style></head><body>
-    <h1>⚡ HCP One Weekly Activity Report</h1>
+    w.document.write(`<!DOCTYPE html><html><head><title>Talyntry Weekly Report</title><style>body{font-family:'DM Sans',Arial,sans-serif;padding:40px;color:#0a1628;max-width:960px;margin:0 auto}h1{color:#22313F;font-size:22px;border-bottom:3px solid #FF7A59;padding-bottom:10px}h2{color:#22313F;margin-top:32px;font-size:13px;text-transform:uppercase;letter-spacing:1px}table{width:100%;border-collapse:collapse;margin-top:12px;font-size:12px}th{background:#0a1628;color:white;padding:9px 12px;text-align:left}td{padding:8px 12px;border-bottom:1px solid #e2e8f0}.summary{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:20px 0}.card{background:#f1f5f9;border-radius:10px;padding:16px;text-align:center}.num{font-size:28px;font-weight:800;color:#FF7A59}.lbl{font-size:11px;color:#64748b;margin-top:3px}@media print{button{display:none}}</style></head><body>
+    <h1>Talyntry Weekly Activity Report</h1>
     <p style="color:#64748b">Week of ${r.ws} – ${r.we} · Generated ${today()} · ${filterR==="all"?"All Recruiters":getTeamMember(filterR)?.name}</p>
     <div class="summary"><div class="card"><div class="num">${r.total}</div><div class="lbl">Total Candidates</div></div><div class="card"><div class="num">${r.active.length}</div><div class="lbl">Active Pipeline</div></div><div class="card"><div class="num">${r.hotCands.length}</div><div class="lbl">Interview / Offer</div></div><div class="card"><div class="num">${r.openJobs.length}</div><div class="lbl">Open Job Orders</div></div></div>
     <h2>Pipeline by Stage</h2><table><tr>${STAGES.map(s=>`<th>${s}</th>`).join("")}</tr><tr>${STAGES.map(s=>`<td>${r.byStage[s]?.length||0}</td>`).join("")}</tr></table>
@@ -271,7 +275,7 @@ function WeeklyReport({cands,jobs,team=TEAM_FALLBACK}){
       <button onClick={printReport} style={{background:C.navy,color:C.white,border:"none",borderRadius:8,padding:"9px 18px",fontSize:12,fontWeight:600,cursor:"pointer"}}>🖨 Print / Export PDF</button>
     </div>
     <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:22}}>
-      {[[r.total,"Total Candidates",C.accent,"👥"],[r.active.length,"Active Pipeline",C.purple,"📋"],[r.hotCands.length,"Interview / Offer",C.pink,"🔥"],[r.openJobs.length,"Open Roles",C.success,"💼"]].map(([v,l,c,ic])=>(
+      {[[r.total,"Total Candidates",C.accent,"⬡"],[r.active.length,"Active Pipeline",C.purple,"◈"],[r.hotCands.length,"Interview / Offer",C.pink,"◆"],[r.openJobs.length,"Open Roles",C.success,"□"]].map(([v,l,c,ic])=>(
         <div key={l} style={{background:C.gray50,border:`1px solid ${C.gray200}`,borderRadius:10,padding:"16px",textAlign:"center"}}>
           <div style={{fontSize:11,color:C.gray400,marginBottom:6}}>{ic} {l}</div>
           <div style={{fontSize:30,fontWeight:800,color:c,fontFamily:"'DM Sans',sans-serif"}}>{v}</div>
@@ -288,7 +292,7 @@ function WeeklyReport({cands,jobs,team=TEAM_FALLBACK}){
       </div>
     </div>
     {r.hotCands.length>0&&<div style={{marginBottom:20}}>
-      <div style={{fontSize:11,fontWeight:600,color:C.gray500,letterSpacing:0.5,textTransform:"uppercase",marginBottom:10}}>🔥 Hot Candidates</div>
+      <div style={{fontSize:11,fontWeight:600,color:C.gray500,letterSpacing:0.5,textTransform:"uppercase",marginBottom:10}}>Hot Candidates</div>
       {r.hotCands.map(c=>{const o=getTeamMember(c.ownerId);return <div key={c.id} style={{background:C.gray50,border:`1px solid ${C.gray200}`,borderRadius:9,padding:"11px 14px",display:"flex",alignItems:"center",gap:10,marginBottom:6}}>
         <Avatar name={c.name} size={32} color={o?.color}/>
         <div style={{flex:1}}><div style={{color:C.navy,fontSize:13,fontWeight:600}}>{c.name}</div><div style={{color:C.gray400,fontSize:11}}>{c.title}</div></div>
@@ -323,41 +327,12 @@ function CandForm({initial,allCandidates,onSave,onClose,activeUser=TEAM_FALLBACK
   const [pMsg,setPMsg]=useState(null);
   const [dupes,setDupes]=useState([]);
   const [dupeOk,setDupeOk]=useState(false);
-  const [liInput,setLiInput]=useState("");
-  const [liParsing,setLiParsing]=useState(false);
   const fr=useRef();
   const s=(k,v)=>setF(p=>({...p,[k]:v}));
   const chkDupe=(em,ph,nm)=>{if(dupeOk)return;setDupes(detectDupes(allCandidates,em,ph,f.id,nm||f.name));};
   const addSkill=(sk)=>{const t=(sk||si).trim();if(t&&!f.skills.includes(t))s("skills",[...f.skills,t]);setSi("");};
   const toggleCollab=(id)=>{const cur=f.collaborators||[];if(cur.includes(id)){s("collaborators",cur.filter(x=>x!==id));}else{if(cur.length>=2)return;s("collaborators",[...cur,id]);}};
-  const parseLinkedIn=async()=>{
-    if(!liInput.trim()) return;
-    setLiParsing(true);
-    try{
-      const extractPrompt=`Extract candidate info from this LinkedIn profile text or URL. Return ONLY valid JSON with these exact fields: name, email, phone, title (current role), seniority (one of: Individual Contributor/Senior IC/Team Lead/Manager/Director/VP/SVP/C-Suite / Partner), experience (years as a number), salary, location, workAuth (one of: US Citizen/Green Card/H-1B/H-4 EAD/L-1/TN Visa/OPT/CPT/EAD/EU Passport/EU Blue Card/Residence Permit/Requires Sponsorship/Other), skills (array of up to 8 most relevant skills), vertical (one of: Telecom / Wireless/AI / ML / Data/Cybersecurity/Software Engineering/Cloud / DevOps/Sales & Business Development/Directors & VPs/SVPs & C-Suite/Client Partners/Project / Program Mgmt/Network Engineering/Consulting), linkedin (the profile URL). Only include fields you can confidently extract.\n\nLinkedIn content:\n${liInput}`;
-      const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":import.meta.env.VITE_ANTHROPIC_API_KEY,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1000,messages:[{role:"user",content:extractPrompt}]})});
-      const data=await res.json();
-      if(data.error) throw new Error(data.error.message);
-      const parsed=JSON.parse((data.content?.[0]?.text||"{}").replace(/```json|```/g,"").trim());
-      const mapped={};
-      if(parsed.name) mapped.name=parsed.name;
-      if(parsed.email) mapped.email=parsed.email;
-      if(parsed.phone) mapped.phone=parsed.phone;
-      if(parsed.title) mapped.title=parsed.title;
-      if(parsed.seniority) mapped.seniority=parsed.seniority;
-      if(parsed.experience) mapped.experience=String(parsed.experience);
-      if(parsed.salary) mapped.salary=parsed.salary;
-      if(parsed.location) mapped.location=parsed.location;
-      if(parsed.workAuth) mapped.workAuth=parsed.workAuth;
-      if(parsed.skills?.length) mapped.skills=parsed.skills;
-      if(parsed.vertical) mapped.vertical=parsed.vertical;
-      if(parsed.linkedin) mapped.linkedin=parsed.linkedin;
-      else if(liInput.includes("linkedin.com")) mapped.linkedin=liInput.split("\n")[0].trim();
-      setF(prev=>({...prev,...mapped}));
-      setLiInput("");
-    }catch(e){alert("LinkedIn parse failed: "+e.message);}
-    setLiParsing(false);
-  };  const handleFile=async(e)=>{
+  const handleFile=async(e)=>{
     const file=e.target.files[0];if(!file)return;
     setParsing(true);setPMsg("Uploading & reading resume…");
     try{
@@ -435,13 +410,6 @@ function CandForm({initial,allCandidates,onSave,onClose,activeUser=TEAM_FALLBACK
       </div>)}
       <button onClick={()=>setDupeOk(true)} style={{marginTop:8,background:C.white,border:`1px solid ${C.warn}`,color:C.warn,borderRadius:6,padding:"4px 12px",fontSize:11,cursor:"pointer",fontWeight:600}}>Dismiss & Continue</button>
     </div>}
-    {/* LinkedIn Import */}
-    <div style={{background:`linear-gradient(135deg,#0077b6 0%,#023e8a 100%)`,borderRadius:10,padding:"14px 16px",marginBottom:14}}>
-      <div style={{fontSize:12,fontWeight:700,color:C.white,marginBottom:6}}>🔗 Import from LinkedIn</div>
-      <div style={{fontSize:11,color:"rgba(255,255,255,0.65)",marginBottom:10}}>Paste a LinkedIn profile URL or copy-paste the profile text below — AI will fill in all fields automatically.</div>
-      <textarea style={{width:"100%",background:"rgba(255,255,255,0.12)",border:"1px solid rgba(255,255,255,0.2)",borderRadius:7,padding:"8px 10px",color:C.white,fontSize:12,outline:"none",resize:"vertical",minHeight:56,boxSizing:"border-box",fontFamily:"inherit","::placeholder":{color:"rgba(255,255,255,0.4)"}}} value={liInput} onChange={e=>setLiInput(e.target.value)} placeholder="https://linkedin.com/in/username  or paste full profile text…"/>
-      <button onClick={parseLinkedIn} disabled={liParsing||!liInput.trim()} style={{marginTop:8,background:"rgba(255,255,255,0.9)",color:"#0077b6",border:"none",borderRadius:7,padding:"7px 16px",fontSize:12,fontWeight:700,cursor:liParsing||!liInput.trim()?"not-allowed":"pointer",opacity:liInput.trim()?1:0.6}}>{liParsing?"Extracting…":"⚡ Auto-Fill from LinkedIn"}</button>
-    </div>
     <div
       data-dropzone="true"
       onClick={()=>!parsing&&fr.current?.click()}
@@ -453,7 +421,7 @@ function CandForm({initial,allCandidates,onSave,onClose,activeUser=TEAM_FALLBACK
       onMouseEnter={e=>{e.currentTarget.style.borderColor=C.accent;e.currentTarget.style.background=C.accentL;}}
       onMouseLeave={e=>{e.currentTarget.style.borderColor=C.gray300;e.currentTarget.style.background=C.gray50;}}>
       <input ref={fr} type="file" accept=".pdf,.doc,.docx,.txt" style={{display:"none"}} onChange={handleFile}/>
-      <div style={{fontSize:20,marginBottom:4}}>{parsing?"⏳":"📄"}</div>
+      <div style={{fontSize:20,marginBottom:4}}>{parsing?"...":"◇"}</div>
       <div style={{color:C.gray500,fontSize:12,fontWeight:500}}>{parsing?"Parsing…":"Upload Resume — AI Auto-Fill"}</div>
       {pMsg&&<div style={{marginTop:6,fontSize:11,fontWeight:600,color:pMsg.startsWith("✓")?C.success:pMsg.startsWith("⚠")?C.warn:C.accent}}>{pMsg}</div>}
     </div>
@@ -525,8 +493,11 @@ function CandDetail({c,jobs,onEdit,onStageChange,onAddNote,onSubmitToJob,activeU
   const dragCounter=useRef(0);
 
   useEffect(()=>{
-    if(c.resumePath){getResumeUrl(c.resumePath).then(setResumeUrl);}
-    else{setResumeUrl(null);}
+    if(c.resumePath){
+      getResumeUrl(c.resumePath).then(setResumeUrl);
+    } else {
+      setResumeUrl(null);
+    }
   },[c.resumePath]);
 
   const handleResumeDrop=async(file)=>{
@@ -534,145 +505,133 @@ function CandDetail({c,jobs,onEdit,onStageChange,onAddNote,onSubmitToJob,activeU
     const ok=file.name.match(/\.(pdf|doc|docx|png|jpg|jpeg|webp)$/i)||file.type.startsWith("image/");
     if(!ok) return setResumeMsg("⚠ PDF, DOCX, or image files only.");
     setUploadingResume(true);setResumeMsg("Uploading…");
-    try{await onResumeUpload(c.id,file);setResumeMsg("✓ Resume uploaded.");}
-    catch(e){setResumeMsg("⚠ Upload failed: "+e.message);}
+    try{
+      await onResumeUpload(c.id,file);
+      setResumeMsg("✓ Resume uploaded.");
+    }catch(e){setResumeMsg("⚠ Upload failed: "+e.message);}
     setUploadingResume(false);
   };
-
   const progress=STAGES.filter(s=>!["On Hold","Rejected"].includes(s));
   const si=STAGES.indexOf(c.stage);
   const assigned=jobs.filter(j=>j.submittedCandidates?.includes(c.id));
   const owner=getTeamMember(c.ownerId);
   const collabs=(c.collaborators||[]).map(getTeamMember).filter(Boolean);
   const post=()=>{if(!note.trim())return;onAddNote(c.id,note.trim());setNote("");};
-
   return <div>
-    {/* Hero header */}
-    <div style={{background:`linear-gradient(135deg,${C.navy} 0%,${C.navy3} 100%)`,borderRadius:14,padding:"24px",marginBottom:20,position:"relative",overflow:"hidden"}}>
-      <div style={{position:"absolute",top:-30,right:-30,width:180,height:180,borderRadius:"50%",background:"rgba(255,255,255,0.04)",pointerEvents:"none"}}/>
-      <div style={{position:"absolute",top:20,right:20,display:"flex",gap:8}}>
-        <button onClick={onEdit} style={{background:"rgba(255,255,255,0.12)",color:C.white,border:"1px solid rgba(255,255,255,0.2)",borderRadius:8,padding:"7px 14px",fontSize:12,fontWeight:600,cursor:"pointer"}}>✏ Edit</button>
-        {onDelete&&<button onClick={()=>onDelete(c.id)} style={{background:"rgba(220,38,38,0.2)",color:"#fca5a5",border:"1px solid rgba(220,38,38,0.3)",borderRadius:8,padding:"7px 12px",fontSize:12,fontWeight:600,cursor:"pointer"}}>🗑</button>}
+    <div style={{display:"flex",gap:14,alignItems:"flex-start",marginBottom:20}}>
+      <Avatar name={c.name} size={52} color={owner?.color}/>
+      <div style={{flex:1}}>
+        <div style={{fontSize:20,fontWeight:700,color:C.navy,fontFamily:"'DM Sans',sans-serif",letterSpacing:-0.3}}>{c.name}</div>
+        <div style={{color:C.gray500,fontSize:13,marginTop:2}}>{c.title}{c.seniority?` · ${c.seniority}`:""}</div>
+        <div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:8}}>
+          <StageBadge stage={c.stage}/>
+          {c.workAuth&&<Tag label={c.workAuth} color={C.success} bg={C.successL}/>}
+          {c.vertical&&<Tag label={c.vertical} color={C.purple} bg={C.purpleL}/>}
+        </div>
       </div>
-      <div style={{display:"flex",gap:18,alignItems:"flex-start"}}>
-        <div style={{width:72,height:72,borderRadius:18,background:owner?.color||C.accent2,display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,fontWeight:800,color:C.white,flexShrink:0,boxShadow:"0 8px 24px rgba(0,0,0,0.2)"}}>{ini(c.name)}</div>
-        <div style={{flex:1}}>
-          <div style={{fontSize:22,fontWeight:800,color:C.white,letterSpacing:-0.5,fontFamily:"'DM Serif Display',serif"}}>{c.name}</div>
-          <div style={{color:"rgba(255,255,255,0.6)",fontSize:13,marginTop:3}}>{c.title}{c.seniority?` · ${c.seniority}`:""}</div>
-          <div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:10}}>
-            <StageBadge stage={c.stage}/>
-            {c.workAuth&&<span style={{background:"rgba(255,255,255,0.15)",color:C.white,borderRadius:6,padding:"3px 10px",fontSize:11,fontWeight:500}}>{c.workAuth}</span>}
-            {c.vertical&&<span style={{background:"rgba(255,255,255,0.1)",color:"rgba(255,255,255,0.7)",borderRadius:6,padding:"3px 10px",fontSize:11,fontWeight:500}}>{c.vertical}</span>}
-            {c.resumePath&&<span style={{background:"rgba(16,163,74,0.2)",color:"#86efac",borderRadius:6,padding:"3px 10px",fontSize:11,fontWeight:600}}>📄 Resume on file</span>}
-          </div>
+      <div style={{display:"flex",gap:8,flexShrink:0}}><button onClick={onEdit} style={{background:C.navy,color:C.white,border:"none",borderRadius:8,padding:"8px 16px",fontSize:12,fontWeight:600,cursor:"pointer"}}>Edit</button>{onDelete&&<button onClick={()=>onDelete(c.id)} style={{background:C.dangerL,color:C.danger,border:`1px solid ${C.danger}30`,borderRadius:8,padding:"8px 14px",fontSize:12,fontWeight:600,cursor:"pointer"}}>Delete</button>}</div>
+    </div>
+    <div style={{background:owner?owner.color+"08":C.gray50,border:`1px solid ${owner?owner.color+"30":C.gray200}`,borderRadius:10,padding:"14px 16px",marginBottom:18}}>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:12}}>
+        <div style={{display:"flex",alignItems:"center",gap:10}}>
+          {owner?<>
+            <div style={{width:40,height:40,borderRadius:10,background:owner.color,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:700,color:C.white,flexShrink:0}}>{owner.initials}</div>
+            <div>
+              <div style={{color:C.gray400,fontSize:10,fontWeight:600,letterSpacing:0.8,textTransform:"uppercase",marginBottom:2}}>Candidate Owner</div>
+              <div style={{color:owner.color,fontSize:15,fontWeight:700}}>{owner.name}</div>
+              <div style={{color:C.gray500,fontSize:11}}>{owner.role}</div>
+            </div>
+          </>:<span style={{color:C.gray400,fontSize:12}}>No owner assigned</span>}
+        </div>
+        <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:5}}>
+          <div style={{color:C.gray400,fontSize:10,fontWeight:600,letterSpacing:0.8,textTransform:"uppercase"}}>Collaborators ({collabs.length}/2)</div>
+          {collabs.length>0?<div style={{display:"flex",gap:7}}>
+            {collabs.map(t=><div key={t.id} style={{display:"flex",alignItems:"center",gap:6,background:t.color+"15",border:`1px solid ${t.color}40`,borderRadius:7,padding:"5px 10px"}}>
+              <div style={{width:22,height:22,borderRadius:5,background:t.color,display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,fontWeight:700,color:C.white}}>{t.initials}</div>
+              <div><div style={{color:t.color,fontSize:11,fontWeight:600}}>{t.name}</div><div style={{color:C.gray400,fontSize:9}}>{t.role}</div></div>
+            </div>)}
+          </div>:<span style={{color:C.gray300,fontSize:11}}>No collaborators</span>}
         </div>
       </div>
     </div>
-
-    {/* Hiring Progress */}
-    <div style={{background:C.white,border:`1px solid ${C.gray200}`,borderRadius:12,padding:"16px 20px",marginBottom:16,boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
-      <div style={{color:C.gray400,fontSize:10,fontWeight:600,letterSpacing:0.8,textTransform:"uppercase",marginBottom:12}}>Hiring Progress — click to change stage</div>
-      <div style={{display:"flex",gap:4,overflowX:"auto",paddingBottom:4}}>
-        {progress.map(st=>{
-          const idx=STAGES.indexOf(st);
-          const done=idx<si&&!["On Hold","Rejected"].includes(c.stage);
-          const cur=st===c.stage;
-          const m=SM[st];
-          return <div key={st} onClick={()=>onStageChange(c.id,st,c.stage)} style={{flex:1,minWidth:60,cursor:"pointer",textAlign:"center",padding:"0 2px"}}>
-            <div style={{height:5,borderRadius:3,background:done||cur?m.c:C.gray200,marginBottom:5,transition:"background 0.2s"}}/>
-            <div style={{fontSize:9,color:cur?m.c:done?C.gray500:C.gray300,fontWeight:cur?700:500,lineHeight:1.3,whiteSpace:"nowrap"}}>{st}</div>
+    <div style={{background:C.gray50,border:`1px solid ${C.gray200}`,borderRadius:10,padding:"14px 16px",marginBottom:18}}>
+      <div style={{color:C.gray400,fontSize:10,fontWeight:600,letterSpacing:0.8,textTransform:"uppercase",marginBottom:10}}>Pipeline — click to advance</div>
+      <div style={{display:"flex",gap:0}}>
+        {progress.map(st=>{const idx=STAGES.indexOf(st);const done=idx<si&&!["On Hold","Rejected"].includes(c.stage);const cur=st===c.stage;const m=SM[st];
+          return <div key={st} onClick={()=>onStageChange(c.id,st)} style={{flex:1,cursor:"pointer",textAlign:"center",padding:"0 1px"}}>
+            <div style={{height:4,borderRadius:2,background:done||cur?m.c:C.gray200,marginBottom:4,transition:"background 0.2s"}}/>
+            <div style={{fontSize:8,color:cur?m.c:done?C.gray400:C.gray300,fontWeight:cur?700:500,lineHeight:1.2}}>{st}</div>
           </div>;
         })}
       </div>
-      {["On Hold","Rejected"].includes(c.stage)&&<div style={{display:"flex",gap:6,marginTop:10}}>
-        {["On Hold","Rejected"].map(st=><span key={st} onClick={()=>onStageChange(c.id,st,c.stage)} style={{cursor:"pointer",background:c.stage===st?SM[st].bg:C.white,color:SM[st].c,border:`1px solid ${SM[st].c}40`,borderRadius:6,padding:"4px 12px",fontSize:11,fontWeight:600}}>{st}{c.stage===st?" ←":""}</span>)}
+      {["On Hold","Rejected"].includes(c.stage)&&<div style={{display:"flex",gap:6,marginTop:8}}>
+        {["On Hold","Rejected"].map(st=><span key={st} onClick={()=>onStageChange(c.id,st)} style={{cursor:"pointer",background:c.stage===st?SM[st].bg:C.white,color:SM[st].c,border:`1px solid ${SM[st].c}40`,borderRadius:6,padding:"4px 12px",fontSize:11,fontWeight:600}}>{st}{c.stage===st?" ←":""}</span>)}
       </div>}
     </div>
-
-    {/* Two-column layout */}
-    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:16}}>
-      <div style={{display:"flex",flexDirection:"column",gap:10}}>
-        <div style={{background:C.white,border:`1px solid ${C.gray200}`,borderRadius:12,padding:"16px",boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
-          <div style={{color:C.gray400,fontSize:10,fontWeight:700,letterSpacing:0.8,textTransform:"uppercase",marginBottom:12}}>Contact</div>
-          {[["Email",c.email,"email"],["Phone",c.phone],["Location",c.location],["LinkedIn",c.linkedin,"linkedin"]].map(([k,v,type])=>
-            <div key={k} style={{display:"flex",gap:10,marginBottom:10,alignItems:"flex-start"}}>
-              <div style={{width:60,flexShrink:0,fontSize:11,color:C.gray400,fontWeight:500,paddingTop:1}}>{k}</div>
-              {type==="email"&&v?<a href={`mailto:${v}?subject=${encodeURIComponent(`Exciting Opportunity – ${c.title||"Role"}`)}&body=${encodeURIComponent(`Hi ${c.name?.split(" ")[0]||""},\n\nI hope you're doing well! I wanted to reach out regarding an exciting opportunity that I believe would be a great fit for your background.\n\nWould you be open to a quick call this week?\n\nBest regards,\n${activeUser.name}`)}`} onClick={()=>onAddNote&&onAddNote(c.id,`📧 Email sent to ${v}`)} style={{color:C.accent,fontSize:12,fontWeight:500,textDecoration:"none",wordBreak:"break-all"}}>{v} ✉</a>
-              :type==="linkedin"&&v?<a href={`https://${v.replace(/^https?:\/\//,"")}`} target="_blank" rel="noreferrer" style={{color:C.accent,fontSize:12,fontWeight:500,textDecoration:"none",wordBreak:"break-all"}}>{v}</a>
-              :<div style={{fontSize:12,color:v?C.navy:C.gray300,fontWeight:v?500:400,wordBreak:"break-all"}}>{v||"—"}</div>}
-            </div>
-          )}
+    <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:16}}>
+      {[["Email",c.email],["Phone",c.phone],["Location",c.location],["Salary/Rate",c.salary],["Experience",c.experience],["Source",c.source],["Work Auth",c.workAuth],["Seniority",c.seniority],["Added",c.addedDate]].map(([k,v])=>(
+        <div key={k} style={{background:C.gray50,border:`1px solid ${C.gray200}`,borderRadius:8,padding:"10px 12px"}}>
+          <div style={{color:C.gray400,fontSize:10,textTransform:"uppercase",letterSpacing:0.5,fontWeight:600,marginBottom:3}}>{k}</div>
+          {k==="Email"&&v
+            ?<a href={`mailto:${v}?subject=${encodeURIComponent(`Exciting Opportunity – ${c.title||"Role"}`)}&body=${encodeURIComponent(`Hi ${c.name?.split(" ")[0]||""},\n\nI hope you're doing well! I wanted to reach out regarding an exciting opportunity that I believe would be a great fit for your background.\n\nWould you be open to a quick call this week?\n\nBest regards,\n${activeUser.name}`)}`} onClick={()=>onAddNote&&onAddNote(c.id,`Email sent to ${v}`)} style={{color:C.accent,fontSize:12,fontWeight:500,textDecoration:"none",wordBreak:"break-all"}}>{v} ✉</a>
+            :<div style={{color:v?C.navy:C.gray300,fontSize:12,fontWeight:500,wordBreak:"break-all"}}>{v||"—"}</div>}
         </div>
-        <div style={{background:C.white,border:`1px solid ${C.gray200}`,borderRadius:12,padding:"16px",boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
-          <div style={{color:C.gray400,fontSize:10,fontWeight:700,letterSpacing:0.8,textTransform:"uppercase",marginBottom:12}}>Details</div>
-          {[["Salary/Rate",c.salary],["Experience",c.experience?(c.experience+" yrs"):null],["Work Auth",c.workAuth],["Seniority",c.seniority],["Source",c.source],["Added",c.addedDate]].map(([k,v])=>
-            <div key={k} style={{display:"flex",gap:10,marginBottom:8}}>
-              <div style={{width:80,flexShrink:0,fontSize:11,color:C.gray400,fontWeight:500}}>{k}</div>
-              <div style={{fontSize:12,color:v?C.navy:C.gray300,fontWeight:v?500:400}}>{v||"—"}</div>
-            </div>
-          )}
+      ))}
+    </div>
+    {c.linkedin&&<div style={{marginBottom:14}}><a href={`https://${c.linkedin.replace(/^https?:\/\//,"")}`} target="_blank" rel="noreferrer" style={{color:C.accent,fontSize:12,fontWeight:500}}>🔗 {c.linkedin}</a></div>}
+    {/* Resume section */}
+    <div style={{marginBottom:16}}>
+      <div style={{color:C.gray400,fontSize:10,fontWeight:600,letterSpacing:0.8,textTransform:"uppercase",marginBottom:8}}>Resume</div>
+      {c.resumePath?(
+        <div style={{background:C.successL,border:`1px solid ${C.success}30`,borderRadius:9,padding:"11px 14px",display:"flex",alignItems:"center",gap:10}}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          <div style={{flex:1}}>
+            <div style={{color:C.success,fontSize:12,fontWeight:600}}>Resume on file</div>
+            <div style={{color:C.gray400,fontSize:11}}>Uploaded</div>
+          </div>
+          {resumeUrl&&<a href={resumeUrl} target="_blank" rel="noreferrer" style={{background:C.success,color:C.white,borderRadius:7,padding:"6px 14px",fontSize:11,fontWeight:600,textDecoration:"none"}}>View PDF</a>}
+          {onResumeUpload&&<div onClick={()=>resumeRef.current?.click()} style={{background:C.white,color:C.gray500,border:`1px solid ${C.gray200}`,borderRadius:7,padding:"6px 12px",fontSize:11,fontWeight:500,cursor:"pointer"}}>Replace</div>}
         </div>
-        <div style={{background:C.white,border:`1px solid ${C.gray200}`,borderRadius:12,padding:"16px",boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
-          <div style={{color:C.gray400,fontSize:10,fontWeight:700,letterSpacing:0.8,textTransform:"uppercase",marginBottom:12}}>Recruiter</div>
-          {owner&&<div style={{display:"flex",alignItems:"center",gap:10,marginBottom:collabs.length?12:0}}>
-            <div style={{width:36,height:36,borderRadius:9,background:owner.color,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:700,color:C.white}}>{owner.initials}</div>
-            <div><div style={{color:owner.color,fontSize:13,fontWeight:700}}>{owner.name}</div><div style={{color:C.gray400,fontSize:11}}>{owner.role} · Owner</div></div>
-          </div>}
-          {collabs.length>0&&<div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-            {collabs.map(t=><div key={t.id} style={{display:"flex",alignItems:"center",gap:6,background:t.color+"15",borderRadius:7,padding:"4px 9px"}}>
-              <div style={{width:16,height:16,borderRadius:4,background:t.color,display:"flex",alignItems:"center",justifyContent:"center",fontSize:8,fontWeight:700,color:C.white}}>{t.initials}</div>
-              <span style={{fontSize:11,color:t.color,fontWeight:600}}>{t.name.split(" ")[0]}</span>
-            </div>)}
-          </div>}
+      ):(
+        <div
+          data-dropzone="true"
+          onDragEnter={e=>{e.preventDefault();dragCounter.current++;setDragging(true);}}
+          onDragOver={e=>e.preventDefault()}
+          onDragLeave={e=>{e.preventDefault();dragCounter.current--;if(dragCounter.current===0)setDragging(false);}}
+          onDrop={e=>{e.preventDefault();e.stopPropagation();dragCounter.current=0;setDragging(false);const f=e.dataTransfer.files[0];if(f)handleResumeDrop(f);}}
+          onClick={()=>onResumeUpload&&resumeRef.current?.click()}
+          style={{background:dragging?C.accentL:C.gray50,border:`2px dashed ${dragging?C.accent:C.danger+"50"}`,borderRadius:9,padding:"20px",textAlign:"center",cursor:onResumeUpload?"pointer":"default",transition:"all 0.15s"}}>
+          <div style={{fontSize:24,marginBottom:6}}>📎</div>
+          <div style={{color:C.danger,fontSize:12,fontWeight:600}}>No resume on file</div>
+          {onResumeUpload&&<div style={{color:C.gray400,fontSize:11,marginTop:4}}>{dragging?"Drop to upload":"Click or drag & drop — PDF, DOCX, or image"}</div>}
         </div>
-      </div>
-      <div style={{display:"flex",flexDirection:"column",gap:10}}>
-        {c.skills?.length>0&&<div style={{background:C.white,border:`1px solid ${C.gray200}`,borderRadius:12,padding:"16px",boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
-          <div style={{color:C.gray400,fontSize:10,fontWeight:700,letterSpacing:0.8,textTransform:"uppercase",marginBottom:10}}>Skills</div>
-          <div style={{display:"flex",flexWrap:"wrap",gap:6}}>{c.skills.map(x=><span key={x} style={{background:C.accentL,color:C.accent,borderRadius:6,padding:"4px 10px",fontSize:11,fontWeight:600}}>{x}</span>)}</div>
-        </div>}
-        <div style={{background:C.white,border:`1px solid ${C.gray200}`,borderRadius:12,padding:"16px",boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
-          <div style={{color:C.gray400,fontSize:10,fontWeight:700,letterSpacing:0.8,textTransform:"uppercase",marginBottom:10}}>Resume</div>
-          {c.resumePath?(
-            <div style={{background:C.successL,border:`1px solid ${C.success}30`,borderRadius:9,padding:"12px 14px",display:"flex",alignItems:"center",gap:10}}>
-              <span style={{fontSize:20}}>📄</span>
-              <div style={{flex:1}}><div style={{color:C.success,fontSize:12,fontWeight:600}}>Resume on file</div></div>
-              {resumeUrl&&<a href={resumeUrl} target="_blank" rel="noreferrer" style={{background:C.success,color:C.white,borderRadius:7,padding:"6px 14px",fontSize:11,fontWeight:600,textDecoration:"none"}}>View</a>}
-              {onResumeUpload&&<div onClick={()=>resumeRef.current?.click()} style={{background:C.white,color:C.gray500,border:`1px solid ${C.gray200}`,borderRadius:7,padding:"6px 10px",fontSize:11,cursor:"pointer"}}>Replace</div>}
-            </div>
-          ):(
-            <div data-dropzone="true" onDragEnter={e=>{e.preventDefault();dragCounter.current++;setDragging(true);}} onDragOver={e=>e.preventDefault()} onDragLeave={e=>{e.preventDefault();dragCounter.current--;if(dragCounter.current===0)setDragging(false);}} onDrop={e=>{e.preventDefault();e.stopPropagation();dragCounter.current=0;setDragging(false);const f=e.dataTransfer.files[0];if(f)handleResumeDrop(f);}} onClick={()=>onResumeUpload&&resumeRef.current?.click()} style={{background:dragging?C.accentL:C.gray50,border:`2px dashed ${dragging?C.accent:C.danger+"50"}`,borderRadius:9,padding:"20px",textAlign:"center",cursor:onResumeUpload?"pointer":"default",transition:"all 0.15s"}}>
-              <div style={{fontSize:20,marginBottom:6}}>📎</div>
-              <div style={{color:C.danger,fontSize:12,fontWeight:600}}>No resume on file</div>
-              {onResumeUpload&&<div style={{color:C.gray400,fontSize:11,marginTop:4}}>{dragging?"Drop to upload":"Click or drag & drop"}</div>}
-            </div>
-          )}
-          <input ref={resumeRef} type="file" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.webp" style={{display:"none"}} onChange={e=>{const f=e.target.files[0];if(f)handleResumeDrop(f);}}/>
-          {resumeMsg&&<div style={{marginTop:6,fontSize:11,fontWeight:600,color:resumeMsg.startsWith("✓")?C.success:C.warn}}>{resumeMsg}</div>}
-        </div>
-        <div style={{background:C.white,border:`1px solid ${C.gray200}`,borderRadius:12,padding:"16px",boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
-          <div style={{color:C.gray400,fontSize:10,fontWeight:700,letterSpacing:0.8,textTransform:"uppercase",marginBottom:10}}>Submitted to Roles ({assigned.length})</div>
-          {!assigned.length&&<div style={{color:C.gray300,fontSize:12,paddingBottom:6}}>Not submitted to any role yet.</div>}
-          {assigned.map(j=><div key={j.id} style={{background:C.gray50,border:`1px solid ${C.gray200}`,borderRadius:8,padding:"9px 12px",marginBottom:6,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-            <div><div style={{color:C.navy,fontSize:12,fontWeight:600}}>{j.title}</div><div style={{color:C.gray400,fontSize:10,marginTop:1}}>{j.client}</div></div>
-            <JobBadge status={j.status}/>
-          </div>)}
-          <select style={{...sel,fontSize:12,marginTop:4}} onChange={e=>{if(e.target.value){onSubmitToJob(c.id,e.target.value);e.target.value="";}}} defaultValue="">
-            <option value="">+ Submit to a role…</option>
-            {jobs.filter(j=>!j.submittedCandidates?.includes(c.id)&&!["Filled","Closed"].includes(j.status)).map(j=><option key={j.id} value={j.id}>{j.title} — {j.client}</option>)}
-          </select>
-        </div>
-      </div>
+      )}
+      <input ref={resumeRef} type="file" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.webp" style={{display:"none"}} onChange={e=>{const f=e.target.files[0];if(f)handleResumeDrop(f);}}/>
+      {resumeMsg&&<div style={{marginTop:6,fontSize:11,fontWeight:600,color:resumeMsg.startsWith("✓")?C.success:C.warn}}>{resumeMsg}</div>}
     </div>
 
-    {/* Notes / Timeline / Scorecard */}
-    <div style={{background:C.white,border:`1px solid ${C.gray200}`,borderRadius:12,padding:"16px 20px",boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
+    {c.skills?.length>0&&<div style={{marginBottom:16}}>
+      <div style={{color:C.gray400,fontSize:10,fontWeight:600,letterSpacing:0.8,textTransform:"uppercase",marginBottom:7}}>Skills</div>
+      <div style={{display:"flex",flexWrap:"wrap",gap:5}}>{c.skills.map(x=><span key={x} style={{background:C.accentL,color:C.accent,borderRadius:5,padding:"3px 9px",fontSize:11,fontWeight:500}}>{x}</span>)}</div>
+    </div>}
+    <div style={{marginBottom:16}}>
+      <div style={{color:C.gray400,fontSize:10,fontWeight:600,letterSpacing:0.8,textTransform:"uppercase",marginBottom:8}}>Submitted to Roles ({assigned.length})</div>
+      {!assigned.length&&<div style={{color:C.gray300,fontSize:12,padding:"6px 0"}}>Not submitted to any role yet.</div>}
+      {assigned.map(j=><div key={j.id} style={{background:C.gray50,border:`1px solid ${C.gray200}`,borderRadius:8,padding:"10px 13px",marginBottom:6,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+        <div><div style={{color:C.navy,fontSize:13,fontWeight:600}}>{j.title}</div><div style={{color:C.gray400,fontSize:11,marginTop:1}}>{j.client} · {j.location}</div></div>
+        <JobBadge status={j.status}/>
+      </div>)}
+      <select style={{...sel,fontSize:12,marginTop:6}} onChange={e=>{if(e.target.value){onSubmitToJob(c.id,e.target.value);e.target.value="";}}} defaultValue="">
+        <option value="">+ Submit to another role…</option>
+        {jobs.filter(j=>!j.submittedCandidates?.includes(c.id)&&!["Filled","Closed"].includes(j.status)).map(j=><option key={j.id} value={j.id}>{j.title} — {j.client}</option>)}
+      </select>
+    </div>
+    <div>
+      {/* Tab bar */}
       <div style={{display:"flex",gap:0,borderBottom:`2px solid ${C.gray100}`,marginBottom:14}}>
-        {["Notes","Timeline","Scorecard"].map(t=><button key={t} onClick={()=>setDetTab(t)} style={{background:"none",border:"none",borderBottom:`2px solid ${detTab===t?C.accent:"transparent"}`,marginBottom:-2,padding:"8px 16px",fontSize:12,fontWeight:detTab===t?700:500,color:detTab===t?C.accent:C.gray400,cursor:"pointer"}}>
-          {t==="Scorecard"?"📊 Scorecard":t==="Timeline"?"🕐 Timeline":"💬 Notes"}
-          {t==="Notes"&&c.notes?.length?<span style={{background:C.accentL,color:C.accent,borderRadius:8,padding:"1px 6px",fontSize:10,marginLeft:5,fontWeight:700}}>{c.notes.length}</span>:null}
-        </button>)}
+        {["Notes","Timeline","Scorecard"].map(t=><button key={t} onClick={()=>setDetTab(t)} style={{background:"none",border:"none",borderBottom:`2px solid ${detTab===t?C.accent:"transparent"}`,marginBottom:-2,padding:"8px 16px",fontSize:12,fontWeight:detTab===t?700:500,color:detTab===t?C.accent:C.gray400,cursor:"pointer"}}>{t==="Scorecard"?"Scorecard":t==="Timeline"?"Timeline":"Notes"}{t==="Notes"&&c.notes?.length?<span style={{background:C.accentL,color:C.accent,borderRadius:8,padding:"1px 6px",fontSize:10,marginLeft:5,fontWeight:700}}>{c.notes.length}</span>:null}</button>)}
       </div>
+
       {detTab==="Notes"&&<>
         <div style={{maxHeight:200,overflowY:"auto",marginBottom:8,display:"flex",flexDirection:"column",gap:6}}>
           {!c.notes?.length&&<div style={{color:C.gray300,fontSize:12}}>No notes yet.</div>}
@@ -695,7 +654,9 @@ function CandDetail({c,jobs,onEdit,onStageChange,onAddNote,onSubmitToJob,activeU
           <button onClick={post} style={{background:C.navy,color:C.white,border:"none",borderRadius:8,padding:"0 16px",fontSize:12,fontWeight:600,cursor:"pointer",flexShrink:0}}>Post</button>
         </div>
       </>}
+
       {detTab==="Timeline"&&<div style={{maxHeight:320,overflowY:"auto"}}><ActivityTimeline candidateId={c.id}/></div>}
+
       {detTab==="Scorecard"&&<ScorecardPanel candidateId={c.id} jobs={jobs} activeUser={activeUser}/>}
     </div>
   </div>;
@@ -844,7 +805,7 @@ Score 0-100. Consider: title match, skills, seniority, work auth, location, expe
           {job.priority&&<span style={{color:PC[job.priority]||C.gray400,background:(PC[job.priority]||C.gray400)+"15",borderRadius:5,padding:"3px 8px",fontSize:11,fontWeight:700}}>{job.priority}</span>}
         </div>
       </div>
-      <div style={{display:"flex",gap:8,flexShrink:0}}><button onClick={onEdit} style={{background:C.navy,color:C.white,border:"none",borderRadius:8,padding:"8px 16px",fontSize:12,fontWeight:600,cursor:"pointer"}}>✏ Edit</button>{onDelete&&<button onClick={()=>onDelete(job.id)} style={{background:C.dangerL,color:C.danger,border:`1px solid ${C.danger}30`,borderRadius:8,padding:"8px 14px",fontSize:12,fontWeight:600,cursor:"pointer"}}>🗑 Delete</button>}</div>
+      <div style={{display:"flex",gap:8,flexShrink:0}}><button onClick={onEdit} style={{background:C.navy,color:C.white,border:"none",borderRadius:8,padding:"8px 16px",fontSize:12,fontWeight:600,cursor:"pointer"}}>Edit</button>{onDelete&&<button onClick={()=>onDelete(job.id)} style={{background:C.dangerL,color:C.danger,border:`1px solid ${C.danger}30`,borderRadius:8,padding:"8px 14px",fontSize:12,fontWeight:600,cursor:"pointer"}}>Delete</button>}</div>
     </div>
     {(job.assignedRecruiters||[]).length>0&&<div style={{background:C.gray50,border:`1px solid ${C.gray200}`,borderRadius:9,padding:"11px 14px",marginBottom:14}}>
       <div style={{fontSize:10,fontWeight:600,color:C.gray400,letterSpacing:0.8,textTransform:"uppercase",marginBottom:8}}>Assigned Recruiters</div>
@@ -952,7 +913,7 @@ Score 0-100. Consider: title match, skills, seniority, work auth, location, expe
 }
 
 // ── ACTIVITY TIMELINE ─────────────────────────────────────────────
-const ACTIVITY_ICONS={created:"🌟",stage_change:"🔄",note:"💬",email:"📧",resume:"📄",job_submit:"📋",edit:"✏"};
+const ACTIVITY_ICONS={created:"●",stage_change:"→",note:"◆",email:"@",resume:"◇",job_submit:"▸",edit:"✎"};
 const ACTIVITY_COLORS={created:C.success,stage_change:C.accent,note:C.purple,email:C.orange,resume:C.warn,job_submit:C.pink,edit:C.gray400};
 function ActivityTimeline({candidateId}){
   const [items,setItems]=useState([]);
@@ -1051,7 +1012,7 @@ function ScorecardPanel({candidateId,jobs,activeUser}){
             <div style={{textAlign:"right",flexShrink:0}}>
               <div style={{fontSize:11,color:C.gray400}}>{card.recruiter_name}</div>
               <div style={{fontSize:10,color:C.gray300}}>{new Date(card.created_at).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})}</div>
-              <button onClick={()=>del(card.id)} style={{marginTop:4,background:"none",border:"none",color:C.gray300,cursor:"pointer",fontSize:11}}>🗑</button>
+              <button onClick={()=>del(card.id)} style={{marginTop:4,background:"none",border:"none",color:C.gray300,cursor:"pointer",fontSize:11}}>✕</button>
             </div>
           </div>
           {card.strengths&&<div style={{marginBottom:6}}><span style={{fontSize:10,fontWeight:700,color:C.success,textTransform:"uppercase",letterSpacing:0.5}}>Strengths</span><div style={{fontSize:12,color:C.gray600,marginTop:2}}>{card.strengths}</div></div>}
@@ -1163,114 +1124,6 @@ function TeamManager({team,activeUser,onSave,onRefresh}){
   </div>;
 }
 
-// ── DASHBOARD VIEW ────────────────────────────────────────────────
-function DashboardView({cands,jobs,team,onOpenCand,onOpenJob,stats}){
-  const hotCands=cands.filter(c=>["Interview 1","Interview 2","Final Interview","Offer"].includes(c.stage)).slice(0,5);
-  const recentCands=[...cands].sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0)).slice(0,6);
-  const openJobs=jobs.filter(j=>["Open – Sourcing","Active"].includes(j.status)).slice(0,4);
-  const pipelineStages=["Sourced","Submitted","Client Review","Interview 1","Interview 2","Final Interview","Offer","Placed"];
-  const maxVal=Math.max(...pipelineStages.map(s=>cands.filter(c=>c.stage===s).length),1);
-
-  return <div>
-    {/* Stat cards */}
-    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(160px,1fr))",gap:14,marginBottom:28}}>
-      {[
-        {label:"Total Candidates",value:stats.total,accent:C.accent,icon:"👥"},
-        {label:"Active Pipeline",value:stats.active,accent:C.purple,icon:"📋"},
-        {label:"Interview / Offer",value:stats.hot,accent:C.pink,icon:"🔥"},
-        {label:"Placed",value:stats.placed,accent:C.success,icon:"✅"},
-        {label:"Open Roles",value:stats.openJobs,accent:C.warn,icon:"💼"},
-        {label:"Roles Filled",value:stats.filled,accent:C.orange,icon:"🎯"},
-      ].map(({label,value,accent,icon})=>(
-        <div key={label} style={{background:C.white,borderRadius:12,padding:"20px",border:`1px solid ${C.gray200}`,boxShadow:"0 1px 3px rgba(0,0,0,0.05)",position:"relative",overflow:"hidden"}}>
-          <div style={{position:"absolute",top:0,right:0,width:56,height:56,borderRadius:"0 12px 0 56px",background:accent+"12"}}/>
-          <div style={{fontSize:10,fontWeight:600,color:C.gray400,letterSpacing:0.5,textTransform:"uppercase",marginBottom:8}}>{icon} {label}</div>
-          <div style={{fontSize:30,fontWeight:800,color:C.navy,lineHeight:1}}>{value}</div>
-        </div>
-      ))}
-    </div>
-
-    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:20,marginBottom:20}}>
-      {/* Hiring Pipeline chart */}
-      <div style={{background:C.white,borderRadius:14,padding:"22px",border:`1px solid ${C.gray200}`,boxShadow:"0 1px 4px rgba(0,0,0,0.05)"}}>
-        <div style={{fontSize:14,fontWeight:700,color:C.navy,marginBottom:18}}>Hiring Pipeline</div>
-        <div style={{display:"flex",alignItems:"flex-end",gap:8,height:140}}>
-          {pipelineStages.map(s=>{
-            const cnt=cands.filter(c=>c.stage===s).length;
-            const m=SM[s];
-            const h=Math.max((cnt/maxVal)*120,4);
-            return <div key={s} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:6}}>
-              <div style={{fontSize:11,fontWeight:700,color:cnt>0?m.c:C.gray300}}>{cnt||""}</div>
-              <div style={{width:"100%",height:h,borderRadius:"6px 6px 0 0",background:cnt>0?m.c:C.gray200,transition:"height 0.3s",cursor:"pointer"}} title={s}/>
-              <div style={{fontSize:8,color:C.gray400,textAlign:"center",lineHeight:1.2,maxWidth:48}}>{s.replace(" Interview","").replace(" Review","")}</div>
-            </div>;
-          })}
-        </div>
-      </div>
-
-      {/* Recent Activity */}
-      <div style={{background:C.white,borderRadius:14,padding:"22px",border:`1px solid ${C.gray200}`,boxShadow:"0 1px 4px rgba(0,0,0,0.05)"}}>
-        <div style={{fontSize:14,fontWeight:700,color:C.navy,marginBottom:16}}>Recent Candidates</div>
-        <div style={{display:"flex",flexDirection:"column",gap:10}}>
-          {recentCands.length===0&&<div style={{color:C.gray300,fontSize:12}}>No candidates yet.</div>}
-          {recentCands.map(c=>{
-            const owner=getTeamMember(c.ownerId);
-            return <div key={c.id} onClick={()=>onOpenCand(c)} style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer",padding:"6px 8px",borderRadius:8,transition:"background 0.15s"}} onMouseEnter={e=>e.currentTarget.style.background=C.gray50} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
-              <Avatar name={c.name} size={30} color={owner?.color}/>
-              <div style={{flex:1,overflow:"hidden"}}>
-                <div style={{fontSize:12,fontWeight:600,color:C.navy,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{c.name}</div>
-                <div style={{fontSize:10,color:C.gray400}}>{c.title}</div>
-              </div>
-              <StageBadge stage={c.stage}/>
-            </div>;
-          })}
-        </div>
-      </div>
-    </div>
-
-    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:20}}>
-      {/* Hot candidates */}
-      <div style={{background:C.white,borderRadius:14,padding:"22px",border:`1px solid ${C.gray200}`,boxShadow:"0 1px 4px rgba(0,0,0,0.05)"}}>
-        <div style={{fontSize:14,fontWeight:700,color:C.navy,marginBottom:16}}>🔥 Hot Candidates</div>
-        {!hotCands.length&&<div style={{color:C.gray300,fontSize:12}}>No candidates at Interview or Offer stage yet.</div>}
-        {hotCands.map(c=>{
-          const owner=getTeamMember(c.ownerId);
-          return <div key={c.id} onClick={()=>onOpenCand(c)} style={{display:"flex",alignItems:"center",gap:10,padding:"8px",borderRadius:8,cursor:"pointer",marginBottom:6,transition:"background 0.15s"}} onMouseEnter={e=>e.currentTarget.style.background=C.gray50} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
-            <Avatar name={c.name} size={34} color={owner?.color}/>
-            <div style={{flex:1}}>
-              <div style={{fontSize:12,fontWeight:600,color:C.navy}}>{c.name}</div>
-              <div style={{fontSize:10,color:C.gray400}}>{c.title} · {c.salary||"—"}</div>
-            </div>
-            <StageBadge stage={c.stage}/>
-          </div>;
-        })}
-      </div>
-
-      {/* Current Openings */}
-      <div style={{background:C.white,borderRadius:14,padding:"22px",border:`1px solid ${C.gray200}`,boxShadow:"0 1px 4px rgba(0,0,0,0.05)"}}>
-        <div style={{fontSize:14,fontWeight:700,color:C.navy,marginBottom:16}}>Current Openings</div>
-        {!openJobs.length&&<div style={{color:C.gray300,fontSize:12}}>No open roles right now.</div>}
-        {openJobs.map(j=>{
-          const subs=cands.filter(c=>(c.submittedTo||[]).includes(j.id));
-          return <div key={j.id} onClick={()=>onOpenJob(j)} style={{background:C.gray50,border:`1px solid ${C.gray200}`,borderRadius:10,padding:"12px 14px",marginBottom:8,cursor:"pointer",transition:"all 0.15s"}} onMouseEnter={e=>{e.currentTarget.style.borderColor=C.accent;e.currentTarget.style.background=C.accentL+"40";}} onMouseLeave={e=>{e.currentTarget.style.borderColor=C.gray200;e.currentTarget.style.background=C.gray50;}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
-              <div>
-                <div style={{fontSize:13,fontWeight:600,color:C.navy}}>{j.title}</div>
-                <div style={{fontSize:11,color:C.gray400,marginTop:2}}>{j.client} · {j.location||"Remote"}</div>
-              </div>
-              <JobBadge status={j.status}/>
-            </div>
-            <div style={{marginTop:8,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-              <span style={{fontSize:11,color:C.gray400}}>{subs.length} submitted</span>
-              <span style={{fontSize:11,fontWeight:600,color:C.success}}>{j.salary||"—"}</span>
-            </div>
-          </div>;
-        })}
-      </div>
-    </div>
-  </div>;
-}
-
 // ── MAIN APP ──────────────────────────────────────────────────────
 export default function HCPRecruit(){
   const [cands,setCands]=useState([]);
@@ -1280,7 +1133,7 @@ export default function HCPRecruit(){
   const [loading,setLoading]=useState(true);
   const [session,setSession]=useState(null);
   const [authChecked,setAuthChecked]=useState(false);
-  const [tab,setTab]=useState("dashboard");
+  const [tab,setTab]=useState("candidates");
   const [view,setView]=useState("list");
   const [modal,setModal]=useState(null);
   const [cs,setCs]=useState(""); const [cStage,setCStage]=useState("All"); const [cVert,setCVert]=useState("All");
@@ -1331,22 +1184,23 @@ export default function HCPRecruit(){
     return unsub;
   },[session]);
 
-  if(!authChecked) return <div style={{minHeight:"100vh",background:C.navy,display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{color:C.accentL,fontSize:24}}>⚡</div></div>;
+  if(!authChecked) return <div style={{minHeight:"100vh",background:"linear-gradient(135deg, #1A242E 0%, #22313F 40%, #2C3E50 70%, #1A242E 100%)",display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{width:8,height:8,borderRadius:"50%",background:"#FF7A59",animation:"pulse 1.5s ease infinite"}}></div><style>{"@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(1.2)}}"}</style></div>;
   if(!session) return <LoginScreen onLogin={()=>getSession().then(setSession)}/>;
-  if(loading) return <div style={{minHeight:"100vh",width:"100vw",background:`linear-gradient(135deg,${C.navy} 0%,#0d2444 60%,#1e4a8a 100%)`,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'DM Sans',sans-serif"}}>
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Serif+Display&display=swap" rel="stylesheet"/>
-    <div style={{textAlign:"center"}}>
-      <div style={{width:72,height:72,borderRadius:20,background:"linear-gradient(135deg,#2563eb,#1d4ed8)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:34,margin:"0 auto 24px",boxShadow:"0 12px 40px rgba(37,99,235,0.5)"}}>⚡</div>
-      <div style={{fontFamily:"'DM Serif Display',serif",fontSize:36,color:C.white,letterSpacing:-0.5,marginBottom:6}}>HCP One Recruit</div>
-      <div style={{fontSize:13,color:"rgba(255,255,255,0.4)",letterSpacing:1,textTransform:"uppercase",marginBottom:40}}>INXL Digital</div>
+  if(loading) return <div style={{minHeight:"100vh",width:"100vw",background:"linear-gradient(135deg, #1A242E 0%, #22313F 40%, #2C3E50 70%, #1A242E 100%)",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Outfit',sans-serif",position:"relative",overflow:"hidden"}}>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+    <div style={{position:"absolute",top:"-20%",right:"-10%",width:"600px",height:"600px",borderRadius:"50%",background:"radial-gradient(circle, rgba(255,122,89,0.06) 0%, transparent 70%)",pointerEvents:"none"}}/>
+    <div style={{position:"absolute",inset:0,backgroundImage:"radial-gradient(rgba(255,255,255,0.02) 1px, transparent 1px)",backgroundSize:"40px 40px",pointerEvents:"none"}}/>
+    <div style={{textAlign:"center",position:"relative",zIndex:1}}>
+      <img src="/logo-light.png" alt="Talyntry" style={{height:28,margin:"0 auto 24px",display:"block"}} onError={e=>{e.target.style.display="none"}}/>
+      <div style={{fontSize:12,color:"rgba(255,255,255,0.3)",letterSpacing:1.5,textTransform:"uppercase",marginBottom:40}}>Talent Intelligence Platform</div>
       <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
-        <div style={{width:8,height:8,borderRadius:"50%",background:C.accent2,animation:"bounce 1.2s infinite 0s"}}/>
-        <div style={{width:8,height:8,borderRadius:"50%",background:C.accent2,animation:"bounce 1.2s infinite 0.2s"}}/>
-        <div style={{width:8,height:8,borderRadius:"50%",background:C.accent2,animation:"bounce 1.2s infinite 0.4s"}}/>
+        <div style={{width:8,height:8,borderRadius:"50%",background:"#FF7A59",animation:"bounce 1.2s infinite 0s"}}/>
+        <div style={{width:8,height:8,borderRadius:"50%",background:"#FF7A59",animation:"bounce 1.2s infinite 0.2s"}}/>
+        <div style={{width:8,height:8,borderRadius:"50%",background:"#FF7A59",animation:"bounce 1.2s infinite 0.4s"}}/>
       </div>
-      <div style={{color:"rgba(255,255,255,0.3)",fontSize:12,marginTop:20,fontWeight:500}}>Loading your workspace…</div>
+      <div style={{color:"rgba(255,255,255,0.25)",fontSize:12,marginTop:20,fontWeight:500}}>Loading your workspace…</div>
     </div>
-    <style>{`@keyframes bounce{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-10px)}}@keyframes pulse{0%,100%{box-shadow:0 12px 40px rgba(37,99,235,0.5)}50%{box-shadow:0 12px 60px rgba(37,99,235,0.8)}}`}</style>
+    <style>{"@keyframes bounce{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-10px)}}"}</style>
   </div>;
 
   const clients=[...new Set(jobs.map(j=>j.client).filter(Boolean))].sort();
@@ -1418,94 +1272,52 @@ export default function HCPRecruit(){
   };
   const openCand=(c)=>setModal({t:"cand",c});
 
-  return <div style={{minHeight:"100vh",width:"100vw",background:C.gray50,color:C.gray700,fontFamily:"'DM Sans',sans-serif",display:"flex",overflowX:"hidden"}}>
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Serif+Display&display=swap" rel="stylesheet"/>
+  return <div style={{minHeight:"100vh",width:"100vw",background:C.gray50,color:C.gray700,fontFamily:"'Outfit',sans-serif",position:"relative",overflowX:"hidden"}}>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
 
-    {/* SIDEBAR */}
-    <div style={{width:220,flexShrink:0,background:C.navy,minHeight:"100vh",display:"flex",flexDirection:"column",position:"sticky",top:0,height:"100vh",zIndex:100}}>
-      {/* Logo */}
-      <div style={{padding:"22px 20px 18px",borderBottom:"1px solid rgba(255,255,255,0.08)"}}>
+    {/* TOP NAV */}
+    <div style={{background:C.navy,padding:"0 28px",position:"sticky",top:0,zIndex:100,boxShadow:"0 2px 12px rgba(10,22,40,0.18)"}}>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",height:58}}>
         <div style={{display:"flex",alignItems:"center",gap:10}}>
-          <div style={{width:34,height:34,borderRadius:9,background:"linear-gradient(135deg,#2563eb,#1d4ed8)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,boxShadow:"0 4px 12px rgba(37,99,235,0.4)",flexShrink:0}}>⚡</div>
-          <div>
-            <div style={{fontFamily:"'DM Serif Display',serif",fontSize:15,color:C.white,letterSpacing:-0.3,lineHeight:1.2}}>HCP One</div>
-            <div style={{fontSize:9,color:"rgba(255,255,255,0.3)",letterSpacing:0.8,textTransform:"uppercase"}}>Recruit</div>
-          </div>
+          <img src="/logo-light.png" alt="Talyntry" style={{height:24,width:"auto"}}/>
         </div>
-      </div>
-
-      {/* Nav items */}
-      <nav style={{padding:"12px 10px",flex:1}}>
-        {[
-          {id:"dashboard",icon:"▦",label:"Dashboard"},
-          {id:"candidates",icon:"👤",label:"Candidates"},
-          {id:"jobs",icon:"💼",label:"Job Orders"},
-          {id:"report",icon:"📊",label:"Reports"},
-          {id:"team",icon:"👥",label:"Team"},
-        ].map(({id,icon,label})=>{
-          const active=tab===id;
-          return <button key={id} onClick={()=>{if(id==="report")setModal({t:"report"});else if(id==="team")setModal({t:"team"});else setTab(id);}} style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderRadius:9,background:active?"rgba(255,255,255,0.12)":"transparent",color:active?C.white:"rgba(255,255,255,0.45)",border:"none",cursor:"pointer",fontSize:13,fontWeight:active?600:400,marginBottom:2,textAlign:"left",transition:"all 0.15s"}}>
-            <span style={{fontSize:15,width:20,textAlign:"center"}}>{icon}</span>{label}
-          </button>;
-        })}
-
-        <div style={{height:1,background:"rgba(255,255,255,0.07)",margin:"12px 0"}}/>
-        <button onClick={()=>setModal({t:tab==="jobs"?"add-job":"add-cand"})} style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"center",gap:8,padding:"10px 12px",borderRadius:9,background:"#2563eb",color:C.white,border:"none",cursor:"pointer",fontSize:13,fontWeight:600,boxShadow:"0 2px 8px rgba(37,99,235,0.4)"}}>
-          + {tab==="jobs"?"Job Order":"Candidate"}
-        </button>
-      </nav>
-
-      {/* User + signout */}
-      <div style={{padding:"14px 14px",borderTop:"1px solid rgba(255,255,255,0.08)"}}>
-        <div style={{display:"flex",alignItems:"center",gap:9,marginBottom:10}}>
-          <RecruiterBadge id={activeUser.id} size={30}/>
-          <div style={{flex:1,overflow:"hidden"}}>
-            <div style={{fontSize:12,color:C.white,fontWeight:600,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{activeUser.name}</div>
-            <div style={{fontSize:10,color:"rgba(255,255,255,0.35)"}}>{activeUser.role}</div>
-          </div>
+        <div style={{display:"flex",gap:2,background:"rgba(255,255,255,0.07)",borderRadius:9,padding:4}}>
+          {[["candidates","Candidates"],["jobs","Job Orders"]].map(([t,l])=>(
+            <button key={t} onClick={()=>setTab(t)} style={{padding:"6px 18px",background:tab===t?"rgba(255,255,255,0.13)":"transparent",color:tab===t?C.white:"rgba(255,255,255,0.4)",border:"none",cursor:"pointer",fontSize:12,fontWeight:tab===t?600:400,borderRadius:6,transition:"all 0.15s",whiteSpace:"nowrap"}}>{l}</button>
+          ))}
         </div>
-        <div style={{display:"flex",gap:6}}>
-          <button onClick={()=>exportCSV(cands,jobs)} style={{flex:1,background:"rgba(255,255,255,0.07)",color:"rgba(255,255,255,0.4)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:7,padding:"6px 0",fontSize:11,cursor:"pointer",fontWeight:500}}>CSV</button>
-          <button onClick={()=>signOut().then(()=>setSession(null))} style={{flex:1,background:"rgba(255,255,255,0.07)",color:"rgba(255,255,255,0.4)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:7,padding:"6px 0",fontSize:11,cursor:"pointer",fontWeight:500}}>Sign Out</button>
+        <div style={{display:"flex",gap:8,alignItems:"center"}}>
+          {tab==="candidates"&&<div style={{display:"flex",background:"rgba(255,255,255,0.07)",borderRadius:7,padding:3}}>
+            {[["list","List"],["pipeline","Board"]].map(([v,l])=>(
+              <button key={v} onClick={()=>setView(v)} style={{padding:"5px 10px",background:view===v?"rgba(255,255,255,0.12)":"transparent",color:view===v?C.white:"rgba(255,255,255,0.4)",border:"none",cursor:"pointer",fontSize:11,borderRadius:5,fontWeight:view===v?600:400}}>{l}</button>
+            ))}
+          </div>}
+          <button onClick={()=>setModal({t:tab==="candidates"?"add-cand":"add-job"})} style={{background:"#FF7A59",color:"#fff",border:"none",borderRadius:8,padding:"7px 16px",fontSize:12,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap",boxShadow:"0 2px 8px rgba(255,122,89,0.3)"}}>
+            + {tab==="candidates"?"Candidate":"Job Order"}
+          </button>
+          <button onClick={()=>setModal({t:"report"})} style={{background:"rgba(255,255,255,0.08)",color:"rgba(255,255,255,0.65)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:8,padding:"7px 13px",fontSize:12,cursor:"pointer",fontWeight:500}}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 20V10M12 20V4M6 20v-6"/></svg> Report</button>
+          <button onClick={()=>setModal({t:"team"})} style={{background:"rgba(255,255,255,0.08)",color:"rgba(255,255,255,0.65)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:8,padding:"7px 13px",fontSize:12,cursor:"pointer",fontWeight:500}}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> Team</button>
+          <button onClick={()=>exportCSV(cands,jobs)} style={{background:"rgba(255,255,255,0.07)",color:"rgba(255,255,255,0.45)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:8,padding:"7px 11px",fontSize:12,cursor:"pointer"}}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg> CSV</button>
+          <div style={{display:"flex",alignItems:"center",gap:7,background:"rgba(255,255,255,0.07)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:8,padding:"5px 12px"}}>
+            <RecruiterBadge id={activeUser.id} size={22}/>
+            <span style={{fontSize:11,color:"rgba(255,255,255,0.55)",fontWeight:500}}>{activeUser.name}</span>
+            <span onClick={()=>signOut().then(()=>setSession(null))} style={{fontSize:10,color:"rgba(255,255,255,0.25)",cursor:"pointer",marginLeft:2,fontWeight:600,padding:"2px 4px"}} title="Sign out">✕</span>
+          </div>
         </div>
       </div>
     </div>
 
-    {/* MAIN CONTENT */}
-    <div style={{flex:1,minWidth:0,display:"flex",flexDirection:"column"}}>
+    <div style={{padding:"24px 28px",width:"100%",boxSizing:"border-box"}}>
 
-      {/* Top bar */}
-      <div style={{background:C.white,borderBottom:`1px solid ${C.gray200}`,padding:"0 28px",height:58,display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0,boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
-        <div>
-          <div style={{fontSize:16,fontWeight:700,color:C.navy,fontFamily:"'DM Serif Display',serif"}}>{tab==="dashboard"?"Dashboard":tab==="candidates"?"Candidates":tab==="jobs"?"Job Orders":"Dashboard"}</div>
-          <div style={{fontSize:11,color:C.gray400,marginTop:1}}>{tab==="candidates"?`${fCands.length} of ${cands.length} candidates`:tab==="jobs"?`${fJobs.length} open roles`:tab==="dashboard"?`Welcome back, ${activeUser.name.split(" ")[0]}`:""}</div>
-        </div>
-        <div style={{display:"flex",gap:8,alignItems:"center"}}>
-          {tab==="candidates"&&<div style={{display:"flex",background:C.gray100,borderRadius:8,padding:3}}>
-            {[["list","☰"],["pipeline","⬡"]].map(([v,l])=>(
-              <button key={v} onClick={()=>setView(v)} style={{padding:"5px 10px",background:view===v?C.white:"transparent",color:view===v?C.navy:C.gray400,border:"none",cursor:"pointer",fontSize:11,borderRadius:6,fontWeight:view===v?600:400,boxShadow:view===v?"0 1px 3px rgba(0,0,0,0.1)":"none"}}>{l}</button>
-            ))}
-          </div>}
-          <button onClick={()=>setModal({t:tab==="jobs"?"add-job":"add-cand"})} style={{background:C.accent,color:C.white,border:"none",borderRadius:8,padding:"7px 16px",fontSize:12,fontWeight:600,cursor:"pointer",boxShadow:"0 2px 8px rgba(30,86,200,0.3)"}}>
-            + {tab==="jobs"?"Job Order":"Candidate"}
-          </button>
-        </div>
+      {/* STATS */}
+      <div style={{display:"flex",gap:12,marginBottom:24,flexWrap:"wrap"}}>
+        <StatCard label="Total Candidates" value={stats.total}   accent={C.accent}  icon="⬡"/>
+        <StatCard label="Active Pipeline"  value={stats.active}  accent={C.purple}  icon="◈"/>
+        <StatCard label="Interview / Offer" value={stats.hot}    accent={C.pink}    icon="◆"/>
+        <StatCard label="Placed"           value={stats.placed}  accent={C.success} icon="●"/>
+        <StatCard label="Open Roles"       value={stats.openJobs}accent={C.warn}    icon="□"/>
+        <StatCard label="Roles Filled"     value={stats.filled}  accent={C.orange}  icon="◉"/>
       </div>
-
-    <div style={{padding:"24px 28px",flex:1,overflowY:"auto"}}>
-
-      {/* DASHBOARD */}
-      {tab==="dashboard"&&<DashboardView cands={cands} jobs={jobs} team={team} onOpenCand={openCand} onOpenJob={j=>setModal({t:"job",j})} stats={stats}/>}
-
-      {/* STATS — shown on candidates/jobs tabs */}
-      {(tab==="candidates"||tab==="jobs")&&<div style={{display:"flex",gap:12,marginBottom:24,flexWrap:"wrap"}}>
-        <StatCard label="Total Candidates" value={stats.total}   accent={C.accent}  icon="👥"/>
-        <StatCard label="Active Pipeline"  value={stats.active}  accent={C.purple}  icon="📋"/>
-        <StatCard label="Interview / Offer" value={stats.hot}    accent={C.pink}    icon="🔥"/>
-        <StatCard label="Placed"           value={stats.placed}  accent={C.success} icon="✅"/>
-        <StatCard label="Open Roles"       value={stats.openJobs}accent={C.warn}    icon="💼"/>
-        <StatCard label="Roles Filled"     value={stats.filled}  accent={C.orange}  icon="🎯"/>
-      </div>}
 
       {/* CANDIDATES */}
       {tab==="candidates"&&<>
@@ -1513,7 +1325,7 @@ export default function HCPRecruit(){
           {/* Search row */}
           <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
             <div style={{position:"relative",flex:"1 1 200px"}}>
-              <span style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",color:C.gray400,fontSize:13}}>🔍</span>
+              <span style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",color:C.gray400,fontSize:13,display:"flex"}}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></span>
               <input style={{...inp,paddingLeft:32}} value={cs} onChange={e=>setCs(e.target.value)} placeholder="Search name, title, skill, client, work auth, notes…"/>
             </div>
             <button onClick={()=>setCFiltersOpen(p=>!p)} style={{background:cFiltersOpen?C.navy:C.white,color:cFiltersOpen?C.white:C.gray600,border:`1px solid ${cFiltersOpen?C.navy:C.gray300}`,borderRadius:8,padding:"8px 14px",fontSize:12,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:6,flexShrink:0}}>
@@ -1581,7 +1393,7 @@ export default function HCPRecruit(){
             <div>
               <label style={{display:"block",color:C.gray500,fontSize:10,fontWeight:700,letterSpacing:0.6,textTransform:"uppercase",marginBottom:6}}>Resume</label>
               <div style={{display:"flex",flexDirection:"column",gap:4}}>
-                {[["All","All Candidates"],["yes","Has Resume 📄"],["no","No Resume ⚠"]].map(([v,l])=><label key={v} style={{display:"flex",alignItems:"center",gap:7,cursor:"pointer",fontSize:12,color:cHasResume===v?C.navy:C.gray500,fontWeight:cHasResume===v?600:400}}>
+                {[["All","All Candidates"],["yes","Has Resume"],["no","No Resume"]].map(([v,l])=><label key={v} style={{display:"flex",alignItems:"center",gap:7,cursor:"pointer",fontSize:12,color:cHasResume===v?C.navy:C.gray500,fontWeight:cHasResume===v?600:400}}>
                   <input type="radio" name="resume" checked={cHasResume===v} onChange={()=>setCHasResume(v)} style={{accentColor:C.navy}}/>{l}
                 </label>)}
               </div>
@@ -1619,7 +1431,7 @@ export default function HCPRecruit(){
                   <td style={{padding:"13px 16px",whiteSpace:"nowrap"}}>
                     <div style={{display:"flex",gap:6,alignItems:"center"}}>
                       {c.resumePath
-                        ?<span title="Resume on file" style={{fontSize:14}}>📄</span>
+                        ?<span title="Resume on file" style={{fontSize:14,display:"flex"}}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>
                         :<span title="No resume" style={{fontSize:12,color:C.danger,fontWeight:600}}>No CV</span>}
                       <button onClick={e=>{e.stopPropagation();setModal({t:"edit-cand",c});}} style={{background:C.gray100,color:C.gray500,border:`1px solid ${C.gray200}`,borderRadius:6,padding:"4px 10px",fontSize:11,cursor:"pointer",fontWeight:500}}>Edit</button>
                     </div>
@@ -1657,7 +1469,7 @@ export default function HCPRecruit(){
       {tab==="jobs"&&<>
         <div style={{background:C.white,border:`1px solid ${C.gray200}`,borderRadius:12,padding:"14px 16px",marginBottom:16,display:"flex",gap:8,flexWrap:"wrap",alignItems:"center",boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
           <div style={{position:"relative",flex:"1 1 200px"}}>
-            <span style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",color:C.gray400,fontSize:13}}>🔍</span>
+            <span style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",color:C.gray400,fontSize:13,display:"flex"}}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></span>
             <input style={{...inp,paddingLeft:32}} value={js} onChange={e=>setJs(e.target.value)} placeholder="Search role, client, SPOC…"/>
           </div>
           <select style={{...sel,flex:"0 0 155px"}} value={jStat} onChange={e=>setJStat(e.target.value)}><option value="All">All Statuses</option>{JOB_STATUSES.map(s=><option key={s}>{s}</option>)}</select>
@@ -1698,7 +1510,6 @@ export default function HCPRecruit(){
           {!fJobs.length&&<div style={{gridColumn:"1/-1",textAlign:"center",padding:48,color:C.gray300,fontSize:13}}>No job orders match your filters.</div>}
         </div>
       </>}
-    </div>
     </div>
 
     {/* MODALS */}
