@@ -208,31 +208,35 @@ function LoginScreen({onLogin}){
     catch{setError("Invalid email or password.");}
     setLoading(false);
   };
-  return <div style={{minHeight:"100vh",width:"100vw",background:`linear-gradient(135deg,${C.navy} 0%,${C.navy3} 60%,#1e4a8a 100%)`,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'DM Sans',sans-serif",padding:20}}>
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Serif+Display&display=swap" rel="stylesheet"/>
-    <div style={{width:"100%",maxWidth:440}}>
-      <div style={{textAlign:"center",marginBottom:40}}>
-        <div style={{width:60,height:60,borderRadius:16,background:"linear-gradient(135deg,#2563eb,#1d4ed8)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,margin:"0 auto 18px",boxShadow:"0 8px 32px rgba(37,99,235,0.45)"}}>⚡</div>
-        <div style={{fontFamily:"'DM Serif Display',serif",fontSize:32,color:C.white,letterSpacing:-0.5,marginBottom:8}}>HCP One Recruit</div>
-        <div style={{fontSize:14,color:"rgba(255,255,255,0.45)"}}>INXL Digital · Recruitment Platform</div>
+  const T={primary:"#22313F",accent:"#FF7A59",surface:"#FFF8F4",ink:"#1A242E",muted:"#E9E5E0",accentHover:"#E8674A",accentLight:"#FFF0EB"};
+  return <div style={{minHeight:"100vh",width:"100vw",background:`linear-gradient(135deg, ${T.ink} 0%, ${T.primary} 40%, #2C3E50 70%, #1A242E 100%)`,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Outfit',sans-serif",padding:20,position:"relative",overflow:"hidden"}}>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+    {/* Ambient glow effects */}
+    <div style={{position:"absolute",top:"-20%",right:"-10%",width:"600px",height:"600px",borderRadius:"50%",background:"radial-gradient(circle, rgba(255,122,89,0.08) 0%, transparent 70%)",pointerEvents:"none"}}/>
+    <div style={{position:"absolute",bottom:"-20%",left:"-10%",width:"500px",height:"500px",borderRadius:"50%",background:"radial-gradient(circle, rgba(255,122,89,0.05) 0%, transparent 70%)",pointerEvents:"none"}}/>
+    {/* Subtle grid pattern */}
+    <div style={{position:"absolute",inset:0,backgroundImage:"radial-gradient(rgba(255,255,255,0.03) 1px, transparent 1px)",backgroundSize:"40px 40px",pointerEvents:"none"}}/>
+    <div style={{width:"100%",maxWidth:420,position:"relative",zIndex:1}}>
+      <div style={{textAlign:"center",marginBottom:36}}>
+        <img src="/logo-light.png" alt="Talyntry" style={{height:32,marginBottom:20,filter:"brightness(10)"}} onError={e=>{e.target.style.display="none"}}/>
+        <div style={{fontFamily:"'DM Serif Display',serif",fontSize:36,color:"#fff",letterSpacing:-1,lineHeight:1.1,marginBottom:10}}>Welcome back</div>
+        <div style={{fontSize:14,color:"rgba(255,255,255,0.35)",fontWeight:400}}>Sign in to your Talyntry account</div>
       </div>
-      <div style={{background:"rgba(255,255,255,0.97)",borderRadius:20,padding:"36px",boxShadow:"0 32px 80px rgba(0,0,0,0.25)"}}>
-        <div style={{fontSize:20,fontWeight:700,color:C.navy,marginBottom:4}}>Welcome back</div>
-        <div style={{fontSize:13,color:C.gray400,marginBottom:28}}>Sign in to your account to continue</div>
-        {error&&<div style={{background:C.dangerL,border:`1px solid ${C.danger}30`,borderRadius:8,padding:"10px 13px",marginBottom:18,color:C.danger,fontSize:13}}>{error}</div>}
-        <div style={{marginBottom:18}}>
-          <label style={{display:"block",color:C.gray600,fontSize:12,fontWeight:600,marginBottom:6}}>Email address</label>
-          <input style={{...inp,padding:"11px 14px",fontSize:14}} value={email} onChange={e=>setEmail(e.target.value)} onKeyDown={e=>e.key==="Enter"&&submit()} placeholder="you@hcpone.com" type="email" autoFocus/>
+      <div style={{background:"rgba(255,248,244,0.97)",borderRadius:20,padding:"40px 36px",boxShadow:"0 32px 80px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.05)",backdropFilter:"blur(20px)"}}>
+        {error&&<div style={{background:"#FEE2E2",border:"1px solid rgba(220,38,38,0.2)",borderRadius:10,padding:"11px 14px",marginBottom:20,color:"#DC2626",fontSize:13,fontWeight:500}}>{error}</div>}
+        <div style={{marginBottom:20}}>
+          <label style={{display:"block",color:T.primary,fontSize:11,fontWeight:600,marginBottom:7,textTransform:"uppercase",letterSpacing:"0.5px"}}>Email address</label>
+          <input style={{width:"100%",background:"#fff",border:`1.5px solid ${T.muted}`,borderRadius:10,padding:"13px 16px",color:T.ink,fontSize:14,outline:"none",boxSizing:"border-box",fontFamily:"inherit",transition:"border-color 0.2s"}} value={email} onChange={e=>setEmail(e.target.value)} onKeyDown={e=>e.key==="Enter"&&submit()} onFocus={e=>e.target.style.borderColor=T.accent} onBlur={e=>e.target.style.borderColor=T.muted} placeholder="you@company.com" type="email" autoFocus/>
         </div>
         <div style={{marginBottom:28}}>
-          <label style={{display:"block",color:C.gray600,fontSize:12,fontWeight:600,marginBottom:6}}>Password</label>
-          <input style={{...inp,padding:"11px 14px",fontSize:14}} value={password} onChange={e=>setPassword(e.target.value)} onKeyDown={e=>e.key==="Enter"&&submit()} placeholder="••••••••" type="password"/>
+          <label style={{display:"block",color:T.primary,fontSize:11,fontWeight:600,marginBottom:7,textTransform:"uppercase",letterSpacing:"0.5px"}}>Password</label>
+          <input style={{width:"100%",background:"#fff",border:`1.5px solid ${T.muted}`,borderRadius:10,padding:"13px 16px",color:T.ink,fontSize:14,outline:"none",boxSizing:"border-box",fontFamily:"inherit",transition:"border-color 0.2s"}} value={password} onChange={e=>setPassword(e.target.value)} onKeyDown={e=>e.key==="Enter"&&submit()} onFocus={e=>e.target.style.borderColor=T.accent} onBlur={e=>e.target.style.borderColor=T.muted} placeholder="••••••••" type="password"/>
         </div>
-        <button onClick={submit} disabled={loading} style={{width:"100%",background:`linear-gradient(135deg,${C.accent2},${C.accent})`,color:C.white,border:"none",borderRadius:10,padding:"14px",fontSize:15,fontWeight:700,cursor:loading?"not-allowed":"pointer",opacity:loading?0.7:1,fontFamily:"'DM Sans',sans-serif",boxShadow:"0 4px 16px rgba(37,99,235,0.3)"}}>
-          {loading?"Signing in…":"Sign In →"}
+        <button onClick={submit} disabled={loading} onMouseEnter={e=>{if(!loading)e.target.style.background=T.accentHover;e.target.style.transform="translateY(-1px)";e.target.style.boxShadow="0 8px 28px rgba(255,122,89,0.4)"}} onMouseLeave={e=>{e.target.style.background=T.accent;e.target.style.transform="translateY(0)";e.target.style.boxShadow="0 4px 20px rgba(255,122,89,0.3)"}} style={{width:"100%",background:T.accent,color:"#fff",border:"none",borderRadius:10,padding:"14px",fontSize:15,fontWeight:700,cursor:loading?"not-allowed":"pointer",opacity:loading?0.7:1,fontFamily:"'Outfit',sans-serif",boxShadow:"0 4px 20px rgba(255,122,89,0.3)",transition:"all 0.25s cubic-bezier(0.16,1,0.3,1)",letterSpacing:"-0.01em"}}>
+          {loading?"Signing in…":"Sign In"}
         </button>
       </div>
-      <div style={{textAlign:"center",marginTop:20,fontSize:12,color:"rgba(255,255,255,0.25)"}}>HCP One Recruit · INXL Digital</div>
+      <div style={{textAlign:"center",marginTop:24,fontSize:12,color:"rgba(255,255,255,0.18)",letterSpacing:"0.3px"}}>Talyntry · INXL Digital</div>
     </div>
   </div>;
 }
