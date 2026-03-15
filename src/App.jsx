@@ -1355,7 +1355,7 @@ export default function HCPRecruit(){
     {id:"report",label:"Reports",icon:IC.report,action:()=>setModal({t:"report"})},
   ];
 
-  return <div style={{display:"flex",minHeight:"100vh",fontFamily:"'Outfit',sans-serif",background:B.surface}}>
+  return <div style={{minHeight:"100vh",fontFamily:"'Outfit',sans-serif",background:B.surface}}>
     <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
 
     {/* ═══ SIDEBAR ═══ */}
@@ -1401,7 +1401,7 @@ export default function HCPRecruit(){
     </div>
 
     {/* ═══ MAIN CONTENT ═══ */}
-    <div style={{flex:1,marginLeft:sW,transition:"margin-left 0.2s ease",minWidth:0}}>
+    <div style={{flex:1,marginLeft:sW,transition:"margin-left 0.2s ease"}}>
       {/* Top bar */}
       <div style={{background:"#fff",borderBottom:`1px solid ${B.muted}`,padding:"0 28px",position:"sticky",top:0,zIndex:40,display:"flex",alignItems:"center",justifyContent:"space-between",height:56}}>
         <div style={{fontSize:18,fontWeight:700,color:B.ink,textTransform:"capitalize"}}>{page}</div>
