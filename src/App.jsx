@@ -1313,7 +1313,7 @@ export default function HCPRecruit(){
 
   // Auth check
   if(!authChecked) return <div style={{minHeight:"100vh",background:`linear-gradient(135deg, ${B.ink} 0%, ${B.primary} 40%, #2C3E50 100%)`,display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{width:8,height:8,borderRadius:"50%",background:B.accent,animation:"pulse 1.5s ease infinite"}}></div><style>{"@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(1.2)}}"}</style></div>;
-  if(!session) return <LoginScreen onLogin={()=>getSession().then(setSession)}/>;
+  if(!session) return <LoginScreen onLogin={()=>getSession().then(s=>{setSession(s);window.history.replaceState(null,"","/");})}/>;
 
   // Loading
   if(loading) return <div style={{minHeight:"100vh",width:"100vw",background:`linear-gradient(135deg, ${B.ink} 0%, ${B.primary} 40%, #2C3E50 100%)`,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Outfit',sans-serif",position:"relative",overflow:"hidden"}}>
