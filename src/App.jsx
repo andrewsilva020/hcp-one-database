@@ -1204,11 +1204,19 @@ function DashboardHome({cands,jobs,team,onOpenCand,onOpenJob,setPage}){
       <div style={{background:"#fff",border:`1px solid ${B.muted}`,borderRadius:16,padding:"24px 28px"}}>
         <div style={{fontSize:16,fontWeight:700,color:B.ink,marginBottom:20}}>Recent Activity</div>
         <div style={{display:"flex",flexDirection:"column",gap:0,maxHeight:320,overflowY:"auto"}}>
-          {recentActs.map((a,i)=>{const ac=ACTIVITY_COLORS[a.type]||B.accent;const timeAgo=(()=>{const diff=Date.now()-new Date(a.created_at).getTime();const mins=Math.floor(diff/60000);if(mins<1)return "just now";if(mins<60)return mins+"m ago";const hrs=Math.floor(mins/60);if(hrs<24)return hrs+"h ago";const days=Math.floor(hrs/24);return days+"d ago";})();
-            return <div key={a.id||i} style={{display:"flex",alignItems:"flex-start",gap:12,padding:"10px 0",borderBottom:i<recentActs.length-1?`1px solid ${B.muted}`:"none"}}>
+          {recentActs.map((a,i)=>{const ac=ACTIVITY_COLORS[a.type]||B.accent;const cand=cands.find(x=>x.id===a.candidate_id);const candName=cand?.name||"Unknown";const timeAgo=(()=>{const diff=Date.now()-new Date(a.created_at).getTime();const mins=Math.floor(diff/60000);if(mins<1)return "just now";if(mins<60)return mins+"m ago";const hrs=Math.floor(mins/60);if(hrs<24)return hrs+"h ago";const days=Math.floor(hrs/24);return days+"d ago";})();
+            let desc="";
+            if(a.type==="stage_change")desc=a.detail;
+            else if(a.type==="note")desc=`Note by ${a.actor_name}: "${a.detail?.slice(0,80)}${a.detail?.length>80?"…":""}"`;
+            else if(a.type==="created")desc=`added to system`;
+            else if(a.type==="resume")desc=`Resume uploaded by ${a.actor_name}`;
+            else if(a.type==="job_submit")desc=a.detail;
+            else if(a.type==="edit")desc=`Profile updated by ${a.actor_name}`;
+            else desc=a.detail||"Activity logged";
+            return <div key={a.id||i} onClick={()=>{if(cand)onOpenCand(cand);}} style={{display:"flex",alignItems:"flex-start",gap:12,padding:"10px 0",borderBottom:i<recentActs.length-1?`1px solid ${B.muted}`:"none",cursor:cand?"pointer":"default"}} onMouseEnter={e=>{if(cand)e.currentTarget.style.background=B.surface;}} onMouseLeave={e=>{e.currentTarget.style.background="transparent";}}>
               <div style={{width:8,height:8,borderRadius:"50%",background:ac,flexShrink:0,marginTop:5}}/>
               <div style={{flex:1,minWidth:0}}>
-                <div style={{fontSize:13,color:B.ink,lineHeight:1.4}}><strong>{a.actor_name}</strong> {a.detail}</div>
+                <div style={{fontSize:13,color:B.ink,lineHeight:1.4}}><strong>{candName}</strong> — {desc}</div>
               </div>
               <div style={{fontSize:11,color:"#A09A93",flexShrink:0,whiteSpace:"nowrap"}}>{timeAgo}</div>
             </div>;
