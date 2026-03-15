@@ -218,7 +218,7 @@ function LoginScreen({onLogin}){
     <div style={{position:"absolute",inset:0,backgroundImage:"radial-gradient(rgba(255,255,255,0.03) 1px, transparent 1px)",backgroundSize:"40px 40px",pointerEvents:"none"}}/>
     <div style={{width:"100%",maxWidth:420,position:"relative",zIndex:1}}>
       <div style={{textAlign:"center",marginBottom:36}}>
-        <img src="/logo-light.png" alt="Talyntry" style={{height:32,marginBottom:20,filter:"brightness(10)"}} onError={e=>{e.target.style.display="none"}}/>
+        <div style={{marginBottom:20}}><img src="/favicon.ico" alt="Talyntry" style={{height:40,width:40,borderRadius:10}} onError={e=>{e.target.style.display="none"}}/></div>
         <div style={{fontFamily:"'DM Serif Display',serif",fontSize:36,color:"#fff",letterSpacing:-1,lineHeight:1.1,marginBottom:10}}>Welcome back</div>
         <div style={{fontSize:14,color:"rgba(255,255,255,0.35)",fontWeight:400}}>Sign in to your Talyntry account</div>
       </div>
@@ -251,8 +251,8 @@ function WeeklyReport({cands,jobs,team=TEAM_FALLBACK}){
     const hotRows=r.hotCands.map(c=>{const o=getTeamMember(c.ownerId);return `<tr><td>${c.name}</td><td>${c.title}</td><td>${c.stage}</td><td>${c.salary||"—"}</td><td>${o?.name||"—"}</td></tr>`;}).join("");
     const jobRows=r.openJobs.map(j=>`<tr><td>${j.title}</td><td>${j.client}</td><td>${j.salary||"—"}</td><td>${j.status}</td><td>${(j.submittedCandidates||[]).length}</td></tr>`).join("");
     const clientRows=Object.entries(r.byClient).filter(([,c])=>c.length>0).map(([client,cs])=>`<tr><td><b>${client}</b></td><td>${cs.length}</td><td>${cs.filter(c=>["Interview 1","Interview 2","Final Interview"].includes(c.stage)).length}</td><td>${cs.filter(c=>c.stage==="Offer").length}</td><td>${cs.filter(c=>c.stage==="Placed").length}</td></tr>`).join("");
-    w.document.write(`<!DOCTYPE html><html><head><title>HCP One Weekly Report</title><style>body{font-family:'DM Sans',Arial,sans-serif;padding:40px;color:#0a1628;max-width:960px;margin:0 auto}h1{color:#1e56c8;font-size:22px;border-bottom:3px solid #1e56c8;padding-bottom:10px}h2{color:#1e56c8;margin-top:32px;font-size:13px;text-transform:uppercase;letter-spacing:1px}table{width:100%;border-collapse:collapse;margin-top:12px;font-size:12px}th{background:#0a1628;color:white;padding:9px 12px;text-align:left}td{padding:8px 12px;border-bottom:1px solid #e2e8f0}.summary{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:20px 0}.card{background:#f1f5f9;border-radius:10px;padding:16px;text-align:center}.num{font-size:28px;font-weight:800;color:#1e56c8}.lbl{font-size:11px;color:#64748b;margin-top:3px}@media print{button{display:none}}</style></head><body>
-    <h1>⚡ HCP One Weekly Activity Report</h1>
+    w.document.write(`<!DOCTYPE html><html><head><title>Talyntry Weekly Report</title><style>body{font-family:'DM Sans',Arial,sans-serif;padding:40px;color:#0a1628;max-width:960px;margin:0 auto}h1{color:#22313F;font-size:22px;border-bottom:3px solid #FF7A59;padding-bottom:10px}h2{color:#22313F;margin-top:32px;font-size:13px;text-transform:uppercase;letter-spacing:1px}table{width:100%;border-collapse:collapse;margin-top:12px;font-size:12px}th{background:#0a1628;color:white;padding:9px 12px;text-align:left}td{padding:8px 12px;border-bottom:1px solid #e2e8f0}.summary{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:20px 0}.card{background:#f1f5f9;border-radius:10px;padding:16px;text-align:center}.num{font-size:28px;font-weight:800;color:#FF7A59}.lbl{font-size:11px;color:#64748b;margin-top:3px}@media print{button{display:none}}</style></head><body>
+    <h1>Talyntry Weekly Activity Report</h1>
     <p style="color:#64748b">Week of ${r.ws} – ${r.we} · Generated ${today()} · ${filterR==="all"?"All Recruiters":getTeamMember(filterR)?.name}</p>
     <div class="summary"><div class="card"><div class="num">${r.total}</div><div class="lbl">Total Candidates</div></div><div class="card"><div class="num">${r.active.length}</div><div class="lbl">Active Pipeline</div></div><div class="card"><div class="num">${r.hotCands.length}</div><div class="lbl">Interview / Offer</div></div><div class="card"><div class="num">${r.openJobs.length}</div><div class="lbl">Open Job Orders</div></div></div>
     <h2>Pipeline by Stage</h2><table><tr>${STAGES.map(s=>`<th>${s}</th>`).join("")}</tr><tr>${STAGES.map(s=>`<td>${r.byStage[s]?.length||0}</td>`).join("")}</tr></table>
@@ -275,7 +275,7 @@ function WeeklyReport({cands,jobs,team=TEAM_FALLBACK}){
       <button onClick={printReport} style={{background:C.navy,color:C.white,border:"none",borderRadius:8,padding:"9px 18px",fontSize:12,fontWeight:600,cursor:"pointer"}}>🖨 Print / Export PDF</button>
     </div>
     <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:22}}>
-      {[[r.total,"Total Candidates",C.accent,"👥"],[r.active.length,"Active Pipeline",C.purple,"📋"],[r.hotCands.length,"Interview / Offer",C.pink,"🔥"],[r.openJobs.length,"Open Roles",C.success,"💼"]].map(([v,l,c,ic])=>(
+      {[[r.total,"Total Candidates",C.accent,"⬡"],[r.active.length,"Active Pipeline",C.purple,"◈"],[r.hotCands.length,"Interview / Offer",C.pink,"◆"],[r.openJobs.length,"Open Roles",C.success,"□"]].map(([v,l,c,ic])=>(
         <div key={l} style={{background:C.gray50,border:`1px solid ${C.gray200}`,borderRadius:10,padding:"16px",textAlign:"center"}}>
           <div style={{fontSize:11,color:C.gray400,marginBottom:6}}>{ic} {l}</div>
           <div style={{fontSize:30,fontWeight:800,color:c,fontFamily:"'DM Sans',sans-serif"}}>{v}</div>
@@ -292,7 +292,7 @@ function WeeklyReport({cands,jobs,team=TEAM_FALLBACK}){
       </div>
     </div>
     {r.hotCands.length>0&&<div style={{marginBottom:20}}>
-      <div style={{fontSize:11,fontWeight:600,color:C.gray500,letterSpacing:0.5,textTransform:"uppercase",marginBottom:10}}>🔥 Hot Candidates</div>
+      <div style={{fontSize:11,fontWeight:600,color:C.gray500,letterSpacing:0.5,textTransform:"uppercase",marginBottom:10}}>Hot Candidates</div>
       {r.hotCands.map(c=>{const o=getTeamMember(c.ownerId);return <div key={c.id} style={{background:C.gray50,border:`1px solid ${C.gray200}`,borderRadius:9,padding:"11px 14px",display:"flex",alignItems:"center",gap:10,marginBottom:6}}>
         <Avatar name={c.name} size={32} color={o?.color}/>
         <div style={{flex:1}}><div style={{color:C.navy,fontSize:13,fontWeight:600}}>{c.name}</div><div style={{color:C.gray400,fontSize:11}}>{c.title}</div></div>
@@ -421,7 +421,7 @@ function CandForm({initial,allCandidates,onSave,onClose,activeUser=TEAM_FALLBACK
       onMouseEnter={e=>{e.currentTarget.style.borderColor=C.accent;e.currentTarget.style.background=C.accentL;}}
       onMouseLeave={e=>{e.currentTarget.style.borderColor=C.gray300;e.currentTarget.style.background=C.gray50;}}>
       <input ref={fr} type="file" accept=".pdf,.doc,.docx,.txt" style={{display:"none"}} onChange={handleFile}/>
-      <div style={{fontSize:20,marginBottom:4}}>{parsing?"⏳":"📄"}</div>
+      <div style={{fontSize:20,marginBottom:4}}>{parsing?"...":"◇"}</div>
       <div style={{color:C.gray500,fontSize:12,fontWeight:500}}>{parsing?"Parsing…":"Upload Resume — AI Auto-Fill"}</div>
       {pMsg&&<div style={{marginTop:6,fontSize:11,fontWeight:600,color:pMsg.startsWith("✓")?C.success:pMsg.startsWith("⚠")?C.warn:C.accent}}>{pMsg}</div>}
     </div>
@@ -529,7 +529,7 @@ function CandDetail({c,jobs,onEdit,onStageChange,onAddNote,onSubmitToJob,activeU
           {c.vertical&&<Tag label={c.vertical} color={C.purple} bg={C.purpleL}/>}
         </div>
       </div>
-      <div style={{display:"flex",gap:8,flexShrink:0}}><button onClick={onEdit} style={{background:C.navy,color:C.white,border:"none",borderRadius:8,padding:"8px 16px",fontSize:12,fontWeight:600,cursor:"pointer"}}>✏ Edit</button>{onDelete&&<button onClick={()=>onDelete(c.id)} style={{background:C.dangerL,color:C.danger,border:`1px solid ${C.danger}30`,borderRadius:8,padding:"8px 14px",fontSize:12,fontWeight:600,cursor:"pointer"}}>🗑 Delete</button>}</div>
+      <div style={{display:"flex",gap:8,flexShrink:0}}><button onClick={onEdit} style={{background:C.navy,color:C.white,border:"none",borderRadius:8,padding:"8px 16px",fontSize:12,fontWeight:600,cursor:"pointer"}}>Edit</button>{onDelete&&<button onClick={()=>onDelete(c.id)} style={{background:C.dangerL,color:C.danger,border:`1px solid ${C.danger}30`,borderRadius:8,padding:"8px 14px",fontSize:12,fontWeight:600,cursor:"pointer"}}>Delete</button>}</div>
     </div>
     <div style={{background:owner?owner.color+"08":C.gray50,border:`1px solid ${owner?owner.color+"30":C.gray200}`,borderRadius:10,padding:"14px 16px",marginBottom:18}}>
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:12}}>
@@ -573,7 +573,7 @@ function CandDetail({c,jobs,onEdit,onStageChange,onAddNote,onSubmitToJob,activeU
         <div key={k} style={{background:C.gray50,border:`1px solid ${C.gray200}`,borderRadius:8,padding:"10px 12px"}}>
           <div style={{color:C.gray400,fontSize:10,textTransform:"uppercase",letterSpacing:0.5,fontWeight:600,marginBottom:3}}>{k}</div>
           {k==="Email"&&v
-            ?<a href={`mailto:${v}?subject=${encodeURIComponent(`Exciting Opportunity – ${c.title||"Role"}`)}&body=${encodeURIComponent(`Hi ${c.name?.split(" ")[0]||""},\n\nI hope you're doing well! I wanted to reach out regarding an exciting opportunity that I believe would be a great fit for your background.\n\nWould you be open to a quick call this week?\n\nBest regards,\n${activeUser.name}`)}`} onClick={()=>onAddNote&&onAddNote(c.id,`📧 Email sent to ${v}`)} style={{color:C.accent,fontSize:12,fontWeight:500,textDecoration:"none",wordBreak:"break-all"}}>{v} ✉</a>
+            ?<a href={`mailto:${v}?subject=${encodeURIComponent(`Exciting Opportunity – ${c.title||"Role"}`)}&body=${encodeURIComponent(`Hi ${c.name?.split(" ")[0]||""},\n\nI hope you're doing well! I wanted to reach out regarding an exciting opportunity that I believe would be a great fit for your background.\n\nWould you be open to a quick call this week?\n\nBest regards,\n${activeUser.name}`)}`} onClick={()=>onAddNote&&onAddNote(c.id,`Email sent to ${v}`)} style={{color:C.accent,fontSize:12,fontWeight:500,textDecoration:"none",wordBreak:"break-all"}}>{v} ✉</a>
             :<div style={{color:v?C.navy:C.gray300,fontSize:12,fontWeight:500,wordBreak:"break-all"}}>{v||"—"}</div>}
         </div>
       ))}
@@ -584,7 +584,7 @@ function CandDetail({c,jobs,onEdit,onStageChange,onAddNote,onSubmitToJob,activeU
       <div style={{color:C.gray400,fontSize:10,fontWeight:600,letterSpacing:0.8,textTransform:"uppercase",marginBottom:8}}>Resume</div>
       {c.resumePath?(
         <div style={{background:C.successL,border:`1px solid ${C.success}30`,borderRadius:9,padding:"11px 14px",display:"flex",alignItems:"center",gap:10}}>
-          <span style={{fontSize:18}}>📄</span>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
           <div style={{flex:1}}>
             <div style={{color:C.success,fontSize:12,fontWeight:600}}>Resume on file</div>
             <div style={{color:C.gray400,fontSize:11}}>Uploaded</div>
@@ -629,7 +629,7 @@ function CandDetail({c,jobs,onEdit,onStageChange,onAddNote,onSubmitToJob,activeU
     <div>
       {/* Tab bar */}
       <div style={{display:"flex",gap:0,borderBottom:`2px solid ${C.gray100}`,marginBottom:14}}>
-        {["Notes","Timeline","Scorecard"].map(t=><button key={t} onClick={()=>setDetTab(t)} style={{background:"none",border:"none",borderBottom:`2px solid ${detTab===t?C.accent:"transparent"}`,marginBottom:-2,padding:"8px 16px",fontSize:12,fontWeight:detTab===t?700:500,color:detTab===t?C.accent:C.gray400,cursor:"pointer"}}>{t==="Scorecard"?"📊 Scorecard":t==="Timeline"?"🕐 Timeline":"💬 Notes"}{t==="Notes"&&c.notes?.length?<span style={{background:C.accentL,color:C.accent,borderRadius:8,padding:"1px 6px",fontSize:10,marginLeft:5,fontWeight:700}}>{c.notes.length}</span>:null}</button>)}
+        {["Notes","Timeline","Scorecard"].map(t=><button key={t} onClick={()=>setDetTab(t)} style={{background:"none",border:"none",borderBottom:`2px solid ${detTab===t?C.accent:"transparent"}`,marginBottom:-2,padding:"8px 16px",fontSize:12,fontWeight:detTab===t?700:500,color:detTab===t?C.accent:C.gray400,cursor:"pointer"}}>{t==="Scorecard"?"Scorecard":t==="Timeline"?"Timeline":"Notes"}{t==="Notes"&&c.notes?.length?<span style={{background:C.accentL,color:C.accent,borderRadius:8,padding:"1px 6px",fontSize:10,marginLeft:5,fontWeight:700}}>{c.notes.length}</span>:null}</button>)}
       </div>
 
       {detTab==="Notes"&&<>
@@ -805,7 +805,7 @@ Score 0-100. Consider: title match, skills, seniority, work auth, location, expe
           {job.priority&&<span style={{color:PC[job.priority]||C.gray400,background:(PC[job.priority]||C.gray400)+"15",borderRadius:5,padding:"3px 8px",fontSize:11,fontWeight:700}}>{job.priority}</span>}
         </div>
       </div>
-      <div style={{display:"flex",gap:8,flexShrink:0}}><button onClick={onEdit} style={{background:C.navy,color:C.white,border:"none",borderRadius:8,padding:"8px 16px",fontSize:12,fontWeight:600,cursor:"pointer"}}>✏ Edit</button>{onDelete&&<button onClick={()=>onDelete(job.id)} style={{background:C.dangerL,color:C.danger,border:`1px solid ${C.danger}30`,borderRadius:8,padding:"8px 14px",fontSize:12,fontWeight:600,cursor:"pointer"}}>🗑 Delete</button>}</div>
+      <div style={{display:"flex",gap:8,flexShrink:0}}><button onClick={onEdit} style={{background:C.navy,color:C.white,border:"none",borderRadius:8,padding:"8px 16px",fontSize:12,fontWeight:600,cursor:"pointer"}}>Edit</button>{onDelete&&<button onClick={()=>onDelete(job.id)} style={{background:C.dangerL,color:C.danger,border:`1px solid ${C.danger}30`,borderRadius:8,padding:"8px 14px",fontSize:12,fontWeight:600,cursor:"pointer"}}>Delete</button>}</div>
     </div>
     {(job.assignedRecruiters||[]).length>0&&<div style={{background:C.gray50,border:`1px solid ${C.gray200}`,borderRadius:9,padding:"11px 14px",marginBottom:14}}>
       <div style={{fontSize:10,fontWeight:600,color:C.gray400,letterSpacing:0.8,textTransform:"uppercase",marginBottom:8}}>Assigned Recruiters</div>
@@ -913,7 +913,7 @@ Score 0-100. Consider: title match, skills, seniority, work auth, location, expe
 }
 
 // ── ACTIVITY TIMELINE ─────────────────────────────────────────────
-const ACTIVITY_ICONS={created:"🌟",stage_change:"🔄",note:"💬",email:"📧",resume:"📄",job_submit:"📋",edit:"✏"};
+const ACTIVITY_ICONS={created:"●",stage_change:"→",note:"◆",email:"@",resume:"◇",job_submit:"▸",edit:"✎"};
 const ACTIVITY_COLORS={created:C.success,stage_change:C.accent,note:C.purple,email:C.orange,resume:C.warn,job_submit:C.pink,edit:C.gray400};
 function ActivityTimeline({candidateId}){
   const [items,setItems]=useState([]);
@@ -1012,7 +1012,7 @@ function ScorecardPanel({candidateId,jobs,activeUser}){
             <div style={{textAlign:"right",flexShrink:0}}>
               <div style={{fontSize:11,color:C.gray400}}>{card.recruiter_name}</div>
               <div style={{fontSize:10,color:C.gray300}}>{new Date(card.created_at).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})}</div>
-              <button onClick={()=>del(card.id)} style={{marginTop:4,background:"none",border:"none",color:C.gray300,cursor:"pointer",fontSize:11}}>🗑</button>
+              <button onClick={()=>del(card.id)} style={{marginTop:4,background:"none",border:"none",color:C.gray300,cursor:"pointer",fontSize:11}}>✕</button>
             </div>
           </div>
           {card.strengths&&<div style={{marginBottom:6}}><span style={{fontSize:10,fontWeight:700,color:C.success,textTransform:"uppercase",letterSpacing:0.5}}>Strengths</span><div style={{fontSize:12,color:C.gray600,marginTop:2}}>{card.strengths}</div></div>}
@@ -1184,22 +1184,24 @@ export default function HCPRecruit(){
     return unsub;
   },[session]);
 
-  if(!authChecked) return <div style={{minHeight:"100vh",background:C.navy,display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{color:C.accentL,fontSize:24}}>⚡</div></div>;
+  if(!authChecked) return <div style={{minHeight:"100vh",background:"linear-gradient(135deg, #1A242E 0%, #22313F 40%, #2C3E50 70%, #1A242E 100%)",display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{width:8,height:8,borderRadius:"50%",background:"#FF7A59",animation:"pulse 1.5s ease infinite"}}></div><style>{"@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(1.2)}}"}</style></div>;
   if(!session) return <LoginScreen onLogin={()=>getSession().then(setSession)}/>;
-  if(loading) return <div style={{minHeight:"100vh",width:"100vw",background:`linear-gradient(135deg,${C.navy} 0%,#0d2444 60%,#1e4a8a 100%)`,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'DM Sans',sans-serif"}}>
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Serif+Display&display=swap" rel="stylesheet"/>
-    <div style={{textAlign:"center"}}>
-      <div style={{width:72,height:72,borderRadius:20,background:"linear-gradient(135deg,#2563eb,#1d4ed8)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:34,margin:"0 auto 24px",boxShadow:"0 12px 40px rgba(37,99,235,0.5)"}}>⚡</div>
-      <div style={{fontFamily:"'DM Serif Display',serif",fontSize:36,color:C.white,letterSpacing:-0.5,marginBottom:6}}>HCP One Recruit</div>
-      <div style={{fontSize:13,color:"rgba(255,255,255,0.4)",letterSpacing:1,textTransform:"uppercase",marginBottom:40}}>INXL Digital</div>
+  if(loading) return <div style={{minHeight:"100vh",width:"100vw",background:"linear-gradient(135deg, #1A242E 0%, #22313F 40%, #2C3E50 70%, #1A242E 100%)",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Outfit',sans-serif",position:"relative",overflow:"hidden"}}>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+    <div style={{position:"absolute",top:"-20%",right:"-10%",width:"600px",height:"600px",borderRadius:"50%",background:"radial-gradient(circle, rgba(255,122,89,0.06) 0%, transparent 70%)",pointerEvents:"none"}}/>
+    <div style={{position:"absolute",inset:0,backgroundImage:"radial-gradient(rgba(255,255,255,0.02) 1px, transparent 1px)",backgroundSize:"40px 40px",pointerEvents:"none"}}/>
+    <div style={{textAlign:"center",position:"relative",zIndex:1}}>
+      <img src="/favicon.ico" alt="" style={{height:48,width:48,borderRadius:12,margin:"0 auto 24px",display:"block"}} onError={e=>{e.target.style.display="none"}}/>
+      <div style={{fontFamily:"'DM Serif Display',serif",fontSize:36,color:"#fff",letterSpacing:-1,marginBottom:6}}>Talyntry</div>
+      <div style={{fontSize:12,color:"rgba(255,255,255,0.3)",letterSpacing:1.5,textTransform:"uppercase",marginBottom:40}}>INXL Digital</div>
       <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
-        <div style={{width:8,height:8,borderRadius:"50%",background:C.accent2,animation:"bounce 1.2s infinite 0s"}}/>
-        <div style={{width:8,height:8,borderRadius:"50%",background:C.accent2,animation:"bounce 1.2s infinite 0.2s"}}/>
-        <div style={{width:8,height:8,borderRadius:"50%",background:C.accent2,animation:"bounce 1.2s infinite 0.4s"}}/>
+        <div style={{width:8,height:8,borderRadius:"50%",background:"#FF7A59",animation:"bounce 1.2s infinite 0s"}}/>
+        <div style={{width:8,height:8,borderRadius:"50%",background:"#FF7A59",animation:"bounce 1.2s infinite 0.2s"}}/>
+        <div style={{width:8,height:8,borderRadius:"50%",background:"#FF7A59",animation:"bounce 1.2s infinite 0.4s"}}/>
       </div>
-      <div style={{color:"rgba(255,255,255,0.3)",fontSize:12,marginTop:20,fontWeight:500}}>Loading your workspace…</div>
+      <div style={{color:"rgba(255,255,255,0.25)",fontSize:12,marginTop:20,fontWeight:500}}>Loading your workspace…</div>
     </div>
-    <style>{`@keyframes bounce{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-10px)}}@keyframes pulse{0%,100%{box-shadow:0 12px 40px rgba(37,99,235,0.5)}50%{box-shadow:0 12px 60px rgba(37,99,235,0.8)}}`}</style>
+    <style>{"@keyframes bounce{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-10px)}}"}</style>
   </div>;
 
   const clients=[...new Set(jobs.map(j=>j.client).filter(Boolean))].sort();
@@ -1271,36 +1273,36 @@ export default function HCPRecruit(){
   };
   const openCand=(c)=>setModal({t:"cand",c});
 
-  return <div style={{minHeight:"100vh",width:"100vw",background:C.gray50,color:C.gray700,fontFamily:"'DM Sans',sans-serif",position:"relative",overflowX:"hidden"}}>
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Serif+Display&display=swap" rel="stylesheet"/>
+  return <div style={{minHeight:"100vh",width:"100vw",background:C.gray50,color:C.gray700,fontFamily:"'Outfit',sans-serif",position:"relative",overflowX:"hidden"}}>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
 
     {/* TOP NAV */}
     <div style={{background:C.navy,padding:"0 28px",position:"sticky",top:0,zIndex:100,boxShadow:"0 2px 12px rgba(10,22,40,0.18)"}}>
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",height:58}}>
         <div style={{display:"flex",alignItems:"center",gap:10}}>
-          <div style={{width:34,height:34,borderRadius:9,background:"linear-gradient(135deg,#2563eb,#1d4ed8)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,boxShadow:"0 4px 12px rgba(37,99,235,0.35)"}}>⚡</div>
+          <img src="/favicon.ico" alt="Talyntry" style={{height:30,width:30,borderRadius:8}}/>
           <div>
-            <div style={{fontFamily:"'DM Serif Display',serif",fontSize:16,color:C.white,letterSpacing:-0.3,lineHeight:1.2}}>HCP One Recruit</div>
+            <div style={{fontFamily:"'DM Serif Display',serif",fontSize:16,color:C.white,letterSpacing:-0.3,lineHeight:1.2}}>Talyntry</div>
             <div style={{fontSize:9,color:"rgba(255,255,255,0.3)",letterSpacing:0.6,textTransform:"uppercase"}}>INXL Digital</div>
           </div>
         </div>
         <div style={{display:"flex",gap:2,background:"rgba(255,255,255,0.07)",borderRadius:9,padding:4}}>
-          {[["candidates","👤  Candidates"],["jobs","💼  Job Orders"]].map(([t,l])=>(
+          {[["candidates","Candidates"],["jobs","Job Orders"]].map(([t,l])=>(
             <button key={t} onClick={()=>setTab(t)} style={{padding:"6px 18px",background:tab===t?"rgba(255,255,255,0.13)":"transparent",color:tab===t?C.white:"rgba(255,255,255,0.4)",border:"none",cursor:"pointer",fontSize:12,fontWeight:tab===t?600:400,borderRadius:6,transition:"all 0.15s",whiteSpace:"nowrap"}}>{l}</button>
           ))}
         </div>
         <div style={{display:"flex",gap:8,alignItems:"center"}}>
           {tab==="candidates"&&<div style={{display:"flex",background:"rgba(255,255,255,0.07)",borderRadius:7,padding:3}}>
-            {[["list","☰ List"],["pipeline","⬡ Board"]].map(([v,l])=>(
+            {[["list","List"],["pipeline","Board"]].map(([v,l])=>(
               <button key={v} onClick={()=>setView(v)} style={{padding:"5px 10px",background:view===v?"rgba(255,255,255,0.12)":"transparent",color:view===v?C.white:"rgba(255,255,255,0.4)",border:"none",cursor:"pointer",fontSize:11,borderRadius:5,fontWeight:view===v?600:400}}>{l}</button>
             ))}
           </div>}
-          <button onClick={()=>setModal({t:tab==="candidates"?"add-cand":"add-job"})} style={{background:"#2563eb",color:C.white,border:"none",borderRadius:8,padding:"7px 16px",fontSize:12,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap",boxShadow:"0 2px 8px rgba(37,99,235,0.3)"}}>
+          <button onClick={()=>setModal({t:tab==="candidates"?"add-cand":"add-job"})} style={{background:"#FF7A59",color:"#fff",border:"none",borderRadius:8,padding:"7px 16px",fontSize:12,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap",boxShadow:"0 2px 8px rgba(255,122,89,0.3)"}}>
             + {tab==="candidates"?"Candidate":"Job Order"}
           </button>
-          <button onClick={()=>setModal({t:"report"})} style={{background:"rgba(255,255,255,0.08)",color:"rgba(255,255,255,0.65)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:8,padding:"7px 13px",fontSize:12,cursor:"pointer",fontWeight:500}}>📊 Report</button>
-          <button onClick={()=>setModal({t:"team"})} style={{background:"rgba(255,255,255,0.08)",color:"rgba(255,255,255,0.65)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:8,padding:"7px 13px",fontSize:12,cursor:"pointer",fontWeight:500}}>👥 Team</button>
-          <button onClick={()=>exportCSV(cands,jobs)} style={{background:"rgba(255,255,255,0.07)",color:"rgba(255,255,255,0.45)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:8,padding:"7px 11px",fontSize:12,cursor:"pointer"}}>⬇ CSV</button>
+          <button onClick={()=>setModal({t:"report"})} style={{background:"rgba(255,255,255,0.08)",color:"rgba(255,255,255,0.65)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:8,padding:"7px 13px",fontSize:12,cursor:"pointer",fontWeight:500}}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 20V10M12 20V4M6 20v-6"/></svg> Report</button>
+          <button onClick={()=>setModal({t:"team"})} style={{background:"rgba(255,255,255,0.08)",color:"rgba(255,255,255,0.65)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:8,padding:"7px 13px",fontSize:12,cursor:"pointer",fontWeight:500}}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> Team</button>
+          <button onClick={()=>exportCSV(cands,jobs)} style={{background:"rgba(255,255,255,0.07)",color:"rgba(255,255,255,0.45)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:8,padding:"7px 11px",fontSize:12,cursor:"pointer"}}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg> CSV</button>
           <div style={{display:"flex",alignItems:"center",gap:7,background:"rgba(255,255,255,0.07)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:8,padding:"5px 12px"}}>
             <RecruiterBadge id={activeUser.id} size={22}/>
             <span style={{fontSize:11,color:"rgba(255,255,255,0.55)",fontWeight:500}}>{activeUser.name}</span>
@@ -1314,12 +1316,12 @@ export default function HCPRecruit(){
 
       {/* STATS */}
       <div style={{display:"flex",gap:12,marginBottom:24,flexWrap:"wrap"}}>
-        <StatCard label="Total Candidates" value={stats.total}   accent={C.accent}  icon="👥"/>
-        <StatCard label="Active Pipeline"  value={stats.active}  accent={C.purple}  icon="📋"/>
-        <StatCard label="Interview / Offer" value={stats.hot}    accent={C.pink}    icon="🔥"/>
-        <StatCard label="Placed"           value={stats.placed}  accent={C.success} icon="✅"/>
-        <StatCard label="Open Roles"       value={stats.openJobs}accent={C.warn}    icon="💼"/>
-        <StatCard label="Roles Filled"     value={stats.filled}  accent={C.orange}  icon="🎯"/>
+        <StatCard label="Total Candidates" value={stats.total}   accent={C.accent}  icon="⬡"/>
+        <StatCard label="Active Pipeline"  value={stats.active}  accent={C.purple}  icon="◈"/>
+        <StatCard label="Interview / Offer" value={stats.hot}    accent={C.pink}    icon="◆"/>
+        <StatCard label="Placed"           value={stats.placed}  accent={C.success} icon="●"/>
+        <StatCard label="Open Roles"       value={stats.openJobs}accent={C.warn}    icon="□"/>
+        <StatCard label="Roles Filled"     value={stats.filled}  accent={C.orange}  icon="◉"/>
       </div>
 
       {/* CANDIDATES */}
@@ -1328,7 +1330,7 @@ export default function HCPRecruit(){
           {/* Search row */}
           <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
             <div style={{position:"relative",flex:"1 1 200px"}}>
-              <span style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",color:C.gray400,fontSize:13}}>🔍</span>
+              <span style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",color:C.gray400,fontSize:13,display:"flex"}}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></span>
               <input style={{...inp,paddingLeft:32}} value={cs} onChange={e=>setCs(e.target.value)} placeholder="Search name, title, skill, client, work auth, notes…"/>
             </div>
             <button onClick={()=>setCFiltersOpen(p=>!p)} style={{background:cFiltersOpen?C.navy:C.white,color:cFiltersOpen?C.white:C.gray600,border:`1px solid ${cFiltersOpen?C.navy:C.gray300}`,borderRadius:8,padding:"8px 14px",fontSize:12,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:6,flexShrink:0}}>
@@ -1396,7 +1398,7 @@ export default function HCPRecruit(){
             <div>
               <label style={{display:"block",color:C.gray500,fontSize:10,fontWeight:700,letterSpacing:0.6,textTransform:"uppercase",marginBottom:6}}>Resume</label>
               <div style={{display:"flex",flexDirection:"column",gap:4}}>
-                {[["All","All Candidates"],["yes","Has Resume 📄"],["no","No Resume ⚠"]].map(([v,l])=><label key={v} style={{display:"flex",alignItems:"center",gap:7,cursor:"pointer",fontSize:12,color:cHasResume===v?C.navy:C.gray500,fontWeight:cHasResume===v?600:400}}>
+                {[["All","All Candidates"],["yes","Has Resume"],["no","No Resume"]].map(([v,l])=><label key={v} style={{display:"flex",alignItems:"center",gap:7,cursor:"pointer",fontSize:12,color:cHasResume===v?C.navy:C.gray500,fontWeight:cHasResume===v?600:400}}>
                   <input type="radio" name="resume" checked={cHasResume===v} onChange={()=>setCHasResume(v)} style={{accentColor:C.navy}}/>{l}
                 </label>)}
               </div>
@@ -1434,7 +1436,7 @@ export default function HCPRecruit(){
                   <td style={{padding:"13px 16px",whiteSpace:"nowrap"}}>
                     <div style={{display:"flex",gap:6,alignItems:"center"}}>
                       {c.resumePath
-                        ?<span title="Resume on file" style={{fontSize:14}}>📄</span>
+                        ?<span title="Resume on file" style={{fontSize:14,display:"flex"}}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>
                         :<span title="No resume" style={{fontSize:12,color:C.danger,fontWeight:600}}>No CV</span>}
                       <button onClick={e=>{e.stopPropagation();setModal({t:"edit-cand",c});}} style={{background:C.gray100,color:C.gray500,border:`1px solid ${C.gray200}`,borderRadius:6,padding:"4px 10px",fontSize:11,cursor:"pointer",fontWeight:500}}>Edit</button>
                     </div>
@@ -1472,7 +1474,7 @@ export default function HCPRecruit(){
       {tab==="jobs"&&<>
         <div style={{background:C.white,border:`1px solid ${C.gray200}`,borderRadius:12,padding:"14px 16px",marginBottom:16,display:"flex",gap:8,flexWrap:"wrap",alignItems:"center",boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
           <div style={{position:"relative",flex:"1 1 200px"}}>
-            <span style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",color:C.gray400,fontSize:13}}>🔍</span>
+            <span style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",color:C.gray400,fontSize:13,display:"flex"}}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></span>
             <input style={{...inp,paddingLeft:32}} value={js} onChange={e=>setJs(e.target.value)} placeholder="Search role, client, SPOC…"/>
           </div>
           <select style={{...sel,flex:"0 0 155px"}} value={jStat} onChange={e=>setJStat(e.target.value)}><option value="All">All Statuses</option>{JOB_STATUSES.map(s=><option key={s}>{s}</option>)}</select>
