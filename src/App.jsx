@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { fetchCandidates, fetchJobs, fetchTeam, upsertTeamMember, upsertCandidate, upsertJob, updateCandidateStage, updateJobStatus, addCandidateNote, addJobNote as addJobNoteDB, submitCandidateToJob, removeCandidateFromJob, subscribeToChanges, signIn, signOut, getSession, deleteCandidate, deleteJob, uploadResume, getResumeUrl, logActivity, fetchActivity, fetchScorecards, upsertScorecard, deleteScorecard } from "./lib/supabase";
+import { fetchCandidates, fetchJobs, fetchTeam, upsertTeamMember, upsertCandidate, upsertJob, updateCandidateStage, updateJobStatus, addCandidateNote, addJobNote as addJobNoteDB, submitCandidateToJob, removeCandidateFromJob, subscribeToChanges, signIn, signOut, getSession, deleteCandidate, deleteJob, uploadResume, getResumeUrl, logActivity, fetchActivity, fetchRecentActivity, fetchScorecards, upsertScorecard, deleteScorecard } from "./lib/supabase";
 
 // ── DESIGN TOKENS ─────────────────────────────────────────────────
 const C = {
@@ -1149,6 +1149,8 @@ const IC={
 
 // ── DASHBOARD HOME ───────────────────────────────────────────────
 function DashboardHome({cands,jobs,team,onOpenCand,onOpenJob,setPage}){
+  const [recentActs,setRecentActs]=useState([]);
+  useEffect(()=>{fetchRecentActivity(15).then(setRecentActs).catch(()=>{});},[cands,jobs]);
   const active=cands.filter(c=>!["Placed","Rejected","On Hold"].includes(c.stage));
   const interviews=cands.filter(c=>["Interview 1","Interview 2","Final Interview"].includes(c.stage));
   const offers=cands.filter(c=>c.stage==="Offer");
@@ -1162,7 +1164,6 @@ function DashboardHome({cands,jobs,team,onOpenCand,onOpenJob,setPage}){
     {label:"Hired",count:placed.length,color:"#34d399"},
   ];
   const maxPipe=Math.max(...pipeData.map(d=>d.count),1);
-  const recentCands=[...cands].sort((a,b)=>(b.addedDate||"").localeCompare(a.addedDate||"")).slice(0,5);
 
   return <div style={{display:"flex",flexDirection:"column",gap:24}}>
     {/* Welcome banner */}
@@ -1202,13 +1203,17 @@ function DashboardHome({cands,jobs,team,onOpenCand,onOpenJob,setPage}){
       {/* Recent Activity */}
       <div style={{background:"#fff",border:`1px solid ${B.muted}`,borderRadius:16,padding:"24px 28px"}}>
         <div style={{fontSize:16,fontWeight:700,color:B.ink,marginBottom:20}}>Recent Activity</div>
-        <div style={{display:"flex",flexDirection:"column",gap:0}}>
-          {recentCands.map((c,i)=>{const o=getTeamMember(c.ownerId);return <div key={c.id} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 0",borderBottom:i<recentCands.length-1?`1px solid ${B.muted}`:"none"}}>
-            <div style={{width:8,height:8,borderRadius:"50%",background:SM[c.stage]?.c||B.accent,flexShrink:0}}/>
-            <div style={{flex:1,fontSize:13,color:B.ink}}><strong>{c.name}</strong> moved to {c.stage}</div>
-            <div style={{fontSize:11,color:"#A09A93",flexShrink:0}}>{c.addedDate||"—"}</div>
-          </div>;})}
-          {!recentCands.length&&<div style={{color:"#A09A93",fontSize:13,textAlign:"center",padding:20}}>No recent activity</div>}
+        <div style={{display:"flex",flexDirection:"column",gap:0,maxHeight:320,overflowY:"auto"}}>
+          {recentActs.map((a,i)=>{const ac=ACTIVITY_COLORS[a.type]||B.accent;const timeAgo=(()=>{const diff=Date.now()-new Date(a.created_at).getTime();const mins=Math.floor(diff/60000);if(mins<1)return "just now";if(mins<60)return mins+"m ago";const hrs=Math.floor(mins/60);if(hrs<24)return hrs+"h ago";const days=Math.floor(hrs/24);return days+"d ago";})();
+            return <div key={a.id||i} style={{display:"flex",alignItems:"flex-start",gap:12,padding:"10px 0",borderBottom:i<recentActs.length-1?`1px solid ${B.muted}`:"none"}}>
+              <div style={{width:8,height:8,borderRadius:"50%",background:ac,flexShrink:0,marginTop:5}}/>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontSize:13,color:B.ink,lineHeight:1.4}}><strong>{a.actor_name}</strong> {a.detail}</div>
+              </div>
+              <div style={{fontSize:11,color:"#A09A93",flexShrink:0,whiteSpace:"nowrap"}}>{timeAgo}</div>
+            </div>;
+          })}
+          {!recentActs.length&&<div style={{color:"#A09A93",fontSize:13,textAlign:"center",padding:20}}>No recent activity</div>}
         </div>
       </div>
     </div>

@@ -331,3 +331,14 @@ export async function deleteScorecard(id) {
   const { error } = await supabase.from("scorecards").delete().eq("id", id);
   if (error) throw error;
 }
+
+// ── GLOBAL ACTIVITY FEED ──────────────────────────────────────────
+export async function fetchRecentActivity(limit = 15) {
+  const { data, error } = await supabase
+    .from("candidate_activity")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  return data;
+}
