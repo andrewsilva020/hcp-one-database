@@ -1406,7 +1406,7 @@ export default function HCPRecruit(){
       <div style={{background:"#fff",borderBottom:`1px solid ${B.muted}`,padding:"0 28px",position:"sticky",top:0,zIndex:40,display:"flex",alignItems:"center",justifyContent:"space-between",height:56}}>
         <div style={{fontSize:18,fontWeight:700,color:B.ink,textTransform:"capitalize",flexShrink:0}}>{page}</div>
         <div style={{display:"flex",gap:8,alignItems:"center",flexShrink:0}}>
-          {page!=="dashboard"page!=="dashboard"&&<div style={{position:"relative"}}page!=="dashboard"&&<div style={{position:"relative"}}<div style={{position:"relative",width:200,flexShrink:0}}>
+          {page!=="dashboard"&&<div style={{position:"relative"}}>
             <span style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",color:"#A09A93",display:"flex"}}>{IC.search}</span>
             <input style={{width:200,maxWidth:200,flexShrink:0,background:B.surface,border:`1px solid ${B.muted}`,borderRadius:8,padding:"8px 12px 8px 34px",fontSize:13,color:B.ink,outline:"none",fontFamily:"inherit",boxSizing:"border-box"}} placeholder={page==="jobs"?"Search jobs...":"Search candidates..."} value={page==="jobs"?js:cs} onChange={e=>page==="jobs"?setJs(e.target.value):setCs(e.target.value)}/>
           </div>}
