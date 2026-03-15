@@ -218,7 +218,7 @@ function LoginScreen({onLogin}){
     <div style={{position:"absolute",inset:0,backgroundImage:"radial-gradient(rgba(255,255,255,0.03) 1px, transparent 1px)",backgroundSize:"40px 40px",pointerEvents:"none"}}/>
     <div style={{width:"100%",maxWidth:420,position:"relative",zIndex:1}}>
       <div style={{textAlign:"center",marginBottom:36}}>
-        <div style={{marginBottom:20}}><img src="/favicon.ico" alt="Talyntry" style={{height:40,width:40,borderRadius:10}} onError={e=>{e.target.style.display="none"}}/></div>
+        <img src="/logo-light.png" alt="Talyntry" style={{height:28,marginBottom:20}} onError={e=>{e.target.style.display="none"}}/>
         <div style={{fontFamily:"'DM Serif Display',serif",fontSize:36,color:"#fff",letterSpacing:-1,lineHeight:1.1,marginBottom:10}}>Welcome back</div>
         <div style={{fontSize:14,color:"rgba(255,255,255,0.35)",fontWeight:400}}>Sign in to your Talyntry account</div>
       </div>
@@ -1191,9 +1191,8 @@ export default function HCPRecruit(){
     <div style={{position:"absolute",top:"-20%",right:"-10%",width:"600px",height:"600px",borderRadius:"50%",background:"radial-gradient(circle, rgba(255,122,89,0.06) 0%, transparent 70%)",pointerEvents:"none"}}/>
     <div style={{position:"absolute",inset:0,backgroundImage:"radial-gradient(rgba(255,255,255,0.02) 1px, transparent 1px)",backgroundSize:"40px 40px",pointerEvents:"none"}}/>
     <div style={{textAlign:"center",position:"relative",zIndex:1}}>
-      <img src="/favicon.ico" alt="" style={{height:48,width:48,borderRadius:12,margin:"0 auto 24px",display:"block"}} onError={e=>{e.target.style.display="none"}}/>
-      <div style={{fontFamily:"'DM Serif Display',serif",fontSize:36,color:"#fff",letterSpacing:-1,marginBottom:6}}>Talyntry</div>
-      <div style={{fontSize:12,color:"rgba(255,255,255,0.3)",letterSpacing:1.5,textTransform:"uppercase",marginBottom:40}}>INXL Digital</div>
+      <img src="/logo-light.png" alt="Talyntry" style={{height:28,margin:"0 auto 24px",display:"block"}} onError={e=>{e.target.style.display="none"}}/>
+      <div style={{fontSize:12,color:"rgba(255,255,255,0.3)",letterSpacing:1.5,textTransform:"uppercase",marginBottom:40}}>Talent Intelligence Platform</div>
       <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
         <div style={{width:8,height:8,borderRadius:"50%",background:"#FF7A59",animation:"bounce 1.2s infinite 0s"}}/>
         <div style={{width:8,height:8,borderRadius:"50%",background:"#FF7A59",animation:"bounce 1.2s infinite 0.2s"}}/>
@@ -1280,11 +1279,7 @@ export default function HCPRecruit(){
     <div style={{background:C.navy,padding:"0 28px",position:"sticky",top:0,zIndex:100,boxShadow:"0 2px 12px rgba(10,22,40,0.18)"}}>
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",height:58}}>
         <div style={{display:"flex",alignItems:"center",gap:10}}>
-          <img src="/favicon.ico" alt="Talyntry" style={{height:30,width:30,borderRadius:8}}/>
-          <div>
-            <div style={{fontFamily:"'DM Serif Display',serif",fontSize:16,color:C.white,letterSpacing:-0.3,lineHeight:1.2}}>Talyntry</div>
-            <div style={{fontSize:9,color:"rgba(255,255,255,0.3)",letterSpacing:0.6,textTransform:"uppercase"}}>INXL Digital</div>
-          </div>
+          <img src="/logo-light.png" alt="Talyntry" style={{height:24,width:"auto"}}/>
         </div>
         <div style={{display:"flex",gap:2,background:"rgba(255,255,255,0.07)",borderRadius:9,padding:4}}>
           {[["candidates","Candidates"],["jobs","Job Orders"]].map(([t,l])=>(
