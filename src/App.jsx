@@ -326,6 +326,7 @@ function CandForm({initial,allCandidates,onSave,onClose,activeUser=TEAM_FALLBACK
   const [parsing,setParsing]=useState(false);
   const [pMsg,setPMsg]=useState(null);
   const [liText,setLiText]=useState("");
+  const [summaryDraft,setSummaryDraft]=useState("");
   const [dupes,setDupes]=useState([]);
   const [dupeOk,setDupeOk]=useState(false);
   const fr=useRef();
@@ -356,12 +357,13 @@ function CandForm({initial,allCandidates,onSave,onClose,activeUser=TEAM_FALLBACK
     setParsing(true);
     setPMsg(`AI reading ${originLabel.toLowerCase()} text…`);
     try{
-      const extractPrompt=`Extract candidate info from this ${originLabel.toLowerCase()} text. Return ONLY valid JSON with these exact fields when present: name, email, phone, linkedin, title, seniority (one of: Individual Contributor/Senior IC/Team Lead/Manager/Director/VP/SVP/C-Suite / Partner), experience, salary, location, workAuth (one of: US Citizen/Green Card/H-1B/H-4 EAD/L-1/TN Visa/OPT/CPT/EAD/EU Passport/EU Blue Card/Residence Permit/Requires Sponsorship/Other), skills (array of up to 8 most relevant skills), vertical (one of: Telecom / Wireless/AI / ML / Data/Cybersecurity/Software Engineering/Cloud / DevOps/Sales & Business Development/Directors & VPs/SVPs & C-Suite/Client Partners/Project / Program Mgmt/Network Engineering/Consulting), source. Infer only when strongly supported by the text. Use "LinkedIn" as source if this appears to be a LinkedIn profile.`;
+      const extractPrompt=`Extract candidate info from this ${originLabel.toLowerCase()} text. Return ONLY valid JSON with these exact fields when present: name, email, phone, linkedin, title, seniority (one of: Individual Contributor/Senior IC/Team Lead/Manager/Director/VP/SVP/C-Suite / Partner), experience, salary, location, workAuth (one of: US Citizen/Green Card/H-1B/H-4 EAD/L-1/TN Visa/OPT/CPT/EAD/EU Passport/EU Blue Card/Residence Permit/Requires Sponsorship/Other), skills (array of up to 8 most relevant skills), vertical (one of: Telecom / Wireless/AI / ML / Data/Cybersecurity/Software Engineering/Cloud / DevOps/Sales & Business Development/Directors & VPs/SVPs & C-Suite/Client Partners/Project / Program Mgmt/Network Engineering/Consulting), source, workSummary. "workSummary" should be a concise recruiter-friendly summary of the candidate's work history, progression, domain background, and notable experience in 3-6 sentences. Infer only when strongly supported by the text. Use "LinkedIn" as source if this appears to be a LinkedIn profile.`;
       const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":import.meta.env.VITE_ANTHROPIC_API_KEY,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1200,messages:[{role:"user",content:`${extractPrompt}\n\nProfile text:\n${text.substring(0,18000)}`}]})});
       const data=await res.json();
       if(data.error) throw new Error(data.error.message);
       const parsed=JSON.parse((data.content?.[0]?.text||"{}").replace(/```json|```/g,"").trim());
       const mapped=mapParsedCandidate(parsed);
+      setSummaryDraft(parsed.workSummary?.trim()||"");
       if(!Object.keys(mapped).length){
         setPMsg(`⚠ Could not extract fields from ${originLabel.toLowerCase()} text.`);
       } else {
@@ -432,7 +434,7 @@ function CandForm({initial,allCandidates,onSave,onClose,activeUser=TEAM_FALLBACK
   const submit=async()=>{
     if(!f.name.trim()||!f.email.trim()) return alert("Name + email required.");
     if(dupes.length&&!dupeOk) return alert("Review duplicate warning first.");
-    await onSave({...f,addedDate:f.addedDate||today(),lastUpdated:today(),submittedTo:f.submittedTo||[]});
+    await onSave({...f,addedDate:f.addedDate||today(),lastUpdated:today(),submittedTo:f.submittedTo||[],aiSummaryDraft:summaryDraft.trim()});
   };
   return <div>
     {dupes.length>0&&!dupeOk&&<div style={{background:C.warnL,border:`1px solid ${C.warn}40`,borderRadius:9,padding:"12px 14px",marginBottom:16}}>
@@ -468,6 +470,10 @@ function CandForm({initial,allCandidates,onSave,onClose,activeUser=TEAM_FALLBACK
       <textarea style={{...ta,minHeight:140,marginBottom:8}} value={liText} onChange={e=>setLiText(e.target.value)} placeholder={"Paste the LinkedIn profile text here.\n\nExample:\nName\nHeadline\nLocation\nAbout\nExperience\nSkills"} />
       <div style={{fontSize:11,color:C.gray400}}>Tip: paste the full copied profile page text. The LinkedIn URL can still go in the field below.</div>
     </div>
+    {summaryDraft&&<div style={{background:C.white,border:`1px solid ${C.gray200}`,borderRadius:10,padding:"14px 16px",marginBottom:18}}>
+      <div style={{color:C.gray500,fontSize:11,fontWeight:600,letterSpacing:0.5,textTransform:"uppercase",marginBottom:8}}>Work History Summary</div>
+      <textarea style={{...ta,minHeight:110}} value={summaryDraft} onChange={e=>setSummaryDraft(e.target.value)} placeholder="AI-generated work history summary will appear here." />
+    </div>}
     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"14px 16px"}}>
       <F label="Full Name *"><input style={inp} value={f.name} onChange={e=>{s("name",e.target.value);chkDupe(f.email,f.phone,e.target.value);}} placeholder="Full name"/></F>
       <F label="Email *"><input style={inp} value={f.email} onChange={e=>{s("email",e.target.value);chkDupe(e.target.value,f.phone);}} placeholder="email@domain.com"/></F>
@@ -528,6 +534,9 @@ function CandForm({initial,allCandidates,onSave,onClose,activeUser=TEAM_FALLBACK
 function CandDetail({c,jobs,onEdit,onStageChange,onAddNote,onSubmitToJob,activeUser=TEAM_FALLBACK[0],onDelete,onResumeUpload}){
   const [note,setNote]=useState("");
   const [detTab,setDetTab]=useState("Notes");
+  const [chatText,setChatText]=useState("");
+  const [chatDraft,setChatDraft]=useState("");
+  const [chatParsing,setChatParsing]=useState(false);
   const [resumeUrl,setResumeUrl]=useState(null);
   const [uploadingResume,setUploadingResume]=useState(false);
   const [resumeMsg,setResumeMsg]=useState(null);
@@ -559,7 +568,32 @@ function CandDetail({c,jobs,onEdit,onStageChange,onAddNote,onSubmitToJob,activeU
   const assigned=jobs.filter(j=>j.submittedCandidates?.includes(c.id));
   const owner=getTeamMember(c.ownerId);
   const collabs=(c.collaborators||[]).map(getTeamMember).filter(Boolean);
+  const summaryNote=(c.notes||[]).slice().reverse().find(n=>n.text?.startsWith("[AI Summary]"));
+  const workSummary=summaryNote?.text?.replace(/^\[AI Summary\]\n?/,"").trim();
   const post=()=>{if(!note.trim())return;onAddNote(c.id,note.trim());setNote("");};
+  const parseChatHistory=async()=>{
+    const text=chatText.trim();
+    if(!text) return;
+    setChatParsing(true);
+    try{
+      const prompt=`You are helping a recruiter turn conversation history into an ATS note. Return ONLY valid JSON with one field: note. The note should be concise, recruiter-friendly, and include the most important details you can confidently infer from the conversation, especially compensation expectations, target role, location preferences, work authorization, availability, interview timing, deal-breakers, and motivation. Use short bullet-style lines in plain text. Do not invent details.`;
+      const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":import.meta.env.VITE_ANTHROPIC_API_KEY,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:900,messages:[{role:"user",content:`${prompt}\n\nConversation:\n${text.substring(0,18000)}`}]})});
+      const data=await res.json();
+      if(data.error) throw new Error(data.error.message);
+      const parsed=JSON.parse((data.content?.[0]?.text||"{}").replace(/```json|```/g,"").trim());
+      setChatDraft(parsed.note?.trim()||"");
+    }catch(e){
+      console.error("Chat parse failed:",e);
+      alert("Chat parsing failed: "+e.message);
+    }
+    setChatParsing(false);
+  };
+  const approveChatDraft=()=>{
+    if(!chatDraft.trim()) return;
+    onAddNote(c.id,`[AI Intake Note]\n${chatDraft.trim()}`);
+    setChatDraft("");
+    setChatText("");
+  };
   return <div>
     <div style={{display:"flex",gap:14,alignItems:"flex-start",marginBottom:20}}>
       <Avatar name={c.name} size={52} color={owner?.color}/>
@@ -621,6 +655,10 @@ function CandDetail({c,jobs,onEdit,onStageChange,onAddNote,onSubmitToJob,activeU
         </div>
       ))}
     </div>
+    {workSummary&&<div style={{marginBottom:16}}>
+      <div style={{color:C.gray400,fontSize:10,fontWeight:600,letterSpacing:0.8,textTransform:"uppercase",marginBottom:8}}>Work History Summary</div>
+      <div style={{background:C.gray50,border:`1px solid ${C.gray200}`,borderRadius:10,padding:"12px 14px",color:C.gray600,fontSize:12,lineHeight:1.7,whiteSpace:"pre-wrap"}}>{workSummary}</div>
+    </div>}
     {c.linkedin&&<div style={{marginBottom:14}}><a href={`https://${c.linkedin.replace(/^https?:\/\//,"")}`} target="_blank" rel="noreferrer" style={{color:C.accent,fontSize:12,fontWeight:500}}>🔗 {c.linkedin}</a></div>}
     {/* Resume section */}
     <div style={{marginBottom:16}}>
@@ -676,6 +714,24 @@ function CandDetail({c,jobs,onEdit,onStageChange,onAddNote,onSubmitToJob,activeU
       </div>
 
       {detTab==="Notes"&&<>
+        <div style={{background:C.gray50,border:`1px solid ${C.gray200}`,borderRadius:10,padding:"12px 14px",marginBottom:12}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,marginBottom:8}}>
+            <div>
+              <div style={{color:C.navy,fontSize:12,fontWeight:700}}>Parse Chat History Into Note</div>
+              <div style={{color:C.gray500,fontSize:11}}>Paste texts, emails, or call notes. Review the draft before adding it.</div>
+            </div>
+            <button onClick={parseChatHistory} disabled={chatParsing} style={{background:C.white,color:C.accent,border:`1px solid ${C.accent}55`,borderRadius:8,padding:"8px 12px",fontSize:12,fontWeight:700,cursor:chatParsing?"not-allowed":"pointer",opacity:chatParsing?0.6:1,whiteSpace:"nowrap"}}>{chatParsing?"Parsing…":"AI Parse Chat"}</button>
+          </div>
+          <textarea style={{...ta,minHeight:100}} value={chatText} onChange={e=>setChatText(e.target.value)} placeholder="Paste chat history, emails, or recruiter call notes here…" />
+          {chatDraft&&<div style={{marginTop:10,background:C.white,border:`1px solid ${C.gray200}`,borderRadius:8,padding:"10px 12px"}}>
+            <div style={{color:C.gray500,fontSize:11,fontWeight:600,letterSpacing:0.5,textTransform:"uppercase",marginBottom:6}}>Draft Note</div>
+            <div style={{color:C.gray600,fontSize:12,lineHeight:1.65,whiteSpace:"pre-wrap"}}>{chatDraft}</div>
+            <div style={{display:"flex",gap:8,marginTop:10}}>
+              <button onClick={approveChatDraft} style={{background:C.navy,color:C.white,border:"none",borderRadius:8,padding:"8px 12px",fontSize:12,fontWeight:700,cursor:"pointer"}}>Approve & Add Note</button>
+              <button onClick={()=>setChatDraft("")} style={{background:C.white,color:C.gray500,border:`1px solid ${C.gray300}`,borderRadius:8,padding:"8px 12px",fontSize:12,cursor:"pointer"}}>Discard</button>
+            </div>
+          </div>}
+        </div>
         <div style={{maxHeight:200,overflowY:"auto",marginBottom:8,display:"flex",flexDirection:"column",gap:6}}>
           {!c.notes?.length&&<div style={{color:C.gray300,fontSize:12}}>No notes yet.</div>}
           {c.notes?.map((n,i)=>{const t=getTeamMember(n.authorId);return <div key={i} style={{background:C.gray50,border:`1px solid ${C.gray200}`,borderRadius:8,padding:"10px 12px"}}>
@@ -1402,7 +1458,17 @@ export default function HCPRecruit(){
 
   // Handlers
   const reload=async()=>{const[c,j]=await Promise.all([fetchCandidates(),fetchJobs()]);setCands(c);setJobs(j);};
-  const saveCand=async(c)=>{const isNew=!c.id||typeof c.id==="number";await upsertCandidate(c);await logActivity(c.id||c.tempId,isNew?"created":"edit",activeUser.id,activeUser.name,isNew?`${c.name} added to system`:`Profile updated`);await reload();setModal(null);};
+  const saveCand=async(c)=>{
+    const isNew=!c.id||typeof c.id==="number";
+    const saved=await upsertCandidate(c);
+    const candidateId=saved?.id||c.id||c.tempId;
+    if(c.aiSummaryDraft){
+      await addCandidateNote(candidateId,{author:activeUser.name,authorId:activeUser.id,text:`[AI Summary]\n${c.aiSummaryDraft}`,date:today()});
+    }
+    await logActivity(candidateId,isNew?"created":"edit",activeUser.id,activeUser.name,isNew?`${c.name} added to system`:`Profile updated`);
+    await reload();
+    setModal(null);
+  };
   const saveJob=async(j)=>{await upsertJob(j);await reload();setModal(null);};
   const stageChange=async(id,stage,prevStage)=>{await updateCandidateStage(id,stage);await logActivity(id,"stage_change",activeUser.id,activeUser.name,`Stage changed${prevStage?` from ${prevStage}`:""} to ${stage}`);const data=await fetchCandidates();setCands(data);};
   const jobStatusChange=async(id,status)=>{await updateJobStatus(id,status);const data=await fetchJobs();setJobs(data);};
