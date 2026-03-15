@@ -1413,7 +1413,7 @@ export default function HCPRecruit(){
       </div>
 
       {/* Page content */}
-      <div style={{padding:"24px 28px"}}>
+      <div style={{padding:"24px 28px",width:"100%",boxSizing:"border-box"}}>
 
         {/* DASHBOARD */}
         {page==="dashboard"&&<DashboardHome cands={cands} jobs={jobs} team={team} onOpenCand={openCand} onOpenJob={j=>setModal({t:"job",j})} setPage={setPage}/>}
