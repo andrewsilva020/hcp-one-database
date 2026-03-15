@@ -1213,35 +1213,51 @@ function DashboardHome({cands,jobs,team,onOpenCand,onOpenJob,setPage}){
       </div>
     </div>
 
-    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:20,marginTop:4}}>
-      {/* Current Openings */}
-      <div style={{background:"#fff",border:`1px solid ${B.muted}`,borderRadius:16,padding:"24px 28px"}}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
-          <div style={{fontSize:16,fontWeight:700,color:B.ink}}>Current Openings ({openJobs.length})</div>
-          <span onClick={()=>setPage("jobs")} style={{fontSize:12,color:B.accent,fontWeight:600,cursor:"pointer"}}>See all</span>
-        </div>
-        <div style={{display:"flex",gap:12,overflowX:"auto",paddingBottom:4}}>
-          {openJobs.slice(0,4).map(j=>{const subs=cands.filter(c=>(j.submittedCandidates||[]).includes(c.id));return <div key={j.id} onClick={()=>onOpenJob(j)} style={{minWidth:180,background:B.surface,border:`1px solid ${B.muted}`,borderRadius:12,padding:"16px",cursor:"pointer",transition:"all 0.2s"}} onMouseEnter={e=>e.currentTarget.style.borderColor=B.accent} onMouseLeave={e=>e.currentTarget.style.borderColor=B.muted}>
-            <div style={{fontSize:13,fontWeight:700,color:B.ink,marginBottom:4}}>{j.title}</div>
-            <div style={{fontSize:11,color:"#A09A93",marginBottom:8}}>{j.client}</div>
-            <div style={{fontSize:12,fontWeight:600,color:B.accent}}>{subs.length} Applicants</div>
-          </div>;})}
-          {!openJobs.length&&<div style={{color:"#A09A93",fontSize:13,padding:20}}>No open jobs</div>}
-        </div>
+    {/* Hot Candidates — full width */}
+    <div style={{background:"#fff",border:`1px solid ${B.muted}`,borderRadius:16,padding:"24px 28px",marginTop:4}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
+        <div><div style={{fontSize:18,fontWeight:700,color:B.ink}}>Hot Candidates</div><div style={{fontSize:12,color:"#A09A93",marginTop:2}}>{[...interviews,...offers].length} candidates in interview or offer stage</div></div>
+        <span onClick={()=>setPage("candidates")} style={{fontSize:12,color:B.accent,fontWeight:600,cursor:"pointer"}}>View all →</span>
       </div>
+      {[...interviews,...offers].length>0?<div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:12}}>
+        {[...interviews,...offers].slice(0,8).map(c=>{const o=getTeamMember(c.ownerId);const m=SM[c.stage];const progress=STAGES.indexOf(c.stage)/7*100;
+          return <div key={c.id} onClick={()=>onOpenCand(c)} style={{background:B.surface,border:`1px solid ${B.muted}`,borderRadius:14,padding:"18px 20px",cursor:"pointer",transition:"all 0.25s"}} onMouseEnter={e=>{e.currentTarget.style.borderColor=m?.c||B.accent;e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow="0 8px 24px rgba(0,0,0,0.06)";}} onMouseLeave={e=>{e.currentTarget.style.borderColor=B.muted;e.currentTarget.style.transform="translateY(0)";e.currentTarget.style.boxShadow="none";}}>
+            <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:12}}>
+              <Avatar name={c.name} size={40} color={o?.color}/>
+              <div style={{flex:1}}>
+                <div style={{fontSize:14,fontWeight:700,color:B.ink}}>{c.name}</div>
+                <div style={{fontSize:12,color:"#A09A93"}}>{c.title}</div>
+              </div>
+              <StageBadge stage={c.stage}/>
+            </div>
+            <div style={{display:"flex",gap:8,marginBottom:10}}>
+              {c.salary&&<div style={{fontSize:11,fontWeight:600,color:"#34d399",background:"rgba(52,211,153,0.08)",padding:"3px 8px",borderRadius:6}}>{c.salary}</div>}
+              {c.workAuth&&<div style={{fontSize:11,fontWeight:500,color:B.ink,background:B.muted,padding:"3px 8px",borderRadius:6,opacity:0.7}}>{c.workAuth}</div>}
+            </div>
+            <div style={{height:4,background:B.muted,borderRadius:2,overflow:"hidden"}}>
+              <div style={{height:"100%",width:`${progress}%`,background:m?.c||B.accent,borderRadius:2,transition:"width 0.4s ease"}}/>
+            </div>
+            <div style={{display:"flex",justifyContent:"space-between",marginTop:6}}>
+              <div style={{fontSize:10,color:"#A09A93"}}>{o?.name||"Unassigned"}</div>
+              <div style={{fontSize:10,color:m?.c||"#A09A93",fontWeight:600}}>{c.stage}</div>
+            </div>
+          </div>;})}
+      </div>:<div style={{color:"#A09A93",fontSize:13,textAlign:"center",padding:32}}>No hot candidates right now</div>}
+    </div>
 
-      {/* Top Candidates */}
-      <div style={{background:"#fff",border:`1px solid ${B.muted}`,borderRadius:16,padding:"24px 28px"}}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
-          <div style={{fontSize:16,fontWeight:700,color:B.ink}}>Hot Candidates</div>
-          <span onClick={()=>setPage("candidates")} style={{fontSize:12,color:B.accent,fontWeight:600,cursor:"pointer"}}>View all</span>
-        </div>
-        {[...interviews,...offers].slice(0,6).map((c,i)=>{const o=getTeamMember(c.ownerId);return <div key={c.id} onClick={()=>onOpenCand(c)} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 0",borderBottom:`1px solid ${B.muted}`,cursor:"pointer"}}>
-          <Avatar name={c.name} size={32} color={o?.color}/>
-          <div style={{flex:1}}><div style={{fontSize:13,fontWeight:600,color:B.ink}}>{c.name}</div><div style={{fontSize:11,color:"#A09A93"}}>{c.title}</div></div>
-          <StageBadge stage={c.stage}/>
+    {/* Current Openings */}
+    <div style={{background:"#fff",border:`1px solid ${B.muted}`,borderRadius:16,padding:"24px 28px",marginTop:16}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+        <div style={{fontSize:16,fontWeight:700,color:B.ink}}>Current Openings ({openJobs.length})</div>
+        <span onClick={()=>setPage("jobs")} style={{fontSize:12,color:B.accent,fontWeight:600,cursor:"pointer"}}>See all →</span>
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:12}}>
+        {openJobs.slice(0,6).map(j=>{const subs=cands.filter(c=>(j.submittedCandidates||[]).includes(c.id));return <div key={j.id} onClick={()=>onOpenJob(j)} style={{background:B.surface,border:`1px solid ${B.muted}`,borderRadius:12,padding:"16px",cursor:"pointer",transition:"all 0.2s"}} onMouseEnter={e=>e.currentTarget.style.borderColor=B.accent} onMouseLeave={e=>e.currentTarget.style.borderColor=B.muted}>
+          <div style={{fontSize:13,fontWeight:700,color:B.ink,marginBottom:4}}>{j.title}</div>
+          <div style={{fontSize:11,color:"#A09A93",marginBottom:8}}>{j.client}</div>
+          <div style={{fontSize:12,fontWeight:600,color:B.accent}}>{subs.length} Applicants</div>
         </div>;})}
-        {!interviews.length&&!offers.length&&<div style={{color:"#A09A93",fontSize:13,textAlign:"center",padding:20}}>No hot candidates right now</div>}
+        {!openJobs.length&&<div style={{color:"#A09A93",fontSize:13,padding:20}}>No open jobs</div>}
       </div>
     </div>
   </div>;
@@ -1401,7 +1417,7 @@ export default function HCPRecruit(){
     </div>
 
     {/* ═══ MAIN CONTENT ═══ */}
-    <div style={{marginLeft:sW,width:`calc(100vw - ${sW}px)`,transition:"margin-left 0.2s ease"}}>
+    <div style={{marginLeft:sW,width:`calc(100vw - ${sW}px)`,transition:"all 0.2s ease"}}>
       {/* Top bar */}
       <div style={{background:"#fff",borderBottom:`1px solid ${B.muted}`,padding:"0 28px",position:"sticky",top:0,zIndex:40,display:"flex",alignItems:"center",justifyContent:"space-between",height:56}}>
         <div style={{fontSize:18,fontWeight:700,color:B.ink,textTransform:"capitalize"}}>{page}</div>
@@ -1476,29 +1492,36 @@ export default function HCPRecruit(){
         </>}
 
         {/* PIPELINE */}
-        {page==="pipeline"&&<div style={{display:"flex",gap:10,overflowX:"auto",paddingBottom:16,alignItems:"flex-start"}}>
+        {page==="pipeline"&&<div style={{display:"flex",gap:10,overflowX:"auto",paddingBottom:16,alignItems:"stretch"}}>
           {STAGES.map(stage=>{
             const col=fCands.filter(c=>c.stage===stage);const m=SM[stage];
-            return <div key={stage} style={{flex:"0 0 200px",minWidth:200}}
-              onDragOver={e=>{e.preventDefault();e.currentTarget.style.background=`${m.c}08`;}}
-              onDragLeave={e=>{e.currentTarget.style.background="transparent";}}
-              onDrop={e=>{e.preventDefault();e.currentTarget.style.background="transparent";const cid=e.dataTransfer.getData("text/plain");if(cid){const cand=cands.find(x=>x.id===cid);stageChange(cid,stage,cand?.stage);}}}>
+            const handleDragOver=e=>{e.preventDefault();e.stopPropagation();};
+            const handleDrop=e=>{e.preventDefault();e.stopPropagation();const cid=e.dataTransfer.getData("text/plain");if(cid){const cand=cands.find(x=>x.id===cid);if(cand&&cand.stage!==stage)stageChange(cid,stage,cand.stage);}};
+            return <div key={stage} style={{flex:"0 0 210px",minWidth:210,minHeight:300,display:"flex",flexDirection:"column"}}
+              onDragOver={handleDragOver}
+              onDrop={handleDrop}>
               <div style={{background:m.bg,border:`1px solid ${m.c}40`,borderRadius:9,padding:"8px 12px",marginBottom:8,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                 <span style={{color:m.t||m.c,fontWeight:700,fontSize:11}}>{stage}</span>
                 <span style={{background:m.c,color:"#fff",borderRadius:10,padding:"2px 8px",fontSize:11,fontWeight:700}}>{col.length}</span>
               </div>
-              {col.map(c=>{const o=getTeamMember(c.ownerId);return <div key={c.id} draggable
-                onDragStart={e=>{e.dataTransfer.setData("text/plain",c.id);e.currentTarget.style.opacity="0.5";}}
-                onDragEnd={e=>{e.currentTarget.style.opacity="1";}}
-                onClick={()=>openCand(c)} style={{background:"#fff",border:`1px solid ${B.muted}`,borderRadius:9,padding:"11px 12px",marginBottom:6,cursor:"grab",transition:"all 0.15s"}} onMouseEnter={e=>{e.currentTarget.style.borderColor=m.c;}} onMouseLeave={e=>{e.currentTarget.style.borderColor=B.muted;}}>
-                <div style={{display:"flex",gap:7,alignItems:"center",marginBottom:5,justifyContent:"space-between"}}>
-                  <div style={{display:"flex",gap:7,alignItems:"center"}}><Avatar name={c.name} size={26} color={o?.color}/><div style={{fontWeight:600,fontSize:12,color:B.ink,lineHeight:1.3}}>{c.name}</div></div>
-                  {c.ownerId&&<RecruiterBadge id={c.ownerId} size={18}/>}
-                </div>
-                <div style={{fontSize:11,color:"#A09A93",marginBottom:4}}>{c.title}</div>
-                {c.salary&&<div style={{fontSize:11,color:"#34d399",fontWeight:600}}>{c.salary}</div>}
-              </div>;})}
-              {!col.length&&<div style={{background:"#fff",border:`2px dashed ${B.muted}`,borderRadius:9,padding:20,textAlign:"center",color:"#A09A93",fontSize:11}}>Drop here</div>}
+              <div style={{flex:1,minHeight:60,borderRadius:9,border:`2px dashed transparent`,transition:"all 0.2s",padding:2}}
+                onDragOver={e=>{e.preventDefault();e.stopPropagation();e.currentTarget.style.borderColor=`${m.c}40`;e.currentTarget.style.background=`${m.c}06`;}}
+                onDragLeave={e=>{e.currentTarget.style.borderColor="transparent";e.currentTarget.style.background="transparent";}}
+                onDrop={e=>{e.preventDefault();e.stopPropagation();e.currentTarget.style.borderColor="transparent";e.currentTarget.style.background="transparent";handleDrop(e);}}>
+                {col.map(c=>{const o=getTeamMember(c.ownerId);return <div key={c.id} draggable
+                  onDragStart={e=>{e.dataTransfer.setData("text/plain",c.id);e.dataTransfer.effectAllowed="move";e.currentTarget.style.opacity="0.4";e.currentTarget.style.transform="scale(0.95)";}}
+                  onDragEnd={e=>{e.currentTarget.style.opacity="1";e.currentTarget.style.transform="scale(1)";}}
+                  onDragOver={e=>{e.preventDefault();e.stopPropagation();}}
+                  onClick={()=>openCand(c)} style={{background:"#fff",border:`1px solid ${B.muted}`,borderRadius:9,padding:"11px 12px",marginBottom:6,cursor:"grab",transition:"all 0.15s",position:"relative"}} onMouseEnter={e=>{e.currentTarget.style.borderColor=m.c;e.currentTarget.style.boxShadow=`0 2px 8px ${m.c}15`;}} onMouseLeave={e=>{e.currentTarget.style.borderColor=B.muted;e.currentTarget.style.boxShadow="none";}}>
+                  <div style={{display:"flex",gap:7,alignItems:"center",marginBottom:5,justifyContent:"space-between"}}>
+                    <div style={{display:"flex",gap:7,alignItems:"center"}}><Avatar name={c.name} size={26} color={o?.color}/><div style={{fontWeight:600,fontSize:12,color:B.ink,lineHeight:1.3}}>{c.name}</div></div>
+                    {c.ownerId&&<RecruiterBadge id={c.ownerId} size={18}/>}
+                  </div>
+                  <div style={{fontSize:11,color:"#A09A93",marginBottom:4}}>{c.title}</div>
+                  {c.salary&&<div style={{fontSize:11,color:"#34d399",fontWeight:600}}>{c.salary}</div>}
+                </div>;})}
+                {!col.length&&<div style={{padding:20,textAlign:"center",color:"#A09A93",fontSize:11}}>Drop here</div>}
+              </div>
             </div>;
           })}
         </div>}
