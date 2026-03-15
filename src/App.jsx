@@ -1125,6 +1125,129 @@ function TeamManager({team,activeUser,onSave,onRefresh}){
 }
 
 // ── MAIN APP ──────────────────────────────────────────────────────
+
+// ── BRAND TOKENS ─────────────────────────────────────────────────
+const B={primary:"#22313F",accent:"#FF7A59",surface:"#FFF8F4",ink:"#1A242E",muted:"#E9E5E0",accentLight:"#FFF0EB",accentHover:"#E8674A"};
+
+// ── SVG ICONS ────────────────────────────────────────────────────
+const IC={
+  dashboard:<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>,
+  candidates:<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
+  pipeline:<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>,
+  jobs:<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>,
+  team:<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>,
+  analytics:<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>,
+  settings:<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>,
+  search:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>,
+  plus:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14m-7-7h14"/></svg>,
+  download:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>,
+  logout:<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>,
+  filter:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>,
+  report:<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>,
+  chevron:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>,
+};
+
+// ── DASHBOARD HOME ───────────────────────────────────────────────
+function DashboardHome({cands,jobs,team,onOpenCand,onOpenJob,setPage}){
+  const active=cands.filter(c=>!["Placed","Rejected","On Hold"].includes(c.stage));
+  const interviews=cands.filter(c=>["Interview 1","Interview 2","Final Interview"].includes(c.stage));
+  const offers=cands.filter(c=>c.stage==="Offer");
+  const placed=cands.filter(c=>c.stage==="Placed");
+  const openJobs=jobs.filter(j=>["Open – Sourcing","Active"].includes(j.status));
+  const pipeData=[
+    {label:"Applied",count:cands.filter(c=>c.stage==="Sourced").length,color:B.accent},
+    {label:"Screened",count:cands.filter(c=>c.stage==="Submitted"||c.stage==="Client Review").length,color:"#8b5cf6"},
+    {label:"Interviewed",count:interviews.length,color:"#6366f1"},
+    {label:"Offered",count:offers.length,color:"#f59e0b"},
+    {label:"Hired",count:placed.length,color:"#34d399"},
+  ];
+  const maxPipe=Math.max(...pipeData.map(d=>d.count),1);
+  const recentCands=[...cands].sort((a,b)=>(b.addedDate||"").localeCompare(a.addedDate||"")).slice(0,5);
+
+  return <div style={{display:"flex",flexDirection:"column",gap:24}}>
+    {/* Welcome banner */}
+    <div style={{background:`linear-gradient(135deg, ${B.primary} 0%, #2C3E50 100%)`,borderRadius:16,padding:"28px 32px",color:"#fff",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+      <div>
+        <div style={{fontSize:14,color:"rgba(255,255,255,0.5)",marginBottom:4}}>Hello</div>
+        <div style={{fontSize:22,fontWeight:700,marginBottom:4}}>You have {active.length} active candidates</div>
+      </div>
+      <div style={{display:"flex",gap:20}}>
+        {[["Interviews Scheduled",interviews.length],["Open Jobs",openJobs.length],["Total Candidates",cands.length],["Hires This Month",placed.length]].map(([l,v])=>
+          <div key={l} style={{textAlign:"center",padding:"0 16px",borderLeft:"1px solid rgba(255,255,255,0.1)"}}>
+            <div style={{fontSize:28,fontWeight:800,lineHeight:1}}>{v}</div>
+            <div style={{fontSize:11,color:"rgba(255,255,255,0.45)",marginTop:4}}>{l}</div>
+          </div>
+        )}
+      </div>
+    </div>
+
+    <div style={{display:"grid",gridTemplateColumns:"1.4fr 1fr",gap:20}}>
+      {/* Hiring Pipeline */}
+      <div style={{background:"#fff",border:`1px solid ${B.muted}`,borderRadius:16,padding:"24px 28px"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:24}}>
+          <div style={{fontSize:16,fontWeight:700,color:B.ink}}>Hiring Pipeline</div>
+          <div style={{background:B.accentLight,color:B.accent,padding:"4px 12px",borderRadius:8,fontSize:11,fontWeight:600}}>This Month</div>
+        </div>
+        <div style={{display:"flex",alignItems:"flex-end",justifyContent:"space-between",gap:12,height:160}}>
+          {pipeData.map(d=><div key={d.label} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:8}}>
+            <div style={{fontSize:13,fontWeight:700,color:d.color}}>{d.count}</div>
+            <div style={{width:"100%",background:`${d.color}18`,borderRadius:8,position:"relative",height:Math.max(d.count/maxPipe*120,8),transition:"height 0.5s ease"}}>
+              <div style={{position:"absolute",bottom:0,left:0,right:0,height:"60%",background:`${d.color}30`,borderRadius:8}}/>
+            </div>
+            <div style={{fontSize:10,color:B.ink,fontWeight:500,opacity:0.5}}>{d.label}</div>
+          </div>)}
+        </div>
+      </div>
+
+      {/* Recent Activity */}
+      <div style={{background:"#fff",border:`1px solid ${B.muted}`,borderRadius:16,padding:"24px 28px"}}>
+        <div style={{fontSize:16,fontWeight:700,color:B.ink,marginBottom:20}}>Recent Activity</div>
+        <div style={{display:"flex",flexDirection:"column",gap:0}}>
+          {recentCands.map((c,i)=>{const o=getTeamMember(c.ownerId);return <div key={c.id} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 0",borderBottom:i<recentCands.length-1?`1px solid ${B.muted}`:"none"}}>
+            <div style={{width:8,height:8,borderRadius:"50%",background:SM[c.stage]?.c||B.accent,flexShrink:0}}/>
+            <div style={{flex:1,fontSize:13,color:B.ink}}><strong>{c.name}</strong> moved to {c.stage}</div>
+            <div style={{fontSize:11,color:"#A09A93",flexShrink:0}}>{c.addedDate||"—"}</div>
+          </div>;})}
+          {!recentCands.length&&<div style={{color:"#A09A93",fontSize:13,textAlign:"center",padding:20}}>No recent activity</div>}
+        </div>
+      </div>
+    </div>
+
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:20}}>
+      {/* Current Openings */}
+      <div style={{background:"#fff",border:`1px solid ${B.muted}`,borderRadius:16,padding:"24px 28px"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+          <div style={{fontSize:16,fontWeight:700,color:B.ink}}>Current Openings ({openJobs.length})</div>
+          <span onClick={()=>setPage("jobs")} style={{fontSize:12,color:B.accent,fontWeight:600,cursor:"pointer"}}>See all</span>
+        </div>
+        <div style={{display:"flex",gap:12,overflowX:"auto",paddingBottom:4}}>
+          {openJobs.slice(0,4).map(j=>{const subs=cands.filter(c=>(j.submittedCandidates||[]).includes(c.id));return <div key={j.id} onClick={()=>onOpenJob(j)} style={{minWidth:180,background:B.surface,border:`1px solid ${B.muted}`,borderRadius:12,padding:"16px",cursor:"pointer",transition:"all 0.2s"}} onMouseEnter={e=>e.currentTarget.style.borderColor=B.accent} onMouseLeave={e=>e.currentTarget.style.borderColor=B.muted}>
+            <div style={{fontSize:13,fontWeight:700,color:B.ink,marginBottom:4}}>{j.title}</div>
+            <div style={{fontSize:11,color:"#A09A93",marginBottom:8}}>{j.client}</div>
+            <div style={{fontSize:12,fontWeight:600,color:B.accent}}>{subs.length} Applicants</div>
+          </div>;})}
+          {!openJobs.length&&<div style={{color:"#A09A93",fontSize:13,padding:20}}>No open jobs</div>}
+        </div>
+      </div>
+
+      {/* Top Candidates */}
+      <div style={{background:"#fff",border:`1px solid ${B.muted}`,borderRadius:16,padding:"24px 28px"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+          <div style={{fontSize:16,fontWeight:700,color:B.ink}}>Hot Candidates</div>
+          <span onClick={()=>setPage("candidates")} style={{fontSize:12,color:B.accent,fontWeight:600,cursor:"pointer"}}>View all</span>
+        </div>
+        {[...interviews,...offers].slice(0,4).map((c,i)=>{const o=getTeamMember(c.ownerId);return <div key={c.id} onClick={()=>onOpenCand(c)} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 0",borderBottom:i<3?`1px solid ${B.muted}`:"none",cursor:"pointer"}}>
+          <Avatar name={c.name} size={32} color={o?.color}/>
+          <div style={{flex:1}}><div style={{fontSize:13,fontWeight:600,color:B.ink}}>{c.name}</div><div style={{fontSize:11,color:"#A09A93"}}>{c.title}</div></div>
+          <StageBadge stage={c.stage}/>
+        </div>;})}
+        {!interviews.length&&!offers.length&&<div style={{color:"#A09A93",fontSize:13,textAlign:"center",padding:20}}>No hot candidates right now</div>}
+      </div>
+    </div>
+  </div>;
+}
+
+// ── MAIN APP ─────────────────────────────────────────────────────
 export default function HCPRecruit(){
   const [cands,setCands]=useState([]);
   const [jobs,setJobs]=useState([]);
@@ -1133,7 +1256,7 @@ export default function HCPRecruit(){
   const [loading,setLoading]=useState(true);
   const [session,setSession]=useState(null);
   const [authChecked,setAuthChecked]=useState(false);
-  const [tab,setTab]=useState("candidates");
+  const [page,setPage]=useState("dashboard");
   const [view,setView]=useState("list");
   const [modal,setModal]=useState(null);
   const [cs,setCs]=useState(""); const [cStage,setCStage]=useState("All"); const [cVert,setCVert]=useState("All");
@@ -1141,18 +1264,12 @@ export default function HCPRecruit(){
   const [cSeniority,setCSeniority]=useState("All"); const [cClient,setCClient]=useState("All"); const [cHasResume,setCHasResume]=useState("All");
   const [cFiltersOpen,setCFiltersOpen]=useState(false);
   const [js,setJs]=useState(""); const [jStat,setJStat]=useState("All"); const [jClient,setJClient]=useState("All"); const [jOwner,setJOwner]=useState("All");
+  const [sidebarCollapsed,setSidebarCollapsed]=useState(false);
 
   useEffect(()=>{getSession().then(s=>{setSession(s);setAuthChecked(true);});},[]);
-
-  // Prevent browser from opening dragged files in a new tab
-  // Only block drops that land outside designated drop zones
   useEffect(()=>{
     const preventDrag=(e)=>{e.preventDefault();};
-    const preventDrop=(e)=>{
-      // Allow drops on elements with data-dropzone attribute
-      if(e.target.closest("[data-dropzone]")) return;
-      e.preventDefault();
-    };
+    const preventDrop=(e)=>{if(e.target.closest("[data-dropzone]")) return;e.preventDefault();};
     window.addEventListener("dragover",preventDrag);
     window.addEventListener("drop",preventDrop);
     return()=>{window.removeEventListener("dragover",preventDrag);window.removeEventListener("drop",preventDrop);};
@@ -1163,356 +1280,273 @@ export default function HCPRecruit(){
     Promise.all([fetchCandidates(),fetchJobs(),fetchTeam()])
       .then(async([c,j,t])=>{
         setCands(c);setJobs(j);
-        // Auto-add new user to team if not already there
         const matched=t.find(m=>m.email&&m.email.toLowerCase()===email?.toLowerCase());
         if(!matched&&email){
           const namePart=email.split("@")[0].replace(/[._]/g," ").replace(/\b\w/g,x=>x.toUpperCase());
           const newMember={id:email.split("@")[0].toLowerCase().replace(/[^a-z0-9]/g,""),name:namePart,initials:namePart.split(" ").map(x=>x[0]).join("").substring(0,2).toUpperCase(),color:"#64748b",role:"Recruiter",email,active:true,is_admin:false};
           await upsertTeamMember(newMember);
-          const refreshed=await fetchTeam();
-          TEAM=refreshed;setTeam(refreshed);
+          const refreshed=await fetchTeam();TEAM=refreshed;setTeam(refreshed);
           const me=refreshed.find(m=>m.email?.toLowerCase()===email.toLowerCase());
           if(me) setActiveUser(me);
-        } else {
-          TEAM=t;setTeam(t);
-          if(matched) setActiveUser(matched);
-        }
+        } else {TEAM=t;setTeam(t);if(matched) setActiveUser(matched);}
         setLoading(false);
-      })
-      .catch(err=>{console.error("Load error:",err);setLoading(false);});
+      }).catch(err=>{console.error("Load error:",err);setLoading(false);});
     const unsub=subscribeToChanges(()=>fetchCandidates().then(setCands),()=>fetchJobs().then(setJobs));
     return unsub;
   },[session]);
 
-  if(!authChecked) return <div style={{minHeight:"100vh",background:"linear-gradient(135deg, #1A242E 0%, #22313F 40%, #2C3E50 70%, #1A242E 100%)",display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{width:8,height:8,borderRadius:"50%",background:"#FF7A59",animation:"pulse 1.5s ease infinite"}}></div><style>{"@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(1.2)}}"}</style></div>;
+  // Auth check
+  if(!authChecked) return <div style={{minHeight:"100vh",background:`linear-gradient(135deg, ${B.ink} 0%, ${B.primary} 40%, #2C3E50 100%)`,display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{width:8,height:8,borderRadius:"50%",background:B.accent,animation:"pulse 1.5s ease infinite"}}></div><style>{"@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(1.2)}}"}</style></div>;
   if(!session) return <LoginScreen onLogin={()=>getSession().then(setSession)}/>;
-  if(loading) return <div style={{minHeight:"100vh",width:"100vw",background:"linear-gradient(135deg, #1A242E 0%, #22313F 40%, #2C3E50 70%, #1A242E 100%)",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Outfit',sans-serif",position:"relative",overflow:"hidden"}}>
+
+  // Loading
+  if(loading) return <div style={{minHeight:"100vh",width:"100vw",background:`linear-gradient(135deg, ${B.ink} 0%, ${B.primary} 40%, #2C3E50 100%)`,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Outfit',sans-serif",position:"relative",overflow:"hidden"}}>
     <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
-    <div style={{position:"absolute",top:"-20%",right:"-10%",width:"600px",height:"600px",borderRadius:"50%",background:"radial-gradient(circle, rgba(255,122,89,0.06) 0%, transparent 70%)",pointerEvents:"none"}}/>
+    <div style={{position:"absolute",top:"-20%",right:"-10%",width:600,height:600,borderRadius:"50%",background:"radial-gradient(circle, rgba(255,122,89,0.06) 0%, transparent 70%)",pointerEvents:"none"}}/>
     <div style={{position:"absolute",inset:0,backgroundImage:"radial-gradient(rgba(255,255,255,0.02) 1px, transparent 1px)",backgroundSize:"40px 40px",pointerEvents:"none"}}/>
     <div style={{textAlign:"center",position:"relative",zIndex:1}}>
       <img src="/logo-light.png" alt="Talyntry" style={{height:28,margin:"0 auto 24px",display:"block"}} onError={e=>{e.target.style.display="none"}}/>
       <div style={{fontSize:12,color:"rgba(255,255,255,0.3)",letterSpacing:1.5,textTransform:"uppercase",marginBottom:40}}>Talent Intelligence Platform</div>
       <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
-        <div style={{width:8,height:8,borderRadius:"50%",background:"#FF7A59",animation:"bounce 1.2s infinite 0s"}}/>
-        <div style={{width:8,height:8,borderRadius:"50%",background:"#FF7A59",animation:"bounce 1.2s infinite 0.2s"}}/>
-        <div style={{width:8,height:8,borderRadius:"50%",background:"#FF7A59",animation:"bounce 1.2s infinite 0.4s"}}/>
+        {[0,0.2,0.4].map(d=><div key={d} style={{width:8,height:8,borderRadius:"50%",background:B.accent,animation:`bounce 1.2s infinite ${d}s`}}/>)}
       </div>
-      <div style={{color:"rgba(255,255,255,0.25)",fontSize:12,marginTop:20,fontWeight:500}}>Loading your workspace…</div>
+      <div style={{color:"rgba(255,255,255,0.25)",fontSize:12,marginTop:20}}>Loading your workspace…</div>
     </div>
     <style>{"@keyframes bounce{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-10px)}}"}</style>
   </div>;
 
+  // Data
   const clients=[...new Set(jobs.map(j=>j.client).filter(Boolean))].sort();
   const fCands=cands
-    .filter(c=>{
-      const q=cs.toLowerCase();
-      if(!q) return true;
-      const jobsForCand=jobs.filter(j=>(c.submittedTo||[]).includes(j.id));
-      return [
-        c.name, c.title, c.email, c.phone, c.location, c.vertical,
-        c.seniority, c.workAuth, c.salary, c.experience, c.source, c.linkedin,
-        ...(c.skills||[]),
-        ...(c.notes||[]).map(n=>n.text),
-        ...(c.collaborators||[]).map(id=>getTeamMember(id)?.name),
-        getTeamMember(c.ownerId)?.name,
-        ...jobsForCand.map(j=>j.title),
-        ...jobsForCand.map(j=>j.client),
-      ].some(v=>v?.toString().toLowerCase().includes(q));
-    })
-    .filter(c=>cStage==="All"||c.stage===cStage)
-    .filter(c=>cVert==="All"||c.vertical===cVert)
-    .filter(c=>cAuth==="All"||c.workAuth===cAuth)
-    .filter(c=>cOwner==="All"||c.ownerId===cOwner||(c.collaborators||[]).includes(cOwner))
+    .filter(c=>{const q=cs.toLowerCase();if(!q) return true;const jobsForCand=jobs.filter(j=>(c.submittedTo||[]).includes(j.id));return [c.name,c.title,c.email,c.phone,c.location,c.vertical,c.seniority,c.workAuth,c.salary,c.experience,c.source,c.linkedin,...(c.skills||[]),...(c.notes||[]).map(n=>n.text),...(c.collaborators||[]).map(id=>getTeamMember(id)?.name),getTeamMember(c.ownerId)?.name,...jobsForCand.map(j=>j.title),...jobsForCand.map(j=>j.client)].some(v=>v?.toString().toLowerCase().includes(q));})
+    .filter(c=>cStage==="All"||c.stage===cStage).filter(c=>cVert==="All"||c.vertical===cVert)
+    .filter(c=>cAuth==="All"||c.workAuth===cAuth).filter(c=>cOwner==="All"||c.ownerId===cOwner||(c.collaborators||[]).includes(cOwner))
     .filter(c=>cSeniority==="All"||c.seniority===cSeniority)
     .filter(c=>cClient==="All"||jobs.filter(j=>(c.submittedTo||[]).includes(j.id)).some(j=>j.client===cClient))
     .filter(c=>cHasResume==="All"||(cHasResume==="yes"?!!c.resumePath:!c.resumePath))
     .sort((a,b)=>cSort==="stage"?STAGES.indexOf(a.stage)-STAGES.indexOf(b.stage):cSort==="salary"?parseInt((b.salary||"0").replace(/\D/g,""))-parseInt((a.salary||"0").replace(/\D/g,"")):(a.name||"").localeCompare(b.name||""));
-  const fJobs=jobs
-    .filter(j=>{const q=js.toLowerCase();return !q||[j.title,j.client,j.spoc].some(v=>v?.toLowerCase().includes(q));})
-    .filter(j=>jStat==="All"||j.status===jStat).filter(j=>jClient==="All"||j.client===jClient)
-    .filter(j=>jOwner==="All"||(j.assignedRecruiters||[]).includes(jOwner))
-    .sort((a,b)=>({"P1":0,"P2":1,"P3":2}[a.priority]||1)-({"P1":0,"P2":1,"P3":2}[b.priority]||1));
-
+  const fJobs=jobs.filter(j=>{const q=js.toLowerCase();return !q||[j.title,j.client,j.spoc].some(v=>v?.toLowerCase().includes(q));}).filter(j=>jStat==="All"||j.status===jStat).filter(j=>jClient==="All"||j.client===jClient).filter(j=>jOwner==="All"||(j.assignedRecruiters||[]).includes(jOwner)).sort((a,b)=>({"P1":0,"P2":1,"P3":2}[a.priority]||1)-({"P1":0,"P2":1,"P3":2}[b.priority]||1));
   const stats={total:cands.length,active:cands.filter(c=>!["Placed","Rejected","On Hold"].includes(c.stage)).length,hot:cands.filter(c=>["Interview 1","Interview 2","Final Interview","Offer"].includes(c.stage)).length,placed:cands.filter(c=>c.stage==="Placed").length,openJobs:jobs.filter(j=>["Open – Sourcing","Active"].includes(j.status)).length,filled:jobs.filter(j=>j.status==="Filled").length};
 
+  // Handlers
   const reload=async()=>{const[c,j]=await Promise.all([fetchCandidates(),fetchJobs()]);setCands(c);setJobs(j);};
-  const saveCand=async(c)=>{
-    const isNew=!c.id||typeof c.id==="number";
-    await upsertCandidate(c);
-    await logActivity(c.id||c.tempId,isNew?"created":"edit",activeUser.id,activeUser.name,isNew?`${c.name} added to system`:`Profile updated`);
-    await reload();setModal(null);
-  };
+  const saveCand=async(c)=>{const isNew=!c.id||typeof c.id==="number";await upsertCandidate(c);await logActivity(c.id||c.tempId,isNew?"created":"edit",activeUser.id,activeUser.name,isNew?`${c.name} added to system`:`Profile updated`);await reload();setModal(null);};
   const saveJob=async(j)=>{await upsertJob(j);await reload();setModal(null);};
-  const stageChange=async(id,stage,prevStage)=>{
-    await updateCandidateStage(id,stage);
-    await logActivity(id,"stage_change",activeUser.id,activeUser.name,`Stage changed${prevStage?` from ${prevStage}`:""} to ${stage}`);
-    const data=await fetchCandidates();setCands(data);
-  };
+  const stageChange=async(id,stage,prevStage)=>{await updateCandidateStage(id,stage);await logActivity(id,"stage_change",activeUser.id,activeUser.name,`Stage changed${prevStage?` from ${prevStage}`:""} to ${stage}`);const data=await fetchCandidates();setCands(data);};
   const jobStatusChange=async(id,status)=>{await updateJobStatus(id,status);const data=await fetchJobs();setJobs(data);};
-  const addCandNoteHandler=async(id,text)=>{
-    await addCandidateNote(id,{author:activeUser.name,authorId:activeUser.id,text,date:today()});
-    await logActivity(id,"note",activeUser.id,activeUser.name,text);
-    const data=await fetchCandidates();setCands(data);
-  };
+  const addCandNoteHandler=async(id,text)=>{await addCandidateNote(id,{author:activeUser.name,authorId:activeUser.id,text,date:today()});await logActivity(id,"note",activeUser.id,activeUser.name,text);const data=await fetchCandidates();setCands(data);};
   const addJobNoteHandler=async(id,text)=>{await addJobNoteDB(id,{author:activeUser.name,authorId:activeUser.id,text,date:today()});const data=await fetchJobs();setJobs(data);};
-  const submitToJobHandler=async(cid,jid)=>{
-    const job=jobs.find(j=>j.id===jid);
-    await submitCandidateToJob(cid,jid);
-    await logActivity(cid,"job_submit",activeUser.id,activeUser.name,`Submitted to ${job?.title||"job"}${job?.client?` @ ${job.client}`:""}`);
-    await reload();
-  };
+  const submitToJobHandler=async(cid,jid)=>{const job=jobs.find(j=>j.id===jid);await submitCandidateToJob(cid,jid);await logActivity(cid,"job_submit",activeUser.id,activeUser.name,`Submitted to ${job?.title||"job"}${job?.client?` @ ${job.client}`:""}`);await reload();};
   const removeFromJob=async(jid,cid)=>{await removeCandidateFromJob(cid,jid);const data=await fetchJobs();setJobs(data);};
   const deleteCandHandler=async(id)=>{if(!window.confirm("Delete this candidate? This cannot be undone."))return;await deleteCandidate(id);await reload();setModal(null);};
   const deleteJobHandler=async(id)=>{if(!window.confirm("Delete this job order? This cannot be undone."))return;await deleteJob(id);await reload();setModal(null);};
-  const handleResumeUpload=async(candidateId,file)=>{
-    await uploadResume(candidateId,file);
-    await logActivity(candidateId,"resume",activeUser.id,activeUser.name,"Resume uploaded");
-    const data=await fetchCandidates();setCands(data);
-  };
+  const handleResumeUpload=async(candidateId,file)=>{await uploadResume(candidateId,file);await logActivity(candidateId,"resume",activeUser.id,activeUser.name,"Resume uploaded");const data=await fetchCandidates();setCands(data);};
   const openCand=(c)=>setModal({t:"cand",c});
 
-  return <div style={{minHeight:"100vh",width:"100vw",background:C.gray50,color:C.gray700,fontFamily:"'Outfit',sans-serif",position:"relative",overflowX:"hidden"}}>
+  const sW=sidebarCollapsed?68:240;
+  const NAV_ITEMS=[
+    {id:"dashboard",label:"Dashboard",icon:IC.dashboard},
+    {id:"candidates",label:"Candidates",icon:IC.candidates},
+    {id:"pipeline",label:"Pipeline",icon:IC.pipeline},
+    {id:"jobs",label:"Jobs",icon:IC.jobs},
+  ];
+  const ADMIN_ITEMS=[
+    {id:"team",label:"Team",icon:IC.team,action:()=>setModal({t:"team"})},
+    {id:"report",label:"Reports",icon:IC.report,action:()=>setModal({t:"report"})},
+  ];
+
+  return <div style={{display:"flex",minHeight:"100vh",fontFamily:"'Outfit',sans-serif",background:B.surface}}>
     <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
 
-    {/* TOP NAV */}
-    <div style={{background:C.navy,padding:"0 28px",position:"sticky",top:0,zIndex:100,boxShadow:"0 2px 12px rgba(10,22,40,0.18)"}}>
-      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",height:58}}>
-        <div style={{display:"flex",alignItems:"center",gap:10}}>
-          <img src="/logo-light.png" alt="Talyntry" style={{height:24,width:"auto"}}/>
-        </div>
-        <div style={{display:"flex",gap:2,background:"rgba(255,255,255,0.07)",borderRadius:9,padding:4}}>
-          {[["candidates","Candidates"],["jobs","Job Orders"]].map(([t,l])=>(
-            <button key={t} onClick={()=>setTab(t)} style={{padding:"6px 18px",background:tab===t?"rgba(255,255,255,0.13)":"transparent",color:tab===t?C.white:"rgba(255,255,255,0.4)",border:"none",cursor:"pointer",fontSize:12,fontWeight:tab===t?600:400,borderRadius:6,transition:"all 0.15s",whiteSpace:"nowrap"}}>{l}</button>
-          ))}
-        </div>
-        <div style={{display:"flex",gap:8,alignItems:"center"}}>
-          {tab==="candidates"&&<div style={{display:"flex",background:"rgba(255,255,255,0.07)",borderRadius:7,padding:3}}>
-            {[["list","List"],["pipeline","Board"]].map(([v,l])=>(
-              <button key={v} onClick={()=>setView(v)} style={{padding:"5px 10px",background:view===v?"rgba(255,255,255,0.12)":"transparent",color:view===v?C.white:"rgba(255,255,255,0.4)",border:"none",cursor:"pointer",fontSize:11,borderRadius:5,fontWeight:view===v?600:400}}>{l}</button>
-            ))}
-          </div>}
-          <button onClick={()=>setModal({t:tab==="candidates"?"add-cand":"add-job"})} style={{background:"#FF7A59",color:"#fff",border:"none",borderRadius:8,padding:"7px 16px",fontSize:12,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap",boxShadow:"0 2px 8px rgba(255,122,89,0.3)"}}>
-            + {tab==="candidates"?"Candidate":"Job Order"}
+    {/* ═══ SIDEBAR ═══ */}
+    <div style={{width:sW,minHeight:"100vh",background:"#fff",borderRight:`1px solid ${B.muted}`,display:"flex",flexDirection:"column",position:"fixed",left:0,top:0,bottom:0,zIndex:50,transition:"width 0.2s ease",overflow:"hidden"}}>
+      {/* Logo */}
+      <div style={{padding:sidebarCollapsed?"20px 16px":"20px 24px",borderBottom:`1px solid ${B.muted}`,display:"flex",alignItems:"center",gap:10,minHeight:64}}>
+        <img src="/favicon.ico" alt="" style={{height:28,width:28,borderRadius:8,flexShrink:0}}/>
+        {!sidebarCollapsed&&<div>
+          <div style={{fontFamily:"'DM Serif Display',serif",fontSize:18,color:B.ink,letterSpacing:-0.3,lineHeight:1}}>Talyntry</div>
+          <div style={{fontSize:9,color:"#A09A93",letterSpacing:0.5,textTransform:"uppercase"}}>Talent Intelligence</div>
+        </div>}
+      </div>
+
+      {/* Nav items */}
+      <div style={{flex:1,padding:"12px 12px",display:"flex",flexDirection:"column",gap:2}}>
+        {NAV_ITEMS.map(item=>{
+          const isActive=page===item.id||(item.id==="candidates"&&page==="candidates")||(item.id==="pipeline"&&page==="pipeline");
+          return <button key={item.id} onClick={()=>setPage(item.id)} style={{display:"flex",alignItems:"center",gap:12,padding:sidebarCollapsed?"10px 14px":"10px 16px",borderRadius:10,border:"none",cursor:"pointer",background:isActive?B.accentLight:"transparent",color:isActive?B.accent:B.ink,fontWeight:isActive?600:500,fontSize:13,fontFamily:"inherit",transition:"all 0.15s",width:"100%",textAlign:"left",opacity:isActive?1:0.65}}>
+            <span style={{flexShrink:0,display:"flex"}}>{item.icon}</span>
+            {!sidebarCollapsed&&<span>{item.label}</span>}
+            {!sidebarCollapsed&&item.id==="candidates"&&<span style={{marginLeft:"auto",background:B.muted,color:B.ink,borderRadius:6,padding:"1px 7px",fontSize:10,fontWeight:700}}>{cands.length}</span>}
+            {!sidebarCollapsed&&item.id==="jobs"&&<span style={{marginLeft:"auto",background:B.muted,color:B.ink,borderRadius:6,padding:"1px 7px",fontSize:10,fontWeight:700}}>{jobs.length}</span>}
+          </button>;
+        })}
+
+        <div style={{height:1,background:B.muted,margin:"12px 4px"}}/>
+        <div style={{fontSize:10,color:"#A09A93",fontWeight:600,textTransform:"uppercase",letterSpacing:0.8,padding:"4px 16px",marginBottom:4}}>{!sidebarCollapsed&&"Admin"}</div>
+        {ADMIN_ITEMS.map(item=>
+          <button key={item.id} onClick={item.action} style={{display:"flex",alignItems:"center",gap:12,padding:sidebarCollapsed?"10px 14px":"10px 16px",borderRadius:10,border:"none",cursor:"pointer",background:"transparent",color:B.ink,fontWeight:500,fontSize:13,fontFamily:"inherit",opacity:0.55,width:"100%",textAlign:"left",transition:"all 0.15s"}} onMouseEnter={e=>e.currentTarget.style.opacity=1} onMouseLeave={e=>e.currentTarget.style.opacity=0.55}>
+            <span style={{flexShrink:0,display:"flex"}}>{item.icon}</span>
+            {!sidebarCollapsed&&<span>{item.label}</span>}
           </button>
-          <button onClick={()=>setModal({t:"report"})} style={{background:"rgba(255,255,255,0.08)",color:"rgba(255,255,255,0.65)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:8,padding:"7px 13px",fontSize:12,cursor:"pointer",fontWeight:500}}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 20V10M12 20V4M6 20v-6"/></svg> Report</button>
-          <button onClick={()=>setModal({t:"team"})} style={{background:"rgba(255,255,255,0.08)",color:"rgba(255,255,255,0.65)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:8,padding:"7px 13px",fontSize:12,cursor:"pointer",fontWeight:500}}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> Team</button>
-          <button onClick={()=>exportCSV(cands,jobs)} style={{background:"rgba(255,255,255,0.07)",color:"rgba(255,255,255,0.45)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:8,padding:"7px 11px",fontSize:12,cursor:"pointer"}}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg> CSV</button>
-          <div style={{display:"flex",alignItems:"center",gap:7,background:"rgba(255,255,255,0.07)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:8,padding:"5px 12px"}}>
-            <RecruiterBadge id={activeUser.id} size={22}/>
-            <span style={{fontSize:11,color:"rgba(255,255,255,0.55)",fontWeight:500}}>{activeUser.name}</span>
-            <span onClick={()=>signOut().then(()=>setSession(null))} style={{fontSize:10,color:"rgba(255,255,255,0.25)",cursor:"pointer",marginLeft:2,fontWeight:600,padding:"2px 4px"}} title="Sign out">✕</span>
-          </div>
+        )}
+      </div>
+
+      {/* User + logout */}
+      <div style={{padding:"16px",borderTop:`1px solid ${B.muted}`}}>
+        <div style={{display:"flex",alignItems:"center",gap:10}}>
+          <RecruiterBadge id={activeUser.id} size={32}/>
+          {!sidebarCollapsed&&<div style={{flex:1,overflow:"hidden"}}>
+            <div style={{fontSize:13,fontWeight:600,color:B.ink,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{activeUser.name}</div>
+            <div style={{fontSize:10,color:"#A09A93"}}>{activeUser.role||"Recruiter"}</div>
+          </div>}
+          {!sidebarCollapsed&&<span onClick={()=>signOut().then(()=>setSession(null))} style={{cursor:"pointer",color:"#A09A93",display:"flex",opacity:0.6}} title="Sign out">{IC.logout}</span>}
         </div>
       </div>
     </div>
 
-    <div style={{padding:"24px 28px",width:"100%",boxSizing:"border-box"}}>
-
-      {/* STATS */}
-      <div style={{display:"flex",gap:12,marginBottom:24,flexWrap:"wrap"}}>
-        <StatCard label="Total Candidates" value={stats.total}   accent={C.accent}  icon="⬡"/>
-        <StatCard label="Active Pipeline"  value={stats.active}  accent={C.purple}  icon="◈"/>
-        <StatCard label="Interview / Offer" value={stats.hot}    accent={C.pink}    icon="◆"/>
-        <StatCard label="Placed"           value={stats.placed}  accent={C.success} icon="●"/>
-        <StatCard label="Open Roles"       value={stats.openJobs}accent={C.warn}    icon="□"/>
-        <StatCard label="Roles Filled"     value={stats.filled}  accent={C.orange}  icon="◉"/>
+    {/* ═══ MAIN CONTENT ═══ */}
+    <div style={{flex:1,marginLeft:sW,transition:"margin-left 0.2s ease"}}>
+      {/* Top bar */}
+      <div style={{background:"#fff",borderBottom:`1px solid ${B.muted}`,padding:"0 28px",position:"sticky",top:0,zIndex:40,display:"flex",alignItems:"center",justifyContent:"space-between",height:56}}>
+        <div style={{fontSize:18,fontWeight:700,color:B.ink,textTransform:"capitalize"}}>{page}</div>
+        <div style={{display:"flex",gap:8,alignItems:"center"}}>
+          <div style={{position:"relative",width:260}}>
+            <span style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",color:"#A09A93",display:"flex"}}>{IC.search}</span>
+            <input style={{width:"100%",background:B.surface,border:`1px solid ${B.muted}`,borderRadius:8,padding:"8px 12px 8px 34px",fontSize:13,color:B.ink,outline:"none",fontFamily:"inherit"}} placeholder="Search candidates or jobs..." value={page==="jobs"?js:cs} onChange={e=>page==="jobs"?setJs(e.target.value):setCs(e.target.value)}/>
+          </div>
+          {(page==="candidates"||page==="pipeline")&&<button onClick={()=>setModal({t:"add-cand"})} style={{display:"flex",alignItems:"center",gap:6,background:B.accent,color:"#fff",border:"none",borderRadius:8,padding:"8px 16px",fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit",boxShadow:"0 2px 8px rgba(255,122,89,0.25)"}}>{IC.plus} Add Candidate</button>}
+          {page==="jobs"&&<button onClick={()=>setModal({t:"add-job"})} style={{display:"flex",alignItems:"center",gap:6,background:B.accent,color:"#fff",border:"none",borderRadius:8,padding:"8px 16px",fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit",boxShadow:"0 2px 8px rgba(255,122,89,0.25)"}}>{IC.plus} Add Job Order</button>}
+          <button onClick={()=>exportCSV(cands,jobs)} style={{display:"flex",alignItems:"center",gap:5,background:B.surface,color:B.ink,border:`1px solid ${B.muted}`,borderRadius:8,padding:"8px 12px",fontSize:12,cursor:"pointer",fontFamily:"inherit",opacity:0.7}}>{IC.download} CSV</button>
+        </div>
       </div>
 
-      {/* CANDIDATES */}
-      {tab==="candidates"&&<>
-        <div style={{background:C.white,border:`1px solid ${C.gray200}`,borderRadius:12,padding:"14px 16px",marginBottom:16,boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
-          {/* Search row */}
-          <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
-            <div style={{position:"relative",flex:"1 1 200px"}}>
-              <span style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",color:C.gray400,fontSize:13,display:"flex"}}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></span>
-              <input style={{...inp,paddingLeft:32}} value={cs} onChange={e=>setCs(e.target.value)} placeholder="Search name, title, skill, client, work auth, notes…"/>
+      {/* Page content */}
+      <div style={{padding:"24px 28px"}}>
+
+        {/* DASHBOARD */}
+        {page==="dashboard"&&<DashboardHome cands={cands} jobs={jobs} team={team} onOpenCand={openCand} onOpenJob={j=>setModal({t:"job",j})} setPage={setPage}/>}
+
+        {/* CANDIDATES */}
+        {page==="candidates"&&<>
+          <div style={{background:"#fff",border:`1px solid ${B.muted}`,borderRadius:12,padding:"14px 16px",marginBottom:16}}>
+            <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
+              <button onClick={()=>setCFiltersOpen(p=>!p)} style={{background:cFiltersOpen?B.ink:"#fff",color:cFiltersOpen?"#fff":B.ink,border:`1px solid ${cFiltersOpen?B.ink:B.muted}`,borderRadius:8,padding:"8px 14px",fontSize:12,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:6}}>
+                {IC.filter} Filters
+                {(cStage!=="All"||cVert!=="All"||cAuth!=="All"||cOwner!=="All"||cSeniority!=="All"||cClient!=="All"||cHasResume!=="All")&&<span style={{background:B.accent,color:"#fff",borderRadius:10,padding:"1px 7px",fontSize:10,fontWeight:700}}>{[cStage,cVert,cAuth,cOwner,cSeniority,cClient,cHasResume].filter(x=>x!=="All").length}</span>}
+              </button>
+              <select style={{...sel,flex:"0 0 140px"}} value={cSort} onChange={e=>setCSort(e.target.value)}>
+                <option value="name">Sort: A–Z</option><option value="stage">Sort: Stage</option><option value="salary">Sort: Rate ↓</option>
+              </select>
+              <span style={{color:"#A09A93",fontSize:12,fontWeight:500,marginLeft:"auto"}}>{fCands.length} candidate{fCands.length!==1?"s":""}</span>
             </div>
-            <button onClick={()=>setCFiltersOpen(p=>!p)} style={{background:cFiltersOpen?C.navy:C.white,color:cFiltersOpen?C.white:C.gray600,border:`1px solid ${cFiltersOpen?C.navy:C.gray300}`,borderRadius:8,padding:"8px 14px",fontSize:12,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:6,flexShrink:0}}>
-              ⚙ Filters
-              {(cStage!=="All"||cVert!=="All"||cAuth!=="All"||cOwner!=="All"||cSeniority!=="All"||cClient!=="All"||cHasResume!=="All")&&<span style={{background:C.accent,color:C.white,borderRadius:10,padding:"1px 7px",fontSize:10,fontWeight:700}}>{[cStage,cVert,cAuth,cOwner,cSeniority,cClient,cHasResume].filter(x=>x!=="All").length}</span>}
-            </button>
-            <select style={{...sel,flex:"0 0 140px"}} value={cSort} onChange={e=>setCSort(e.target.value)}>
-              <option value="name">Sort: A–Z</option><option value="stage">Sort: Stage</option><option value="salary">Sort: Rate ↓</option>
-            </select>
-            <span style={{color:C.gray400,fontSize:12,flexShrink:0,fontWeight:500}}>{fCands.length}/{cands.length}</span>
-            {(cStage!=="All"||cVert!=="All"||cAuth!=="All"||cOwner!=="All"||cSeniority!=="All"||cClient!=="All"||cHasResume!=="All")&&
-              <button onClick={()=>{setCStage("All");setCVert("All");setCAuth("All");setCOwner("All");setCSeniority("All");setCClient("All");setCHasResume("All");}} style={{background:C.dangerL,color:C.danger,border:"none",borderRadius:7,padding:"6px 12px",fontSize:11,fontWeight:600,cursor:"pointer"}}>✕ Clear</button>}
+            {cFiltersOpen&&<div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(160px,1fr))",gap:8,marginTop:12,paddingTop:12,borderTop:`1px solid ${B.muted}`}}>
+              <select style={sel} value={cStage} onChange={e=>setCStage(e.target.value)}><option value="All">All Stages</option>{STAGES.map(s=><option key={s}>{s}</option>)}</select>
+              <select style={sel} value={cVert} onChange={e=>setCVert(e.target.value)}><option value="All">All Verticals</option>{VERTICALS.map(v=><option key={v}>{v}</option>)}</select>
+              <select style={sel} value={cAuth} onChange={e=>setCAuth(e.target.value)}><option value="All">All Work Auth</option>{WORK_AUTH.map(w=><option key={w}>{w}</option>)}</select>
+              <select style={sel} value={cOwner} onChange={e=>setCOwner(e.target.value)}><option value="All">All Recruiters</option>{team.map(t=><option key={t.id} value={t.id}>{t.name.split(" ")[0]}</option>)}</select>
+              <select style={sel} value={cSeniority} onChange={e=>setCSeniority(e.target.value)}><option value="All">All Seniority</option>{SENIORITY.map(s=><option key={s}>{s}</option>)}</select>
+              <select style={sel} value={cClient} onChange={e=>setCClient(e.target.value)}><option value="All">All Clients</option>{clients.map(c=><option key={c}>{c}</option>)}</select>
+              {[["All","All Candidates"],["yes","Has Resume"],["no","No Resume"]].map(([v,l])=><label key={v} style={{display:"flex",alignItems:"center",gap:7,cursor:"pointer",fontSize:12,color:cHasResume===v?B.ink:"#A09A93",fontWeight:cHasResume===v?600:400}}><input type="radio" name="resume" checked={cHasResume===v} onChange={()=>setCHasResume(v)} style={{accentColor:B.accent}}/>{l}</label>)}
+            </div>}
           </div>
 
-          {/* Filters panel */}
-          {cFiltersOpen&&<div style={{marginTop:14,paddingTop:14,borderTop:`1px solid ${C.gray100}`,display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(180px,1fr))",gap:"14px 20px"}}>
-            <div>
-              <label style={{display:"block",color:C.gray500,fontSize:10,fontWeight:700,letterSpacing:0.6,textTransform:"uppercase",marginBottom:6}}>Pipeline Stage</label>
-              <div style={{display:"flex",flexDirection:"column",gap:4}}>
-                {["All",...STAGES].map(s=><label key={s} style={{display:"flex",alignItems:"center",gap:7,cursor:"pointer",fontSize:12,color:cStage===s?C.navy:C.gray500,fontWeight:cStage===s?600:400}}>
-                  <input type="radio" name="stage" checked={cStage===s} onChange={()=>setCStage(s)} style={{accentColor:C.navy}}/>{s==="All"?"All Stages":s}
-                </label>)}
-              </div>
-            </div>
-            <div>
-              <label style={{display:"block",color:C.gray500,fontSize:10,fontWeight:700,letterSpacing:0.6,textTransform:"uppercase",marginBottom:6}}>Work Authorization</label>
-              <div style={{display:"flex",flexDirection:"column",gap:4}}>
-                {["All",...WORK_AUTH].map(w=><label key={w} style={{display:"flex",alignItems:"center",gap:7,cursor:"pointer",fontSize:12,color:cAuth===w?C.navy:C.gray500,fontWeight:cAuth===w?600:400}}>
-                  <input type="radio" name="auth" checked={cAuth===w} onChange={()=>setCAuth(w)} style={{accentColor:C.navy}}/>{w==="All"?"All Auth":w}
-                </label>)}
-              </div>
-            </div>
-            <div>
-              <label style={{display:"block",color:C.gray500,fontSize:10,fontWeight:700,letterSpacing:0.6,textTransform:"uppercase",marginBottom:6}}>Industry Vertical</label>
-              <div style={{display:"flex",flexDirection:"column",gap:4}}>
-                {["All",...VERTICALS].map(v=><label key={v} style={{display:"flex",alignItems:"center",gap:7,cursor:"pointer",fontSize:12,color:cVert===v?C.navy:C.gray500,fontWeight:cVert===v?600:400}}>
-                  <input type="radio" name="vert" checked={cVert===v} onChange={()=>setCVert(v)} style={{accentColor:C.navy}}/>{v==="All"?"All Verticals":v}
-                </label>)}
-              </div>
-            </div>
-            <div>
-              <label style={{display:"block",color:C.gray500,fontSize:10,fontWeight:700,letterSpacing:0.6,textTransform:"uppercase",marginBottom:6}}>Seniority</label>
-              <div style={{display:"flex",flexDirection:"column",gap:4}}>
-                {["All",...SENIORITY].map(s=><label key={s} style={{display:"flex",alignItems:"center",gap:7,cursor:"pointer",fontSize:12,color:cSeniority===s?C.navy:C.gray500,fontWeight:cSeniority===s?600:400}}>
-                  <input type="radio" name="sen" checked={cSeniority===s} onChange={()=>setCSeniority(s)} style={{accentColor:C.navy}}/>{s==="All"?"All Seniority":s}
-                </label>)}
-              </div>
-            </div>
-            <div>
-              <label style={{display:"block",color:C.gray500,fontSize:10,fontWeight:700,letterSpacing:0.6,textTransform:"uppercase",marginBottom:6}}>Recruiter</label>
-              <div style={{display:"flex",flexDirection:"column",gap:4}}>
-                {[{id:"All",name:"All Recruiters"},...team].map(t=><label key={t.id} style={{display:"flex",alignItems:"center",gap:7,cursor:"pointer",fontSize:12,color:cOwner===t.id?C.navy:C.gray500,fontWeight:cOwner===t.id?600:400}}>
-                  <input type="radio" name="owner" checked={cOwner===t.id} onChange={()=>setCOwner(t.id)} style={{accentColor:C.navy}}/>{t.name}
-                </label>)}
-              </div>
-            </div>
-            <div>
-              <label style={{display:"block",color:C.gray500,fontSize:10,fontWeight:700,letterSpacing:0.6,textTransform:"uppercase",marginBottom:6}}>Client</label>
-              <div style={{display:"flex",flexDirection:"column",gap:4}}>
-                {["All",...clients].map(cl=><label key={cl} style={{display:"flex",alignItems:"center",gap:7,cursor:"pointer",fontSize:12,color:cClient===cl?C.navy:C.gray500,fontWeight:cClient===cl?600:400}}>
-                  <input type="radio" name="client" checked={cClient===cl} onChange={()=>setCClient(cl)} style={{accentColor:C.navy}}/>{cl==="All"?"All Clients":cl}
-                </label>)}
-              </div>
-            </div>
-            <div>
-              <label style={{display:"block",color:C.gray500,fontSize:10,fontWeight:700,letterSpacing:0.6,textTransform:"uppercase",marginBottom:6}}>Resume</label>
-              <div style={{display:"flex",flexDirection:"column",gap:4}}>
-                {[["All","All Candidates"],["yes","Has Resume"],["no","No Resume"]].map(([v,l])=><label key={v} style={{display:"flex",alignItems:"center",gap:7,cursor:"pointer",fontSize:12,color:cHasResume===v?C.navy:C.gray500,fontWeight:cHasResume===v?600:400}}>
-                  <input type="radio" name="resume" checked={cHasResume===v} onChange={()=>setCHasResume(v)} style={{accentColor:C.navy}}/>{l}
-                </label>)}
-              </div>
-            </div>
-          </div>}
-        </div>
+          {/* Candidate list */}
+          <div style={{background:"#fff",border:`1px solid ${B.muted}`,borderRadius:12,overflow:"hidden"}}>
+            <table style={{width:"100%",borderCollapse:"collapse",fontSize:13}}>
+              <thead><tr style={{background:B.surface}}>
+                {["Candidate","Title","Stage","Rate","Owner","Client","Auth"].map(h=><th key={h} style={{padding:"12px 14px",textAlign:"left",fontWeight:600,color:"#A09A93",fontSize:11,textTransform:"uppercase",letterSpacing:0.5,borderBottom:`1px solid ${B.muted}`}}>{h}</th>)}
+              </tr></thead>
+              <tbody>
+                {fCands.map(c=>{
+                  const o=getTeamMember(c.ownerId);
+                  const cJobs=jobs.filter(j=>(c.submittedTo||[]).includes(j.id));
+                  return <tr key={c.id} onClick={()=>openCand(c)} style={{cursor:"pointer",transition:"background 0.15s"}} onMouseEnter={e=>e.currentTarget.style.background=B.surface} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                    <td style={{padding:"12px 14px",borderBottom:`1px solid ${B.muted}`,display:"flex",alignItems:"center",gap:10}}>
+                      <Avatar name={c.name} size={36} color={o?.color}/>
+                      <div><div style={{fontWeight:600,color:B.ink}}>{c.name}</div><div style={{fontSize:11,color:"#A09A93"}}>{c.location||""}</div></div>
+                    </td>
+                    <td style={{padding:"12px 14px",borderBottom:`1px solid ${B.muted}`,color:B.ink}}>{c.title||"—"}</td>
+                    <td style={{padding:"12px 14px",borderBottom:`1px solid ${B.muted}`}}><StageBadge stage={c.stage}/></td>
+                    <td style={{padding:"12px 14px",borderBottom:`1px solid ${B.muted}`,color:c.salary?"#34d399":"#A09A93",fontWeight:600,fontSize:12}}>{c.salary||"—"}</td>
+                    <td style={{padding:"12px 14px",borderBottom:`1px solid ${B.muted}`}}>{o?<RecruiterBadge id={o.id} size={24} showName/>:<span style={{color:"#A09A93"}}>—</span>}</td>
+                    <td style={{padding:"12px 14px",borderBottom:`1px solid ${B.muted}`,fontSize:12,color:B.ink}}>{cJobs.map(j=>j.client).filter(Boolean).join(", ")||"—"}</td>
+                    <td style={{padding:"12px 14px",borderBottom:`1px solid ${B.muted}`}}>{c.workAuth?<Tag label={c.workAuth}/>:<span style={{color:"#A09A93"}}>—</span>}</td>
+                  </tr>;
+                })}
+                {!fCands.length&&<tr><td colSpan={7} style={{textAlign:"center",padding:48,color:"#A09A93",fontSize:13}}>No candidates match your filters.</td></tr>}
+              </tbody>
+            </table>
+          </div>
+        </>}
 
-        {view==="list"&&<div style={{background:C.white,border:`1px solid ${C.gray200}`,borderRadius:12,overflow:"hidden",boxShadow:"0 1px 3px rgba(0,0,0,0.05)"}}>
-          <table style={{width:"100%",borderCollapse:"collapse"}}>
-            <thead><tr style={{background:C.gray50,borderBottom:`1px solid ${C.gray200}`}}>
-              {["Candidate","Title","Owner","Client","Work Auth","Rate","Stage",""].map(h=><th key={h} style={{padding:"11px 16px",textAlign:"left",color:C.gray400,fontSize:11,fontWeight:600,letterSpacing:0.4,whiteSpace:"nowrap"}}>{h}</th>)}
-            </tr></thead>
-            <tbody>
-              {fCands.map((c,idx)=>{
-                const cjobs=jobs.filter(j=>j.submittedCandidates?.includes(c.id));
-                const owner=getTeamMember(c.ownerId);
-                return <tr key={c.id} onClick={()=>openCand(c)} style={{borderBottom:`1px solid ${C.gray100}`,cursor:"pointer",background:C.white}} onMouseEnter={e=>e.currentTarget.style.background=C.accentL} onMouseLeave={e=>e.currentTarget.style.background=C.white}>
-                  <td style={{padding:"13px 16px"}}>
-                    <div style={{display:"flex",alignItems:"center",gap:10}}>
-                      <Avatar name={c.name} size={36} color={owner?.color}/>
-                      <div><div style={{fontWeight:600,fontSize:13,color:C.navy}}>{c.name}</div><div style={{fontSize:11,color:C.gray400,marginTop:1}}>{c.location||"—"}</div></div>
-                    </div>
-                  </td>
-                  <td style={{padding:"13px 16px"}}><div style={{color:C.gray600,fontSize:12,fontWeight:500,maxWidth:150}}>{c.title||"—"}</div></td>
-                  <td style={{padding:"13px 16px"}}>
-                    <div style={{display:"flex",alignItems:"center",gap:5}}>
-                      {c.ownerId&&<RecruiterBadge id={c.ownerId} size={22}/>}
-                      {(c.collaborators||[]).length>0&&<><span style={{color:C.gray300,fontSize:10}}>+</span><RecruiterStack ids={c.collaborators||[]} size={18}/></>}
-                    </div>
-                  </td>
-                  <td style={{padding:"13px 16px"}}>{cjobs.slice(0,1).map(j=><div key={j.id} style={{fontSize:12,color:C.gray500,fontWeight:500}}>{j.client}</div>)}{!cjobs.length&&<span style={{color:C.gray300,fontSize:12}}>—</span>}</td>
-                  <td style={{padding:"13px 16px"}}>{c.workAuth&&<Tag label={c.workAuth} color={C.success} bg={C.successL}/>}</td>
-                  <td style={{padding:"13px 16px",color:C.navy,fontSize:12,fontWeight:600,whiteSpace:"nowrap"}}>{c.salary||"—"}</td>
-                  <td style={{padding:"13px 16px"}}><StageBadge stage={c.stage}/></td>
-                  <td style={{padding:"13px 16px",whiteSpace:"nowrap"}}>
-                    <div style={{display:"flex",gap:6,alignItems:"center"}}>
-                      {c.resumePath
-                        ?<span title="Resume on file" style={{fontSize:14,display:"flex"}}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>
-                        :<span title="No resume" style={{fontSize:12,color:C.danger,fontWeight:600}}>No CV</span>}
-                      <button onClick={e=>{e.stopPropagation();setModal({t:"edit-cand",c});}} style={{background:C.gray100,color:C.gray500,border:`1px solid ${C.gray200}`,borderRadius:6,padding:"4px 10px",fontSize:11,cursor:"pointer",fontWeight:500}}>Edit</button>
-                    </div>
-                  </td>
-                </tr>;
-              })}
-              {!fCands.length&&<tr><td colSpan={8} style={{textAlign:"center",padding:48,color:C.gray300,fontSize:13}}>No candidates match your filters.</td></tr>}
-            </tbody>
-          </table>
-        </div>}
-
-        {view==="pipeline"&&<div style={{display:"flex",gap:10,overflowX:"auto",paddingBottom:16,alignItems:"flex-start"}}>
+        {/* PIPELINE */}
+        {page==="pipeline"&&<div style={{display:"flex",gap:10,overflowX:"auto",paddingBottom:16,alignItems:"flex-start"}}>
           {STAGES.map(stage=>{
             const col=fCands.filter(c=>c.stage===stage);const m=SM[stage];
             return <div key={stage} style={{flex:"0 0 200px",minWidth:200}}>
               <div style={{background:m.bg,border:`1px solid ${m.c}40`,borderRadius:9,padding:"8px 12px",marginBottom:8,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                 <span style={{color:m.t||m.c,fontWeight:700,fontSize:11}}>{stage}</span>
-                <span style={{background:m.c,color:C.white,borderRadius:10,padding:"2px 8px",fontSize:11,fontWeight:700}}>{col.length}</span>
+                <span style={{background:m.c,color:"#fff",borderRadius:10,padding:"2px 8px",fontSize:11,fontWeight:700}}>{col.length}</span>
               </div>
-              {col.map(c=>{const o=getTeamMember(c.ownerId);return <div key={c.id} onClick={()=>openCand(c)} style={{background:C.white,border:`1px solid ${C.gray200}`,borderRadius:9,padding:"11px 12px",marginBottom:6,cursor:"pointer",transition:"all 0.15s",boxShadow:"0 1px 3px rgba(0,0,0,0.05)"}} onMouseEnter={e=>{e.currentTarget.style.borderColor=m.c;e.currentTarget.style.boxShadow=`0 3px 10px ${m.c}20`;}} onMouseLeave={e=>{e.currentTarget.style.borderColor=C.gray200;e.currentTarget.style.boxShadow="0 1px 3px rgba(0,0,0,0.05)";}}>
+              {col.map(c=>{const o=getTeamMember(c.ownerId);return <div key={c.id} onClick={()=>openCand(c)} style={{background:"#fff",border:`1px solid ${B.muted}`,borderRadius:9,padding:"11px 12px",marginBottom:6,cursor:"pointer",transition:"all 0.15s"}} onMouseEnter={e=>{e.currentTarget.style.borderColor=m.c;}} onMouseLeave={e=>{e.currentTarget.style.borderColor=B.muted;}}>
                 <div style={{display:"flex",gap:7,alignItems:"center",marginBottom:5,justifyContent:"space-between"}}>
-                  <div style={{display:"flex",gap:7,alignItems:"center"}}><Avatar name={c.name} size={26} color={o?.color}/><div style={{fontWeight:600,fontSize:12,color:C.navy,lineHeight:1.3}}>{c.name}</div></div>
+                  <div style={{display:"flex",gap:7,alignItems:"center"}}><Avatar name={c.name} size={26} color={o?.color}/><div style={{fontWeight:600,fontSize:12,color:B.ink,lineHeight:1.3}}>{c.name}</div></div>
                   {c.ownerId&&<RecruiterBadge id={c.ownerId} size={18}/>}
                 </div>
-                <div style={{fontSize:11,color:C.gray400,marginBottom:4}}>{c.title}</div>
-                {c.salary&&<div style={{fontSize:11,color:C.success,fontWeight:600}}>{c.salary}</div>}
+                <div style={{fontSize:11,color:"#A09A93",marginBottom:4}}>{c.title}</div>
+                {c.salary&&<div style={{fontSize:11,color:"#34d399",fontWeight:600}}>{c.salary}</div>}
               </div>;})}
-              {!col.length&&<div style={{background:C.white,border:`2px dashed ${C.gray200}`,borderRadius:9,padding:"20px",textAlign:"center",color:C.gray300,fontSize:11}}>Empty</div>}
+              {!col.length&&<div style={{background:"#fff",border:`2px dashed ${B.muted}`,borderRadius:9,padding:20,textAlign:"center",color:"#A09A93",fontSize:11}}>Empty</div>}
             </div>;
           })}
         </div>}
-      </>}
 
-      {/* JOBS */}
-      {tab==="jobs"&&<>
-        <div style={{background:C.white,border:`1px solid ${C.gray200}`,borderRadius:12,padding:"14px 16px",marginBottom:16,display:"flex",gap:8,flexWrap:"wrap",alignItems:"center",boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
-          <div style={{position:"relative",flex:"1 1 200px"}}>
-            <span style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",color:C.gray400,fontSize:13,display:"flex"}}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></span>
-            <input style={{...inp,paddingLeft:32}} value={js} onChange={e=>setJs(e.target.value)} placeholder="Search role, client, SPOC…"/>
+        {/* JOBS */}
+        {page==="jobs"&&<>
+          <div style={{background:"#fff",border:`1px solid ${B.muted}`,borderRadius:12,padding:"14px 16px",marginBottom:16,display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}}>
+            <select style={{...sel,flex:"0 0 155px"}} value={jStat} onChange={e=>setJStat(e.target.value)}><option value="All">All Statuses</option>{JOB_STATUSES.map(s=><option key={s}>{s}</option>)}</select>
+            <select style={{...sel,flex:"0 0 145px"}} value={jClient} onChange={e=>setJClient(e.target.value)}><option value="All">All Clients</option>{clients.map(c=><option key={c}>{c}</option>)}</select>
+            <select style={{...sel,flex:"0 0 145px"}} value={jOwner} onChange={e=>setJOwner(e.target.value)}><option value="All">All Recruiters</option>{team.map(t=><option key={t.id} value={t.id}>{t.name.split(" ")[0]}</option>)}</select>
+            <span style={{color:"#A09A93",fontSize:12,fontWeight:500,marginLeft:"auto"}}>{fJobs.length} role{fJobs.length!==1?"s":""}</span>
           </div>
-          <select style={{...sel,flex:"0 0 155px"}} value={jStat} onChange={e=>setJStat(e.target.value)}><option value="All">All Statuses</option>{JOB_STATUSES.map(s=><option key={s}>{s}</option>)}</select>
-          <select style={{...sel,flex:"0 0 145px"}} value={jClient} onChange={e=>setJClient(e.target.value)}><option value="All">All Clients</option>{clients.map(c=><option key={c}>{c}</option>)}</select>
-          <select style={{...sel,flex:"0 0 145px"}} value={jOwner} onChange={e=>setJOwner(e.target.value)}><option value="All">All Recruiters</option>{team.map(t=><option key={t.id} value={t.id}>{t.name.split(" ")[0]}</option>)}</select>
-          <span style={{color:C.gray400,fontSize:12,fontWeight:500,flexShrink:0}}>{fJobs.length} role{fJobs.length!==1?"s":""}</span>
-        </div>
-        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(320px,1fr))",gap:12}}>
-          {fJobs.map(j=>{
-            const subs=cands.filter(c=>j.submittedCandidates?.includes(c.id));
-            const PC={"P1":C.danger,"P2":C.warn,"P3":C.gray400};
-            return <div key={j.id} onClick={()=>setModal({t:"job",j})} style={{background:C.white,border:`1px solid ${C.gray200}`,borderRadius:13,padding:"18px 20px",cursor:"pointer",transition:"all 0.2s",boxShadow:"0 1px 4px rgba(0,0,0,0.05)"}} onMouseEnter={e=>{e.currentTarget.style.borderColor=C.accent;e.currentTarget.style.boxShadow=`0 6px 24px ${C.accent}14`;e.currentTarget.style.transform="translateY(-2px)";}} onMouseLeave={e=>{e.currentTarget.style.borderColor=C.gray200;e.currentTarget.style.boxShadow="0 1px 4px rgba(0,0,0,0.05)";e.currentTarget.style.transform="translateY(0)";}}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
-                <div style={{flex:1,paddingRight:10}}>
-                  <div style={{fontSize:14,fontWeight:700,color:C.navy,lineHeight:1.3,marginBottom:3}}>{j.title}</div>
-                  <div style={{fontSize:12,color:C.gray400,fontWeight:500}}>{j.client}{j.spoc?` · ${j.spoc}`:""}</div>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(320px,1fr))",gap:12}}>
+            {fJobs.map(j=>{
+              const subs=cands.filter(c=>j.submittedCandidates?.includes(c.id));
+              const PC={"P1":C.danger,"P2":C.warn,"P3":C.gray400};
+              return <div key={j.id} onClick={()=>setModal({t:"job",j})} style={{background:"#fff",border:`1px solid ${B.muted}`,borderRadius:13,padding:"18px 20px",cursor:"pointer",transition:"all 0.2s"}} onMouseEnter={e=>{e.currentTarget.style.borderColor=B.accent;e.currentTarget.style.transform="translateY(-2px)";}} onMouseLeave={e=>{e.currentTarget.style.borderColor=B.muted;e.currentTarget.style.transform="translateY(0)";}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
+                  <div style={{flex:1,paddingRight:10}}>
+                    <div style={{fontSize:14,fontWeight:700,color:B.ink,lineHeight:1.3,marginBottom:3}}>{j.title}</div>
+                    <div style={{fontSize:12,color:"#A09A93",fontWeight:500}}>{j.client}{j.spoc?` · ${j.spoc}`:""}</div>
+                  </div>
+                  <JobBadge status={j.status}/>
                 </div>
-                <JobBadge status={j.status}/>
-              </div>
-              <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:12}}>
-                {j.empType&&<Tag label={j.empType} color={C.accent} bg={C.accentL}/>}
-                {j.priority&&<span style={{color:PC[j.priority]||C.gray400,background:(PC[j.priority]||C.gray400)+"15",borderRadius:5,padding:"2px 8px",fontSize:11,fontWeight:700}}>{j.priority}</span>}
-              </div>
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"4px 10px",marginBottom:12}}>
-                {j.location&&<div style={{fontSize:11,color:C.gray400}}>📍 {j.location}</div>}
-                {j.salary&&<div style={{fontSize:11,color:C.gray600,fontWeight:600}}>💰 {j.salary}</div>}
-                <div style={{fontSize:11,color:C.gray400}}>📤 {subs.length} submitted</div>
-              </div>
-              <div style={{borderTop:`1px solid ${C.gray100}`,paddingTop:10,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                <RecruiterStack ids={j.assignedRecruiters||[]} size={22}/>
-                <div style={{display:"flex",alignItems:"center"}}>
-                  {subs.slice(0,5).map((c,i)=>{const o=getTeamMember(c.ownerId);return <div key={c.id} style={{marginLeft:i>0?-7:0,zIndex:10-i,position:"relative",border:`2px solid ${C.white}`,borderRadius:7}}><Avatar name={c.name} size={24} color={o?.color}/></div>;})}
-                  {!subs.length&&<span style={{color:C.gray300,fontSize:11}}>No candidates yet</span>}
+                <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:12}}>
+                  {j.empType&&<Tag label={j.empType} color={B.accent} bg={B.accentLight}/>}
+                  {j.priority&&<span style={{color:PC[j.priority]||"#A09A93",background:(PC[j.priority]||"#A09A93")+"15",borderRadius:5,padding:"2px 8px",fontSize:11,fontWeight:700}}>{j.priority}</span>}
                 </div>
-              </div>
-            </div>;
-          })}
-          {!fJobs.length&&<div style={{gridColumn:"1/-1",textAlign:"center",padding:48,color:C.gray300,fontSize:13}}>No job orders match your filters.</div>}
-        </div>
-      </>}
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"4px 10px",marginBottom:12}}>
+                  {j.location&&<div style={{fontSize:11,color:"#A09A93"}}>{j.location}</div>}
+                  {j.salary&&<div style={{fontSize:11,color:B.ink,fontWeight:600}}>{j.salary}</div>}
+                  <div style={{fontSize:11,color:"#A09A93"}}>{subs.length} submitted</div>
+                </div>
+                <div style={{borderTop:`1px solid ${B.muted}`,paddingTop:10,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                  <RecruiterStack ids={j.assignedRecruiters||[]} size={22}/>
+                  <div style={{display:"flex",alignItems:"center"}}>
+                    {subs.slice(0,5).map((c,i)=>{const o=getTeamMember(c.ownerId);return <div key={c.id} style={{marginLeft:i>0?-7:0,zIndex:10-i,position:"relative",border:"2px solid #fff",borderRadius:7}}><Avatar name={c.name} size={24} color={o?.color}/></div>;})}
+                    {!subs.length&&<span style={{color:"#A09A93",fontSize:11}}>No candidates yet</span>}
+                  </div>
+                </div>
+              </div>;
+            })}
+            {!fJobs.length&&<div style={{gridColumn:"1/-1",textAlign:"center",padding:48,color:"#A09A93",fontSize:13}}>No job orders match your filters.</div>}
+          </div>
+        </>}
+
+      </div>
     </div>
 
-    {/* MODALS */}
+    {/* ═══ MODALS ═══ */}
     {modal?.t==="add-cand"&&<Modal title="Add New Candidate" subtitle="Fill in details or upload a resume for AI auto-fill" onClose={()=>setModal(null)}><CandForm allCandidates={cands} onSave={saveCand} onClose={()=>setModal(null)} activeUser={activeUser} team={team}/></Modal>}
     {modal?.t==="edit-cand"&&<Modal title="Edit Candidate" onClose={()=>setModal(null)}><CandForm initial={modal.c} allCandidates={cands} onSave={saveCand} onClose={()=>setModal(null)} activeUser={activeUser} team={team}/></Modal>}
     {modal?.t==="cand"&&(()=>{const live=cands.find(c=>c.id===modal.c.id)||modal.c;return <Modal title="Candidate Profile" onClose={()=>setModal(null)} wide><CandDetail c={live} jobs={jobs} onEdit={()=>setModal({t:"edit-cand",c:live})} onStageChange={stageChange} onAddNote={addCandNoteHandler} onSubmitToJob={submitToJobHandler} activeUser={activeUser} onDelete={activeUser?.is_admin?deleteCandHandler:null} onResumeUpload={handleResumeUpload}/></Modal>;})()}
