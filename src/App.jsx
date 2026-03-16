@@ -128,6 +128,50 @@ function generateWeeklyReport(cands, jobs, filterRecruiter="all", team=TEAM_FALL
   return {ws,we,active:fc.filter(c=>!["Placed","Rejected"].includes(c.stage)),byStage,byClient,byRecruiter,openJobs:fj.filter(j=>["Open – Sourcing","Active"].includes(j.status)),hotCands:fc.filter(c=>["Interview 1","Interview 2","Final Interview","Offer"].includes(c.stage)),total:fc.length,placed:fc.filter(c=>c.stage==="Placed").length};
 }
 
+const AI_PROFILE_PREFIX = "[AI PROFILE]";
+const AI_SUMMARY_PREFIX = "[AI Summary]";
+const AI_PROFILE_SECTIONS = ["overview","experience","education"];
+
+function normalizeAIProfile(profile={}) {
+  return {
+    overview: (profile.overview || "").trim(),
+    experience: Array.isArray(profile.experience) ? profile.experience.filter(Boolean).map(item=>({
+      company: item.company || "",
+      title: item.title || "",
+      dates: item.dates || "",
+      bullets: Array.isArray(item.bullets) ? item.bullets.filter(Boolean).slice(0,4) : [],
+    })).filter(item=>item.company || item.title || item.dates || item.bullets.length) : [],
+    education: Array.isArray(profile.education) ? profile.education.filter(Boolean).map(item=>({
+      school: item.school || "",
+      degree: item.degree || "",
+      dates: item.dates || "",
+    })).filter(item=>item.school || item.degree || item.dates) : [],
+  };
+}
+
+function hasAIProfile(profile={}) {
+  return AI_PROFILE_SECTIONS.some(key=>Array.isArray(profile[key]) ? profile[key].length : !!profile[key]);
+}
+
+function buildAIProfileNote(profile) {
+  return `${AI_PROFILE_PREFIX}\n${JSON.stringify(normalizeAIProfile(profile))}`;
+}
+
+function extractAIProfile(notes=[]) {
+  const note=[...notes].reverse().find(n=>n.text?.startsWith(AI_PROFILE_PREFIX));
+  if(!note) return null;
+  try {
+    const parsed=JSON.parse(note.text.replace(`${AI_PROFILE_PREFIX}\n`,"").trim());
+    return normalizeAIProfile(parsed);
+  } catch {
+    return null;
+  }
+}
+
+function isHiddenCandidateNote(note) {
+  return note?.text?.startsWith(AI_PROFILE_PREFIX) || note?.text?.startsWith(AI_SUMMARY_PREFIX);
+}
+
 // ── MICRO COMPONENTS ──────────────────────────────────────────────
 function StageBadge({stage}){
   const m=SM[stage]||SM.Sourced;
@@ -326,7 +370,7 @@ function CandForm({initial,allCandidates,onSave,onClose,activeUser=TEAM_FALLBACK
   const [parsing,setParsing]=useState(false);
   const [pMsg,setPMsg]=useState(null);
   const [liText,setLiText]=useState("");
-  const [summaryDraft,setSummaryDraft]=useState("");
+  const [profileDraft,setProfileDraft]=useState(null);
   const [dupes,setDupes]=useState([]);
   const [dupeOk,setDupeOk]=useState(false);
   const fr=useRef();
@@ -357,13 +401,13 @@ function CandForm({initial,allCandidates,onSave,onClose,activeUser=TEAM_FALLBACK
     setParsing(true);
     setPMsg(`AI reading ${originLabel.toLowerCase()} text…`);
     try{
-      const extractPrompt=`Extract candidate info from this ${originLabel.toLowerCase()} text. Return ONLY valid JSON with these exact fields when present: name, email, phone, linkedin, title, seniority (one of: Individual Contributor/Senior IC/Team Lead/Manager/Director/VP/SVP/C-Suite / Partner), experience, salary, location, workAuth (one of: US Citizen/Green Card/H-1B/H-4 EAD/L-1/TN Visa/OPT/CPT/EAD/EU Passport/EU Blue Card/Residence Permit/Requires Sponsorship/Other), skills (array of up to 8 most relevant skills), vertical (one of: Telecom / Wireless/AI / ML / Data/Cybersecurity/Software Engineering/Cloud / DevOps/Sales & Business Development/Directors & VPs/SVPs & C-Suite/Client Partners/Project / Program Mgmt/Network Engineering/Consulting), source, workSummary. "workSummary" should be a concise recruiter-friendly summary of the candidate's work history, progression, domain background, and notable experience in 3-6 sentences. Infer only when strongly supported by the text. Use "LinkedIn" as source if this appears to be a LinkedIn profile.`;
+      const extractPrompt=`Extract candidate info from this ${originLabel.toLowerCase()} text. Return ONLY valid JSON with these exact fields when present: name, email, phone, linkedin, title, seniority (one of: Individual Contributor/Senior IC/Team Lead/Manager/Director/VP/SVP/C-Suite / Partner), experience, salary, location, workAuth (one of: US Citizen/Green Card/H-1B/H-4 EAD/L-1/TN Visa/OPT/CPT/EAD/EU Passport/EU Blue Card/Residence Permit/Requires Sponsorship/Other), skills (array of up to 8 most relevant skills), vertical (one of: Telecom / Wireless/AI / ML / Data/Cybersecurity/Software Engineering/Cloud / DevOps/Sales & Business Development/Directors & VPs/SVPs & C-Suite/Client Partners/Project / Program Mgmt/Network Engineering/Consulting), source, profile. "profile" should be an object with keys: overview (string), experience (array of {company,title,dates,bullets}), education (array of {school,degree,dates}). Keep the overview concise and recruiter-friendly. Infer only when strongly supported by the text. Use "LinkedIn" as source if this appears to be a LinkedIn profile.`;
       const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":import.meta.env.VITE_ANTHROPIC_API_KEY,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1200,messages:[{role:"user",content:`${extractPrompt}\n\nProfile text:\n${text.substring(0,18000)}`}]})});
       const data=await res.json();
       if(data.error) throw new Error(data.error.message);
       const parsed=JSON.parse((data.content?.[0]?.text||"{}").replace(/```json|```/g,"").trim());
       const mapped=mapParsedCandidate(parsed);
-      setSummaryDraft(parsed.workSummary?.trim()||"");
+      setProfileDraft(hasAIProfile(parsed.profile) ? normalizeAIProfile(parsed.profile) : null);
       if(!Object.keys(mapped).length){
         setPMsg(`⚠ Could not extract fields from ${originLabel.toLowerCase()} text.`);
       } else {
@@ -393,7 +437,7 @@ function CandForm({initial,allCandidates,onSave,onClose,activeUser=TEAM_FALLBACK
       const isImage=file.type.startsWith("image/")||file.name.match(/\.(png|jpg|jpeg|webp)$/i);
       const base64=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result.split(",")[1]);r.onerror=()=>rej(new Error("Read failed"));r.readAsDataURL(file);});
       setPMsg("AI extracting details…");
-      const extractPrompt="Extract candidate info from this resume. Return ONLY valid JSON with these exact fields: name, email, phone, title, seniority (one of: Individual Contributor/Senior IC/Team Lead/Manager/Director/VP/SVP/C-Suite / Partner), experience, salary, location, workAuth (one of: US Citizen/Green Card/H-1B/H-4 EAD/L-1/TN Visa/OPT/CPT/EAD/EU Passport/EU Blue Card/Residence Permit/Requires Sponsorship/Other), skills (array of up to 8 most relevant skills), vertical (one of: Telecom / Wireless/AI / ML / Data/Cybersecurity/Software Engineering/Cloud / DevOps/Sales & Business Development/Directors & VPs/SVPs & C-Suite/Client Partners/Project / Program Mgmt/Network Engineering/Consulting). Only include fields you can confidently extract.";
+      const extractPrompt="Extract candidate info from this resume. Return ONLY valid JSON with these exact fields: name, email, phone, title, seniority (one of: Individual Contributor/Senior IC/Team Lead/Manager/Director/VP/SVP/C-Suite / Partner), experience, salary, location, workAuth (one of: US Citizen/Green Card/H-1B/H-4 EAD/L-1/TN Visa/OPT/CPT/EAD/EU Passport/EU Blue Card/Residence Permit/Requires Sponsorship/Other), skills (array of up to 8 most relevant skills), vertical (one of: Telecom / Wireless/AI / ML / Data/Cybersecurity/Software Engineering/Cloud / DevOps/Sales & Business Development/Directors & VPs/SVPs & C-Suite/Client Partners/Project / Program Mgmt/Network Engineering/Consulting), profile. \"profile\" should be an object with keys: overview (string), experience (array of {company,title,dates,bullets}), education (array of {school,degree,dates}). Only include fields you can confidently extract.";
       let messages;
       if(isPDF){
         messages=[{role:"user",content:[{type:"document",source:{type:"base64",media_type:"application/pdf",data:base64}},{type:"text",text:extractPrompt}]}];
@@ -422,6 +466,7 @@ function CandForm({initial,allCandidates,onSave,onClose,activeUser=TEAM_FALLBACK
       if(data.error) throw new Error(data.error.message);
       const parsed=JSON.parse((data.content?.[0]?.text||"{}").replace(/```json|```/g,"").trim());
       const mapped=mapParsedCandidate(parsed);
+      setProfileDraft(hasAIProfile(parsed.profile) ? normalizeAIProfile(parsed.profile) : null);
       if(!Object.keys(mapped).length){
         setPMsg(upErr?"⚠ Could not extract. Fill manually.":"✓ Resume saved. Could not extract details — fill manually.");
       } else {
@@ -434,7 +479,7 @@ function CandForm({initial,allCandidates,onSave,onClose,activeUser=TEAM_FALLBACK
   const submit=async()=>{
     if(!f.name.trim()||!f.email.trim()) return alert("Name + email required.");
     if(dupes.length&&!dupeOk) return alert("Review duplicate warning first.");
-    await onSave({...f,addedDate:f.addedDate||today(),lastUpdated:today(),submittedTo:f.submittedTo||[],aiSummaryDraft:summaryDraft.trim()});
+    await onSave({...f,addedDate:f.addedDate||today(),lastUpdated:today(),submittedTo:f.submittedTo||[],aiProfileDraft:profileDraft});
   };
   return <div>
     {dupes.length>0&&!dupeOk&&<div style={{background:C.warnL,border:`1px solid ${C.warn}40`,borderRadius:9,padding:"12px 14px",marginBottom:16}}>
@@ -470,9 +515,11 @@ function CandForm({initial,allCandidates,onSave,onClose,activeUser=TEAM_FALLBACK
       <textarea style={{...ta,minHeight:140,marginBottom:8}} value={liText} onChange={e=>setLiText(e.target.value)} placeholder={"Paste the LinkedIn profile text here.\n\nExample:\nName\nHeadline\nLocation\nAbout\nExperience\nSkills"} />
       <div style={{fontSize:11,color:C.gray400}}>Tip: paste the full copied profile page text. The LinkedIn URL can still go in the field below.</div>
     </div>
-    {summaryDraft&&<div style={{background:C.white,border:`1px solid ${C.gray200}`,borderRadius:10,padding:"14px 16px",marginBottom:18}}>
-      <div style={{color:C.gray500,fontSize:11,fontWeight:600,letterSpacing:0.5,textTransform:"uppercase",marginBottom:8}}>Work History Summary</div>
-      <textarea style={{...ta,minHeight:110}} value={summaryDraft} onChange={e=>setSummaryDraft(e.target.value)} placeholder="AI-generated work history summary will appear here." />
+    {profileDraft&&<div style={{background:C.white,border:`1px solid ${C.gray200}`,borderRadius:10,padding:"14px 16px",marginBottom:18}}>
+      <div style={{color:C.gray500,fontSize:11,fontWeight:600,letterSpacing:0.5,textTransform:"uppercase",marginBottom:6}}>Profile Snapshot Ready</div>
+      <div style={{color:C.gray600,fontSize:12,lineHeight:1.6}}>
+        {profileDraft.overview||"Overview"} · {profileDraft.experience.length} experience entr{profileDraft.experience.length===1?"y":"ies"} · {profileDraft.education.length} education entr{profileDraft.education.length===1?"y":"ies"}
+      </div>
     </div>}
     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"14px 16px"}}>
       <F label="Full Name *"><input style={inp} value={f.name} onChange={e=>{s("name",e.target.value);chkDupe(f.email,f.phone,e.target.value);}} placeholder="Full name"/></F>
@@ -534,9 +581,6 @@ function CandForm({initial,allCandidates,onSave,onClose,activeUser=TEAM_FALLBACK
 function CandDetail({c,jobs,onEdit,onStageChange,onAddNote,onSubmitToJob,activeUser=TEAM_FALLBACK[0],onDelete,onResumeUpload}){
   const [note,setNote]=useState("");
   const [detTab,setDetTab]=useState("Notes");
-  const [chatText,setChatText]=useState("");
-  const [chatDraft,setChatDraft]=useState("");
-  const [chatParsing,setChatParsing]=useState(false);
   const [resumeUrl,setResumeUrl]=useState(null);
   const [uploadingResume,setUploadingResume]=useState(false);
   const [resumeMsg,setResumeMsg]=useState(null);
@@ -568,32 +612,9 @@ function CandDetail({c,jobs,onEdit,onStageChange,onAddNote,onSubmitToJob,activeU
   const assigned=jobs.filter(j=>j.submittedCandidates?.includes(c.id));
   const owner=getTeamMember(c.ownerId);
   const collabs=(c.collaborators||[]).map(getTeamMember).filter(Boolean);
-  const summaryNote=(c.notes||[]).slice().reverse().find(n=>n.text?.startsWith("[AI Summary]"));
-  const workSummary=summaryNote?.text?.replace(/^\[AI Summary\]\n?/,"").trim();
+  const aiProfile=extractAIProfile(c.notes||[]);
+  const visibleNotes=(c.notes||[]).filter(n=>!isHiddenCandidateNote(n));
   const post=()=>{if(!note.trim())return;onAddNote(c.id,note.trim());setNote("");};
-  const parseChatHistory=async()=>{
-    const text=chatText.trim();
-    if(!text) return;
-    setChatParsing(true);
-    try{
-      const prompt=`You are helping a recruiter turn conversation history into an ATS note. Return ONLY valid JSON with one field: note. The note should be concise, recruiter-friendly, and include the most important details you can confidently infer from the conversation, especially compensation expectations, target role, location preferences, work authorization, availability, interview timing, deal-breakers, and motivation. Use short bullet-style lines in plain text. Do not invent details.`;
-      const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":import.meta.env.VITE_ANTHROPIC_API_KEY,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:900,messages:[{role:"user",content:`${prompt}\n\nConversation:\n${text.substring(0,18000)}`}]})});
-      const data=await res.json();
-      if(data.error) throw new Error(data.error.message);
-      const parsed=JSON.parse((data.content?.[0]?.text||"{}").replace(/```json|```/g,"").trim());
-      setChatDraft(parsed.note?.trim()||"");
-    }catch(e){
-      console.error("Chat parse failed:",e);
-      alert("Chat parsing failed: "+e.message);
-    }
-    setChatParsing(false);
-  };
-  const approveChatDraft=()=>{
-    if(!chatDraft.trim()) return;
-    onAddNote(c.id,`[AI Intake Note]\n${chatDraft.trim()}`);
-    setChatDraft("");
-    setChatText("");
-  };
   return <div>
     <div style={{display:"flex",gap:14,alignItems:"flex-start",marginBottom:20}}>
       <Avatar name={c.name} size={52} color={owner?.color}/>
@@ -655,9 +676,48 @@ function CandDetail({c,jobs,onEdit,onStageChange,onAddNote,onSubmitToJob,activeU
         </div>
       ))}
     </div>
-    {workSummary&&<div style={{marginBottom:16}}>
-      <div style={{color:C.gray400,fontSize:10,fontWeight:600,letterSpacing:0.8,textTransform:"uppercase",marginBottom:8}}>Work History Summary</div>
-      <div style={{background:C.gray50,border:`1px solid ${C.gray200}`,borderRadius:10,padding:"12px 14px",color:C.gray600,fontSize:12,lineHeight:1.7,whiteSpace:"pre-wrap"}}>{workSummary}</div>
+    {aiProfile&&hasAIProfile(aiProfile)&&<div style={{marginBottom:18}}>
+      {aiProfile.overview&&<div style={{marginBottom:18}}>
+        <div style={{fontSize:18,fontWeight:700,color:C.navy,marginBottom:10}}>Overview</div>
+        <div style={{background:C.white,border:`1px solid ${C.gray200}`,borderRadius:12,padding:"16px 18px",color:C.gray600,fontSize:13,lineHeight:1.75}}>{aiProfile.overview}</div>
+      </div>}
+      {aiProfile.experience.length>0&&<div style={{marginBottom:18}}>
+        <div style={{fontSize:18,fontWeight:700,color:C.navy,marginBottom:12}}>Experience</div>
+        <div style={{display:"flex",flexDirection:"column",gap:14}}>
+          {aiProfile.experience.map((item,idx)=><div key={`${item.company}-${idx}`} style={{background:C.white,border:`1px solid ${C.gray200}`,borderRadius:12,padding:"16px 18px"}}>
+            <div style={{display:"flex",gap:12,alignItems:"flex-start"}}>
+              <div style={{width:40,height:40,borderRadius:10,background:C.accentL,color:C.accent,display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,fontWeight:800,flexShrink:0}}>{ini(item.company||item.title||"T")}</div>
+              <div style={{flex:1}}>
+                <div style={{fontSize:16,fontWeight:700,color:C.navy}}>{item.company||"Experience"}</div>
+                <div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"center",marginTop:2,color:C.gray500,fontSize:12}}>
+                  {item.title&&<span>{item.title}</span>}
+                  {item.title&&item.dates&&<span style={{color:C.gray300}}>•</span>}
+                  {item.dates&&<span>{item.dates}</span>}
+                </div>
+                {item.bullets?.length>0&&<ul style={{margin:"10px 0 0 18px",padding:0,color:C.gray600,fontSize:12,lineHeight:1.7}}>
+                  {item.bullets.map((bullet,i)=><li key={i} style={{marginBottom:4}}>{bullet}</li>)}
+                </ul>}
+              </div>
+            </div>
+          </div>)}
+        </div>
+      </div>}
+      {aiProfile.education.length>0&&<div style={{marginBottom:18}}>
+        <div style={{fontSize:18,fontWeight:700,color:C.navy,marginBottom:12}}>Education</div>
+        <div style={{display:"flex",flexDirection:"column",gap:12}}>
+          {aiProfile.education.map((item,idx)=><div key={`${item.school}-${idx}`} style={{background:C.white,border:`1px solid ${C.gray200}`,borderRadius:12,padding:"16px 18px",display:"flex",gap:12,alignItems:"flex-start"}}>
+            <div style={{width:40,height:40,borderRadius:10,background:C.purpleL,color:C.purple,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>🎓</div>
+            <div>
+              <div style={{fontSize:16,fontWeight:700,color:C.navy}}>{item.school||"Education"}</div>
+              <div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"center",marginTop:2,color:C.gray500,fontSize:12}}>
+                {item.degree&&<span>{item.degree}</span>}
+                {item.degree&&item.dates&&<span style={{color:C.gray300}}>•</span>}
+                {item.dates&&<span>{item.dates}</span>}
+              </div>
+            </div>
+          </div>)}
+        </div>
+      </div>}
     </div>}
     {c.linkedin&&<div style={{marginBottom:14}}><a href={`https://${c.linkedin.replace(/^https?:\/\//,"")}`} target="_blank" rel="noreferrer" style={{color:C.accent,fontSize:12,fontWeight:500}}>🔗 {c.linkedin}</a></div>}
     {/* Resume section */}
@@ -710,31 +770,13 @@ function CandDetail({c,jobs,onEdit,onStageChange,onAddNote,onSubmitToJob,activeU
     <div>
       {/* Tab bar */}
       <div style={{display:"flex",gap:0,borderBottom:`2px solid ${C.gray100}`,marginBottom:14}}>
-        {["Notes","Timeline","Scorecard"].map(t=><button key={t} onClick={()=>setDetTab(t)} style={{background:"none",border:"none",borderBottom:`2px solid ${detTab===t?C.accent:"transparent"}`,marginBottom:-2,padding:"8px 16px",fontSize:12,fontWeight:detTab===t?700:500,color:detTab===t?C.accent:C.gray400,cursor:"pointer"}}>{t==="Scorecard"?"Scorecard":t==="Timeline"?"Timeline":"Notes"}{t==="Notes"&&c.notes?.length?<span style={{background:C.accentL,color:C.accent,borderRadius:8,padding:"1px 6px",fontSize:10,marginLeft:5,fontWeight:700}}>{c.notes.length}</span>:null}</button>)}
+        {["Notes","Timeline","Scorecard"].map(t=><button key={t} onClick={()=>setDetTab(t)} style={{background:"none",border:"none",borderBottom:`2px solid ${detTab===t?C.accent:"transparent"}`,marginBottom:-2,padding:"8px 16px",fontSize:12,fontWeight:detTab===t?700:500,color:detTab===t?C.accent:C.gray400,cursor:"pointer"}}>{t==="Scorecard"?"Scorecard":t==="Timeline"?"Timeline":"Notes"}{t==="Notes"&&visibleNotes.length?<span style={{background:C.accentL,color:C.accent,borderRadius:8,padding:"1px 6px",fontSize:10,marginLeft:5,fontWeight:700}}>{visibleNotes.length}</span>:null}</button>)}
       </div>
 
       {detTab==="Notes"&&<>
-        <div style={{background:C.gray50,border:`1px solid ${C.gray200}`,borderRadius:10,padding:"12px 14px",marginBottom:12}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,marginBottom:8}}>
-            <div>
-              <div style={{color:C.navy,fontSize:12,fontWeight:700}}>Parse Chat History Into Note</div>
-              <div style={{color:C.gray500,fontSize:11}}>Paste texts, emails, or call notes. Review the draft before adding it.</div>
-            </div>
-            <button onClick={parseChatHistory} disabled={chatParsing} style={{background:C.white,color:C.accent,border:`1px solid ${C.accent}55`,borderRadius:8,padding:"8px 12px",fontSize:12,fontWeight:700,cursor:chatParsing?"not-allowed":"pointer",opacity:chatParsing?0.6:1,whiteSpace:"nowrap"}}>{chatParsing?"Parsing…":"AI Parse Chat"}</button>
-          </div>
-          <textarea style={{...ta,minHeight:100}} value={chatText} onChange={e=>setChatText(e.target.value)} placeholder="Paste chat history, emails, or recruiter call notes here…" />
-          {chatDraft&&<div style={{marginTop:10,background:C.white,border:`1px solid ${C.gray200}`,borderRadius:8,padding:"10px 12px"}}>
-            <div style={{color:C.gray500,fontSize:11,fontWeight:600,letterSpacing:0.5,textTransform:"uppercase",marginBottom:6}}>Draft Note</div>
-            <div style={{color:C.gray600,fontSize:12,lineHeight:1.65,whiteSpace:"pre-wrap"}}>{chatDraft}</div>
-            <div style={{display:"flex",gap:8,marginTop:10}}>
-              <button onClick={approveChatDraft} style={{background:C.navy,color:C.white,border:"none",borderRadius:8,padding:"8px 12px",fontSize:12,fontWeight:700,cursor:"pointer"}}>Approve & Add Note</button>
-              <button onClick={()=>setChatDraft("")} style={{background:C.white,color:C.gray500,border:`1px solid ${C.gray300}`,borderRadius:8,padding:"8px 12px",fontSize:12,cursor:"pointer"}}>Discard</button>
-            </div>
-          </div>}
-        </div>
         <div style={{maxHeight:200,overflowY:"auto",marginBottom:8,display:"flex",flexDirection:"column",gap:6}}>
-          {!c.notes?.length&&<div style={{color:C.gray300,fontSize:12}}>No notes yet.</div>}
-          {c.notes?.map((n,i)=>{const t=getTeamMember(n.authorId);return <div key={i} style={{background:C.gray50,border:`1px solid ${C.gray200}`,borderRadius:8,padding:"10px 12px"}}>
+          {!visibleNotes.length&&<div style={{color:C.gray300,fontSize:12}}>No notes yet.</div>}
+          {visibleNotes.map((n,i)=>{const t=getTeamMember(n.authorId);return <div key={i} style={{background:C.gray50,border:`1px solid ${C.gray200}`,borderRadius:8,padding:"10px 12px"}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
               <div style={{display:"flex",alignItems:"center",gap:6}}>
                 {t&&<div style={{width:18,height:18,borderRadius:4,background:t.color,display:"flex",alignItems:"center",justifyContent:"center",fontSize:7.5,fontWeight:700,color:C.white}}>{t.initials}</div>}
@@ -1462,8 +1504,8 @@ export default function HCPRecruit(){
     const isNew=!c.id||typeof c.id==="number";
     const saved=await upsertCandidate(c);
     const candidateId=saved?.id||c.id||c.tempId;
-    if(c.aiSummaryDraft){
-      await addCandidateNote(candidateId,{author:activeUser.name,authorId:activeUser.id,text:`[AI Summary]\n${c.aiSummaryDraft}`,date:today()});
+    if(c.aiProfileDraft&&hasAIProfile(c.aiProfileDraft)){
+      await addCandidateNote(candidateId,{author:"Talyntry AI",authorId:activeUser.id,text:buildAIProfileNote(c.aiProfileDraft),date:today()});
     }
     await logActivity(candidateId,isNew?"created":"edit",activeUser.id,activeUser.name,isNew?`${c.name} added to system`:`Profile updated`);
     await reload();
