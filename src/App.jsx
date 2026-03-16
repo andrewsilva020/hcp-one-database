@@ -1401,11 +1401,25 @@ function DashboardHome({cands,jobs,team,onOpenCand,onOpenJob,setPage}){
   const placed=cands.filter(c=>c.stage==="Placed");
   const openJobs=jobs.filter(j=>["Open – Sourcing","Active"].includes(j.status));
   const pipeChart=buildPipelineChartSeries(cands,chartActs,pipeRange);
-  const activePipeIdx=pipeHover??pipeChart.buckets.length-1;
+  const activePipePos=pipeHover??Math.max(0,pipeChart.buckets.length-1);
+  const activePipeIdx=Math.max(0,Math.min(pipeChart.buckets.length-1,Math.round(activePipePos)));
   const activePipeBucket=pipeChart.buckets[activePipeIdx];
   const chartW=760, chartH=220, padX=26, padTop=20, padBottom=34;
   const stepX=pipeChart.buckets.length>1?(chartW-padX*2)/(pipeChart.buckets.length-1):0;
   const valueToY=v=>padTop+((pipeChart.max-v)/pipeChart.max)*(chartH-padTop-padBottom);
+  const interpolatePoint=(points,pos)=>{
+    const left=Math.floor(pos);
+    const right=Math.min(points.length-1,Math.ceil(pos));
+    const t=pos-left;
+    const lv=points[left]??0;
+    const rv=points[right]??lv;
+    return lv+(rv-lv)*t;
+  };
+  const interpolatedSeries=pipeChart.series.map(s=>({
+    ...s,
+    hoverValue: interpolatePoint(s.points, activePipePos),
+  }));
+  const hoverX=padX+(stepX*activePipePos);
   const buildLinePath=points=>{
     const coords=points.map((v,i)=>({x:padX+i*stepX,y:valueToY(v)}));
     if(coords.length<2) return coords.length?`M ${coords[0].x} ${coords[0].y}`:"";
@@ -1427,8 +1441,8 @@ function DashboardHome({cands,jobs,team,onOpenCand,onOpenJob,setPage}){
     if(!chartRef.current||pipeChart.buckets.length===0) return;
     const rect=chartRef.current.getBoundingClientRect();
     const relX=Math.max(0,Math.min(rect.width,clientX-rect.left));
-    const idx=stepX===0?0:Math.round(((relX/rect.width)*(chartW-padX*2))/stepX);
-    setPipeHover(Math.max(0,Math.min(pipeChart.buckets.length-1,idx)));
+    const pos=stepX===0?0:((relX/rect.width)*(chartW-padX*2))/stepX;
+    setPipeHover(Math.max(0,Math.min(pipeChart.buckets.length-1,pos)));
   };
 
   return <div style={{display:"flex",flexDirection:"column",gap:24}}>
@@ -1466,10 +1480,10 @@ function DashboardHome({cands,jobs,team,onOpenCand,onOpenJob,setPage}){
           </div>
         </div>
         <div style={{display:"flex",gap:14,alignItems:"center",flexWrap:"wrap",marginBottom:14}}>
-          {pipeChart.series.map(s=><div key={s.key} style={{display:"flex",alignItems:"center",gap:8}}>
+          {interpolatedSeries.map(s=><div key={s.key} style={{display:"flex",alignItems:"center",gap:8}}>
             <span style={{width:10,height:10,borderRadius:"50%",background:s.color,boxShadow:`0 0 0 5px ${s.color}18`}}/>
             <span style={{fontSize:12,color:B.ink,fontWeight:600}}>{s.key}</span>
-            <span style={{fontSize:12,color:"#A09A93"}}>{activePipeBucket?.values[s.key]||0}</span>
+            <span style={{fontSize:12,color:"#A09A93"}}>{Math.round(s.hoverValue * 10) / 10}</span>
           </div>)}
         </div>
         <div ref={chartRef} onMouseMove={e=>updateHoverFromClientX(e.clientX)} onMouseLeave={()=>setPipeHover(null)} style={{position:"relative",borderRadius:18,background:"linear-gradient(180deg, #fff 0%, #FFFBF8 100%)",border:`1px solid ${B.muted}`,padding:"18px 18px 14px"}}>
@@ -1478,19 +1492,22 @@ function DashboardHome({cands,jobs,team,onOpenCand,onOpenJob,setPage}){
               const y=padTop+(chartH-padTop-padBottom)*step;
               return <line key={i} x1={padX} x2={chartW-padX} y1={y} y2={y} stroke="#EFE7E1" strokeDasharray="6 8"/>;
             })}
-            {pipeChart.series.map(s=><path key={s.key} d={buildLinePath(s.points)} fill="none" stroke={s.color} strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" style={{transition:"all 0.18s",filter:pipeHover!==null?"drop-shadow(0 6px 14px rgba(0,0,0,0.08))":"none",opacity:pipeHover!==null&&activePipeBucket?.values[s.key]===0?0.45:1}}/>)}
+            {pipeChart.series.map(s=><path key={s.key} d={buildLinePath(s.points)} fill="none" stroke={s.color} strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" style={{transition:"all 0.18s",filter:pipeHover!==null?"drop-shadow(0 6px 14px rgba(0,0,0,0.08))":"none",opacity:pipeHover!==null&&Math.round(interpolatePoint(s.points,activePipePos)*10)/10===0?0.45:1}}/>)}
             <rect x={padX} y={padTop} width={chartW-padX*2} height={chartH-padTop-padBottom+10} fill="transparent"/>
+            <line x1={hoverX} x2={hoverX} y1={padTop} y2={chartH-padBottom+6} stroke="#E5D8CF" strokeWidth="1.5"/>
+            {interpolatedSeries.map(s=>{
+              const y=valueToY(s.hoverValue);
+              return <g key={s.key}>
+                <circle cx={hoverX} cy={y} r={6.5} fill="#fff" stroke={s.color} strokeWidth="3" style={{transition:"all 0.08s linear"}}/>
+                <circle cx={hoverX} cy={y} r={14} fill={`${s.color}16`} style={{transition:"all 0.08s linear"}}/>
+              </g>;
+            })}
             {pipeChart.buckets.map((b,i)=>{
               const x=padX+i*stepX;
               return <g key={b.label} style={{cursor:"pointer"}}>
-                <line x1={x} x2={x} y1={padTop} y2={chartH-padBottom+6} stroke={i===activePipeIdx?"#E5D8CF":"transparent"} strokeWidth="1.5"/>
                 {pipeChart.series.map(s=>{
                   const y=valueToY(s.points[i]);
-                  const activePoint=i===activePipeIdx;
-                  return <g key={s.key}>
-                    <circle cx={x} cy={y} r={activePoint?6.5:4.5} fill="#fff" stroke={s.color} strokeWidth="3" style={{transition:"all 0.16s"}}/>
-                    <circle cx={x} cy={y} r={activePoint?14:0} fill={`${s.color}16`} style={{transition:"all 0.16s"}}/>
-                  </g>;
+                  return <circle key={s.key} cx={x} cy={y} r={3.5} fill="#fff" stroke={s.color} strokeWidth="2" opacity={0.45}/>;
                 })}
               </g>;
             })}
@@ -1504,9 +1521,9 @@ function DashboardHome({cands,jobs,team,onOpenCand,onOpenJob,setPage}){
               <div style={{fontSize:11,color:"#A09A93"}}>{pipeChart.label}</div>
             </div>
             <div style={{display:"grid",gridTemplateColumns:"repeat(5,minmax(0,1fr))",gap:"8px 10px"}}>
-              {pipeChart.series.map(s=><div key={s.key}>
+              {interpolatedSeries.map(s=><div key={s.key}>
                 <div style={{fontSize:11,color:s.color,fontWeight:700}}>{s.key}</div>
-                <div style={{fontSize:18,color:B.ink,fontWeight:800,lineHeight:1.1}}>{activePipeBucket.values[s.key]}</div>
+                <div style={{fontSize:18,color:B.ink,fontWeight:800,lineHeight:1.1}}>{Math.round(s.hoverValue * 10) / 10}</div>
               </div>)}
             </div>
           </div>}
