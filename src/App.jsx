@@ -1392,6 +1392,7 @@ function DashboardHome({cands,jobs,team,onOpenCand,onOpenJob,setPage}){
   const [chartActs,setChartActs]=useState([]);
   const [pipeRange,setPipeRange]=useState("1m");
   const [pipeHover,setPipeHover]=useState(null);
+  const chartRef=useRef(null);
   useEffect(()=>{fetchRecentActivity(15).then(setRecentActs).catch(()=>{});},[cands,jobs]);
   useEffect(()=>{fetchDashboardActivity().then(setChartActs).catch(()=>{});},[cands.length,jobs.length]);
   const active=cands.filter(c=>!["Placed","Rejected","On Hold"].includes(c.stage));
@@ -1405,7 +1406,30 @@ function DashboardHome({cands,jobs,team,onOpenCand,onOpenJob,setPage}){
   const chartW=760, chartH=220, padX=26, padTop=20, padBottom=34;
   const stepX=pipeChart.buckets.length>1?(chartW-padX*2)/(pipeChart.buckets.length-1):0;
   const valueToY=v=>padTop+((pipeChart.max-v)/pipeChart.max)*(chartH-padTop-padBottom);
-  const buildLinePath=points=>points.map((v,i)=>`${i===0?"M":"L"} ${padX+i*stepX} ${valueToY(v)}`).join(" ");
+  const buildLinePath=points=>{
+    const coords=points.map((v,i)=>({x:padX+i*stepX,y:valueToY(v)}));
+    if(coords.length<2) return coords.length?`M ${coords[0].x} ${coords[0].y}`:"";
+    let path=`M ${coords[0].x} ${coords[0].y}`;
+    for(let i=0;i<coords.length-1;i++){
+      const p0=coords[i-1]||coords[i];
+      const p1=coords[i];
+      const p2=coords[i+1];
+      const p3=coords[i+2]||p2;
+      const cp1x=p1.x+(p2.x-p0.x)/6;
+      const cp1y=p1.y+(p2.y-p0.y)/6;
+      const cp2x=p2.x-(p3.x-p1.x)/6;
+      const cp2y=p2.y-(p3.y-p1.y)/6;
+      path+=` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${p2.x} ${p2.y}`;
+    }
+    return path;
+  };
+  const updateHoverFromClientX=clientX=>{
+    if(!chartRef.current||pipeChart.buckets.length===0) return;
+    const rect=chartRef.current.getBoundingClientRect();
+    const relX=Math.max(0,Math.min(rect.width,clientX-rect.left));
+    const idx=stepX===0?0:Math.round(((relX/rect.width)*(chartW-padX*2))/stepX);
+    setPipeHover(Math.max(0,Math.min(pipeChart.buckets.length-1,idx)));
+  };
 
   return <div style={{display:"flex",flexDirection:"column",gap:24}}>
     {/* Welcome banner */}
@@ -1448,16 +1472,17 @@ function DashboardHome({cands,jobs,team,onOpenCand,onOpenJob,setPage}){
             <span style={{fontSize:12,color:"#A09A93"}}>{activePipeBucket?.values[s.key]||0}</span>
           </div>)}
         </div>
-        <div style={{position:"relative",borderRadius:18,background:"linear-gradient(180deg, #fff 0%, #FFFBF8 100%)",border:`1px solid ${B.muted}`,padding:"18px 18px 14px"}}>
+        <div ref={chartRef} onMouseMove={e=>updateHoverFromClientX(e.clientX)} onMouseLeave={()=>setPipeHover(null)} style={{position:"relative",borderRadius:18,background:"linear-gradient(180deg, #fff 0%, #FFFBF8 100%)",border:`1px solid ${B.muted}`,padding:"18px 18px 14px"}}>
           <svg viewBox={`0 0 ${chartW} ${chartH}`} style={{width:"100%",height:230,display:"block",overflow:"visible"}}>
             {[0.25,0.5,0.75,1].map((step,i)=>{
               const y=padTop+(chartH-padTop-padBottom)*step;
               return <line key={i} x1={padX} x2={chartW-padX} y1={y} y2={y} stroke="#EFE7E1" strokeDasharray="6 8"/>;
             })}
             {pipeChart.series.map(s=><path key={s.key} d={buildLinePath(s.points)} fill="none" stroke={s.color} strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" style={{transition:"all 0.18s",filter:pipeHover!==null?"drop-shadow(0 6px 14px rgba(0,0,0,0.08))":"none",opacity:pipeHover!==null&&activePipeBucket?.values[s.key]===0?0.45:1}}/>)}
+            <rect x={padX} y={padTop} width={chartW-padX*2} height={chartH-padTop-padBottom+10} fill="transparent"/>
             {pipeChart.buckets.map((b,i)=>{
               const x=padX+i*stepX;
-              return <g key={b.label} onMouseEnter={()=>setPipeHover(i)} onMouseLeave={()=>setPipeHover(null)} style={{cursor:"pointer"}}>
+              return <g key={b.label} style={{cursor:"pointer"}}>
                 <line x1={x} x2={x} y1={padTop} y2={chartH-padBottom+6} stroke={i===activePipeIdx?"#E5D8CF":"transparent"} strokeWidth="1.5"/>
                 {pipeChart.series.map(s=>{
                   const y=valueToY(s.points[i]);
@@ -1471,7 +1496,7 @@ function DashboardHome({cands,jobs,team,onOpenCand,onOpenJob,setPage}){
             })}
           </svg>
           <div style={{display:"flex",justifyContent:"space-between",padding:"0 8px 0 10px",marginTop:-2}}>
-            {pipeChart.buckets.map((b,i)=><div key={b.label} onMouseEnter={()=>setPipeHover(i)} onMouseLeave={()=>setPipeHover(null)} style={{fontSize:i===activePipeIdx?13:12,fontWeight:i===activePipeIdx?700:500,color:i===activePipeIdx?B.ink:"#A09A93",transition:"all 0.16s",cursor:"pointer"}}>{b.label}</div>)}
+            {pipeChart.buckets.map((b,i)=><div key={b.label} onMouseMove={e=>updateHoverFromClientX(e.clientX)} style={{fontSize:i===activePipeIdx?13:12,fontWeight:i===activePipeIdx?700:500,color:i===activePipeIdx?B.ink:"#A09A93",transition:"all 0.16s",cursor:"pointer"}}>{b.label}</div>)}
           </div>
           {activePipeBucket&&<div style={{marginTop:14,background:"rgba(255,255,255,0.96)",backdropFilter:"blur(12px)",border:`1px solid ${B.muted}`,boxShadow:"0 10px 30px rgba(34,49,63,0.06)",borderRadius:16,padding:"12px 14px"}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:12,marginBottom:8}}>
