@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { fetchCandidates, fetchJobs, fetchTeam, upsertTeamMember, upsertCandidate, upsertJob, updateCandidateStage, updateJobStatus, addCandidateNote, addJobNote as addJobNoteDB, submitCandidateToJob, removeCandidateFromJob, subscribeToChanges, signIn, signOut, getSession, deleteCandidate, deleteJob, uploadResume, getResumeUrl, logActivity, fetchActivity, fetchRecentActivity, fetchScorecards, upsertScorecard, deleteScorecard } from "./lib/supabase";
+import { fetchCandidates, fetchJobs, fetchTeam, upsertTeamMember, upsertCandidate, upsertJob, updateCandidateStage, updateJobStatus, addCandidateNote, addJobNote as addJobNoteDB, submitCandidateToJob, removeCandidateFromJob, subscribeToChanges, signIn, signOut, getSession, deleteCandidate, deleteJob, uploadResume, getResumeUrl, logActivity, fetchActivity, fetchRecentActivity, fetchDashboardActivity, fetchScorecards, upsertScorecard, deleteScorecard } from "./lib/supabase";
 
 // ── DESIGN TOKENS ─────────────────────────────────────────────────
 const C = {
@@ -189,7 +189,21 @@ function getPipelineChartStage(candidate) {
   return null;
 }
 
-function buildPipelineChartSeries(cands, rangeKey="1m") {
+function getPipelineChartStageFromActivity(item) {
+  if (item.type === "created") return "Sourced";
+  if (item.type !== "stage_change") return null;
+  const detail = item.detail || "";
+  const match = detail.match(/to (.+)$/);
+  const nextStage = match?.[1]?.trim();
+  if (nextStage === "Sourced") return "Sourced";
+  if (["Submitted", "Client Review"].includes(nextStage)) return "Screened";
+  if (["Interview 1", "Interview 2", "Final Interview"].includes(nextStage)) return "Interviewed";
+  if (nextStage === "Offer") return "Offered";
+  if (nextStage === "Placed") return "Placed";
+  return null;
+}
+
+function buildPipelineChartSeries(items, rangeKey="1m") {
   const now=new Date();
   const ranges={
     "1m":{count:4,unit:"week",label:"This Month"},
@@ -223,10 +237,10 @@ function buildPipelineChartSeries(cands, rangeKey="1m") {
       });
     }
   }
-  cands.forEach(c=>{
-    const stage=getPipelineChartStage(c);
-    if(!stage||!c.addedDate) return;
-    const dt=new Date(`${c.addedDate}T00:00:00`);
+  items.forEach(item=>{
+    const stage=getPipelineChartStageFromActivity(item);
+    if(!stage||!item.created_at) return;
+    const dt=new Date(item.created_at);
     if(Number.isNaN(dt.getTime())) return;
     const bucket=buckets.find(b=>dt>=b.start&&dt<=b.end);
     if(bucket) bucket.values[stage]+=1;
@@ -1360,15 +1374,17 @@ const IC={
 // ── DASHBOARD HOME ───────────────────────────────────────────────
 function DashboardHome({cands,jobs,team,onOpenCand,onOpenJob,setPage}){
   const [recentActs,setRecentActs]=useState([]);
+  const [chartActs,setChartActs]=useState([]);
   const [pipeRange,setPipeRange]=useState("1m");
   const [pipeHover,setPipeHover]=useState(null);
   useEffect(()=>{fetchRecentActivity(15).then(setRecentActs).catch(()=>{});},[cands,jobs]);
+  useEffect(()=>{fetchDashboardActivity().then(setChartActs).catch(()=>{});},[cands.length,jobs.length]);
   const active=cands.filter(c=>!["Placed","Rejected","On Hold"].includes(c.stage));
   const interviews=cands.filter(c=>["Interview 1","Interview 2","Final Interview"].includes(c.stage));
   const offers=cands.filter(c=>c.stage==="Offer");
   const placed=cands.filter(c=>c.stage==="Placed");
   const openJobs=jobs.filter(j=>["Open – Sourcing","Active"].includes(j.status));
-  const pipeChart=buildPipelineChartSeries(cands,pipeRange);
+  const pipeChart=buildPipelineChartSeries(chartActs,pipeRange);
   const activePipeIdx=pipeHover??pipeChart.buckets.length-1;
   const activePipeBucket=pipeChart.buckets[activePipeIdx];
   const chartW=760, chartH=220, padX=26, padTop=20, padBottom=34;

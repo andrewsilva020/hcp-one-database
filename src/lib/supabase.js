@@ -342,3 +342,13 @@ export async function fetchRecentActivity(limit = 15) {
   if (error) throw error;
   return data;
 }
+
+export async function fetchDashboardActivity(limit = 2000) {
+  const { data, error } = await supabase
+    .from("candidate_activity")
+    .select("*")
+    .order("created_at", { ascending: true })
+    .limit(limit);
+  if (error) throw error;
+  return data;
+}
