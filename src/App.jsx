@@ -1393,6 +1393,7 @@ function DashboardHome({cands,jobs,team,onOpenCand,onOpenJob,setPage}){
   const [pipeRange,setPipeRange]=useState("1m");
   const [pipeHover,setPipeHover]=useState(null);
   const chartRef=useRef(null);
+  const plotRef=useRef(null);
   useEffect(()=>{fetchRecentActivity(15).then(setRecentActs).catch(()=>{});},[cands,jobs]);
   useEffect(()=>{fetchDashboardActivity().then(setChartActs).catch(()=>{});},[cands.length,jobs.length]);
   const active=cands.filter(c=>!["Placed","Rejected","On Hold"].includes(c.stage));
@@ -1461,11 +1462,15 @@ function DashboardHome({cands,jobs,team,onOpenCand,onOpenJob,setPage}){
     return path;
   };
   const updateHoverFromClientX=clientX=>{
-    if(!chartRef.current||pipeChart.buckets.length===0) return;
-    const rect=chartRef.current.getBoundingClientRect();
+    if(!plotRef.current||pipeChart.buckets.length===0) return;
+    const rect=plotRef.current.getBoundingClientRect();
     const relX=Math.max(0,Math.min(rect.width,clientX-rect.left));
-    const pos=stepX===0?0:((relX/rect.width)*(chartW-padX*2))/stepX;
-    setPipeHover(Math.max(0,Math.min(pipeChart.buckets.length-1,pos)));
+    const rawPos=stepX===0?0:((relX/rect.width)*(chartW-padX*2))/stepX;
+    const boundedPos=Math.max(0,Math.min(pipeChart.buckets.length-1,rawPos));
+    const nearest=Math.round(boundedPos);
+    const snapDistance=Math.abs(boundedPos-nearest);
+    const snapThreshold=0.12;
+    setPipeHover(snapDistance<=snapThreshold?nearest:boundedPos);
   };
 
   return <div style={{display:"flex",flexDirection:"column",gap:24}}>
@@ -1509,8 +1514,8 @@ function DashboardHome({cands,jobs,team,onOpenCand,onOpenJob,setPage}){
             <span style={{fontSize:12,color:"#A09A93"}}>{s.displayValue}</span>
           </div>)}
         </div>
-        <div ref={chartRef} onMouseMove={e=>updateHoverFromClientX(e.clientX)} onMouseLeave={()=>setPipeHover(null)} style={{position:"relative",borderRadius:18,background:"linear-gradient(180deg, #fff 0%, #FFFBF8 100%)",border:`1px solid ${B.muted}`,padding:"18px 18px 14px"}}>
-          <svg viewBox={`0 0 ${chartW} ${chartH}`} style={{width:"100%",height:230,display:"block",overflow:"visible"}}>
+        <div ref={chartRef} style={{position:"relative",borderRadius:18,background:"linear-gradient(180deg, #fff 0%, #FFFBF8 100%)",border:`1px solid ${B.muted}`,padding:"18px 18px 14px"}}>
+          <svg ref={plotRef} onMouseMove={e=>updateHoverFromClientX(e.clientX)} onMouseLeave={()=>setPipeHover(null)} viewBox={`0 0 ${chartW} ${chartH}`} style={{width:"100%",height:230,display:"block",overflow:"visible"}}>
             {[0.25,0.5,0.75,1].map((step,i)=>{
               const y=padTop+(chartH-padTop-padBottom)*step;
               return <line key={i} x1={padX} x2={chartW-padX} y1={y} y2={y} stroke="#EFE7E1" strokeDasharray="6 8"/>;
@@ -1520,8 +1525,8 @@ function DashboardHome({cands,jobs,team,onOpenCand,onOpenJob,setPage}){
             <line x1={hoverX} x2={hoverX} y1={padTop} y2={chartH-padBottom+6} stroke="#E5D8CF" strokeWidth="1.5"/>
             {interpolatedSeries.map(s=>{
               return <g key={s.key}>
-                <circle cx={s.hoverPoint.x} cy={s.hoverPoint.y} r={6.5} fill="#fff" stroke={s.color} strokeWidth="3" style={{transition:"all 0.08s linear"}}/>
-                <circle cx={s.hoverPoint.x} cy={s.hoverPoint.y} r={14} fill={`${s.color}16`} style={{transition:"all 0.08s linear"}}/>
+                <circle cx={s.hoverPoint.x} cy={s.hoverPoint.y} r={6.5} fill="#fff" stroke={s.color} strokeWidth="3"/>
+                <circle cx={s.hoverPoint.x} cy={s.hoverPoint.y} r={14} fill={`${s.color}16`}/>
               </g>;
             })}
             {pipeChart.buckets.map((b,i)=>{
@@ -1535,7 +1540,7 @@ function DashboardHome({cands,jobs,team,onOpenCand,onOpenJob,setPage}){
             })}
           </svg>
           <div style={{display:"flex",justifyContent:"space-between",padding:"0 8px 0 10px",marginTop:-2}}>
-            {pipeChart.buckets.map((b,i)=><div key={b.label} onMouseMove={e=>updateHoverFromClientX(e.clientX)} style={{fontSize:i===activePipeIdx?13:12,fontWeight:i===activePipeIdx?700:500,color:i===activePipeIdx?B.ink:"#A09A93",transition:"all 0.16s",cursor:"pointer"}}>{b.label}</div>)}
+            {pipeChart.buckets.map((b,i)=><div key={b.label} style={{fontSize:i===activePipeIdx?13:12,fontWeight:i===activePipeIdx?700:500,color:i===activePipeIdx?B.ink:"#A09A93",transition:"all 0.16s",cursor:"default"}}>{b.label}</div>)}
           </div>
           {activePipeBucket&&<div style={{marginTop:14,background:"rgba(255,255,255,0.96)",backdropFilter:"blur(12px)",border:`1px solid ${B.muted}`,boxShadow:"0 10px 30px rgba(34,49,63,0.06)",borderRadius:16,padding:"12px 14px"}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:12,marginBottom:8}}>
