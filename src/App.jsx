@@ -130,6 +130,7 @@ function generateWeeklyReport(cands, jobs, filterRecruiter="all", team=TEAM_FALL
 
 const AI_PROFILE_PREFIX = "[AI PROFILE]";
 const AI_SUMMARY_PREFIX = "[AI Summary]";
+const PROFILE_META_PREFIX = "[PROFILE META]";
 const AI_PROFILE_SECTIONS = ["overview","experience","education"];
 
 function normalizeAIProfile(profile={}) {
@@ -169,12 +170,26 @@ function extractAIProfile(notes=[]) {
 }
 
 function isHiddenCandidateNote(note) {
-  return note?.text?.startsWith(AI_PROFILE_PREFIX) || note?.text?.startsWith(AI_SUMMARY_PREFIX);
+  return note?.text?.startsWith(AI_PROFILE_PREFIX) || note?.text?.startsWith(AI_SUMMARY_PREFIX) || note?.text?.startsWith(PROFILE_META_PREFIX);
+}
+
+function buildProfileMetaNote(meta={}) {
+  return `${PROFILE_META_PREFIX}\n${JSON.stringify(meta)}`;
+}
+
+function extractProfileMeta(notes=[]) {
+  const note=[...notes].reverse().find(n=>n.text?.startsWith(PROFILE_META_PREFIX));
+  if(!note) return {};
+  try {
+    return JSON.parse(note.text.replace(`${PROFILE_META_PREFIX}\n`,"").trim());
+  } catch {
+    return {};
+  }
 }
 
 const DASH_PIPE_COLORS = {
   Sourced: "#FF7A59",
-  Screened: "#8B5CF6",
+  Submitted: "#8B5CF6",
   Interviewed: "#4F46E5",
   Offered: "#F59E0B",
   Placed: "#34D399",
@@ -182,7 +197,7 @@ const DASH_PIPE_COLORS = {
 
 function getPipelineChartStage(candidate) {
   if (candidate.stage === "Sourced") return "Sourced";
-  if (["Submitted","Client Review"].includes(candidate.stage)) return "Screened";
+  if (["Submitted","Client Review"].includes(candidate.stage)) return "Submitted";
   if (["Interview 1","Interview 2","Final Interview"].includes(candidate.stage)) return "Interviewed";
   if (candidate.stage === "Offer") return "Offered";
   if (candidate.stage === "Placed") return "Placed";
@@ -196,7 +211,7 @@ function getPipelineChartStageFromActivity(item) {
   const match = detail.match(/to (.+)$/);
   const nextStage = match?.[1]?.trim();
   if (nextStage === "Sourced") return "Sourced";
-  if (["Submitted", "Client Review"].includes(nextStage)) return "Screened";
+  if (["Submitted", "Client Review"].includes(nextStage)) return "Submitted";
   if (["Interview 1", "Interview 2", "Final Interview"].includes(nextStage)) return "Interviewed";
   if (nextStage === "Offer") return "Offered";
   if (nextStage === "Placed") return "Placed";
@@ -222,8 +237,8 @@ function buildPipelineChartSeries(cands, items, rangeKey="1m") {
         label:`${start.toLocaleString("en-US",{month:"short"})} ${start.getDate()}`,
         start,
         end,
-        values:{Sourced:0,Screened:0,Interviewed:0,Offered:0,Placed:0},
-        seen:{Sourced:new Set(),Screened:new Set(),Interviewed:new Set(),Offered:new Set(),Placed:new Set()},
+        values:{Sourced:0,Submitted:0,Interviewed:0,Offered:0,Placed:0},
+        seen:{Sourced:new Set(),Submitted:new Set(),Interviewed:new Set(),Offered:new Set(),Placed:new Set()},
       });
     }
   } else {
@@ -234,8 +249,8 @@ function buildPipelineChartSeries(cands, items, rangeKey="1m") {
         label:d.toLocaleString("en-US",{month:"short"}),
         start:d,
         end,
-        values:{Sourced:0,Screened:0,Interviewed:0,Offered:0,Placed:0},
-        seen:{Sourced:new Set(),Screened:new Set(),Interviewed:new Set(),Offered:new Set(),Placed:new Set()},
+        values:{Sourced:0,Submitted:0,Interviewed:0,Offered:0,Placed:0},
+        seen:{Sourced:new Set(),Submitted:new Set(),Interviewed:new Set(),Offered:new Set(),Placed:new Set()},
       });
     }
   }
@@ -494,9 +509,11 @@ function WeeklyReport({cands,jobs,team=TEAM_FALLBACK}){
 // ── CANDIDATE FORM ────────────────────────────────────────────────
 function CandForm({initial,allCandidates,onSave,onClose,activeUser=TEAM_FALLBACK[0],team=TEAM_FALLBACK}){
   const E={name:"",email:"",phone:"",linkedin:"",title:"",seniority:"",vertical:"",stage:"Sourced",skills:[],salary:"",location:"",workAuth:"",experience:"",source:"",ownerId:activeUser.id,collaborators:[],notes:[]};
+  const initialMeta=extractProfileMeta(initial?.notes||[]);
   const [tempId] = useState(()=>initial?.id||(crypto.randomUUID?crypto.randomUUID():`${Date.now()}-${Math.random().toString(36).slice(2)}`));
   const [f,setF]=useState({...(initial||E), id: initial?.id || tempId});
   const [si,setSi]=useState("");
+  const [openToRelocate,setOpenToRelocate]=useState(initialMeta.openToRelocate||"");
   const [parsing,setParsing]=useState(false);
   const [pMsg,setPMsg]=useState(null);
   const [liText,setLiText]=useState("");
@@ -577,7 +594,7 @@ function CandForm({initial,allCandidates,onSave,onClose,activeUser=TEAM_FALLBACK
   const submit=async()=>{
     if(!f.name.trim()||!f.email.trim()) return alert("Name + email required.");
     if(dupes.length&&!dupeOk) return alert("Review duplicate warning first.");
-    await onSave({...f,addedDate:f.addedDate||today(),lastUpdated:today(),submittedTo:f.submittedTo||[],aiProfileDraft:profileDraft});
+    await onSave({...f,addedDate:f.addedDate||today(),lastUpdated:today(),submittedTo:f.submittedTo||[],aiProfileDraft:profileDraft,openToRelocate});
   };
   return <div>
     {dupes.length>0&&!dupeOk&&<div style={{background:C.warnL,border:`1px solid ${C.warn}40`,borderRadius:9,padding:"12px 14px",marginBottom:16}}>
@@ -632,6 +649,7 @@ function CandForm({initial,allCandidates,onSave,onClose,activeUser=TEAM_FALLBACK
       <F label="Location"><input style={inp} value={f.location} onChange={e=>s("location",e.target.value)} placeholder="City, State"/></F>
       <F label="Salary / Rate"><input style={inp} value={f.salary} onChange={e=>s("salary",e.target.value)} placeholder="$85/Hr C2C or $145K"/></F>
       <F label="Experience"><input style={inp} value={f.experience} onChange={e=>s("experience",e.target.value)} placeholder="8 years"/></F>
+      <F label="Open to Relocate"><select style={sel} value={openToRelocate} onChange={e=>setOpenToRelocate(e.target.value)}><option value="">Select…</option><option value="Yes">Yes</option><option value="No">No</option><option value="Open to discuss">Open to discuss</option></select></F>
     </div>
     <Divider/>
     <div style={{background:C.gray50,border:`1px solid ${C.gray200}`,borderRadius:10,padding:"14px 16px",marginBottom:16}}>
@@ -711,6 +729,7 @@ function CandDetail({c,jobs,onEdit,onStageChange,onAddNote,onSubmitToJob,activeU
   const owner=getTeamMember(c.ownerId);
   const collabs=(c.collaborators||[]).map(getTeamMember).filter(Boolean);
   const aiProfile=extractAIProfile(c.notes||[]);
+  const profileMeta=extractProfileMeta(c.notes||[]);
   const visibleNotes=(c.notes||[]).filter(n=>!isHiddenCandidateNote(n));
   const post=()=>{if(!note.trim())return;onAddNote(c.id,note.trim());setNote("");};
   return <div>
@@ -765,7 +784,7 @@ function CandDetail({c,jobs,onEdit,onStageChange,onAddNote,onSubmitToJob,activeU
       </div>
     </div>
     <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:16}}>
-      {[["Email",c.email],["Phone",c.phone],["Location",c.location],["Salary/Rate",c.salary],["Experience",c.experience],["Source",c.source],["Work Auth",c.workAuth],["Seniority",c.seniority],["Added",c.addedDate]].map(([k,v])=>(
+      {[["Email",c.email],["Phone",c.phone],["Location",c.location],["Open to Relocate",profileMeta.openToRelocate],["Salary/Rate",c.salary],["Experience",c.experience],["Source",c.source],["Work Auth",c.workAuth],["Seniority",c.seniority],["Added",c.addedDate]].map(([k,v])=>(
         <div key={k} style={{background:C.gray50,border:`1px solid ${C.gray200}`,borderRadius:8,padding:"10px 12px"}}>
           <div style={{color:C.gray400,fontSize:10,textTransform:"uppercase",letterSpacing:0.5,fontWeight:600,marginBottom:3}}>{k}</div>
           {k==="Email"&&v
@@ -1497,7 +1516,7 @@ function DashboardHome({cands,jobs,team,onOpenCand,onOpenJob,setPage}){
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:18,position:"relative",zIndex:1}}>
           <div>
             <div style={{fontSize:18,fontWeight:700,color:B.ink}}>Hiring Pipeline</div>
-            <div style={{fontSize:12,color:"#A09A93",marginTop:2}}>Sourced, Screened, Interviewed, Offered, and Placed</div>
+            <div style={{fontSize:12,color:"#A09A93",marginTop:2}}>Sourced, Submitted, Interviewed, Offered, and Placed</div>
           </div>
           <div style={{display:"flex",gap:6,alignItems:"center"}}>
             {[
@@ -1726,6 +1745,10 @@ export default function HCPRecruit(){
     const candidateId=saved?.id||c.id||c.tempId;
     if(c.aiProfileDraft&&hasAIProfile(c.aiProfileDraft)){
       await addCandidateNote(candidateId,{author:"Talyntry AI",authorId:activeUser.id,text:buildAIProfileNote(c.aiProfileDraft),date:today()});
+    }
+    const existingMeta=extractProfileMeta(c.notes||[]);
+    if((c.openToRelocate||"") !== (existingMeta.openToRelocate||"")){
+      await addCandidateNote(candidateId,{author:"Talyntry System",authorId:activeUser.id,text:buildProfileMetaNote({openToRelocate:c.openToRelocate||""}),date:today()});
     }
     await logActivity(candidateId,isNew?"created":"edit",activeUser.id,activeUser.name,isNew?`${c.name} added to system`:`Profile updated`);
     await reload();
