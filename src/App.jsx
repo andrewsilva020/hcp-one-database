@@ -172,6 +172,74 @@ function isHiddenCandidateNote(note) {
   return note?.text?.startsWith(AI_PROFILE_PREFIX) || note?.text?.startsWith(AI_SUMMARY_PREFIX);
 }
 
+const DASH_PIPE_COLORS = {
+  Sourced: "#FF7A59",
+  Screened: "#8B5CF6",
+  Interviewed: "#4F46E5",
+  Offered: "#F59E0B",
+  Placed: "#34D399",
+};
+
+function getPipelineChartStage(candidate) {
+  if (candidate.stage === "Sourced") return "Sourced";
+  if (["Submitted","Client Review"].includes(candidate.stage)) return "Screened";
+  if (["Interview 1","Interview 2","Final Interview"].includes(candidate.stage)) return "Interviewed";
+  if (candidate.stage === "Offer") return "Offered";
+  if (candidate.stage === "Placed") return "Placed";
+  return null;
+}
+
+function buildPipelineChartSeries(cands, rangeKey="1m") {
+  const now=new Date();
+  const ranges={
+    "1m":{count:4,unit:"week",label:"This Month"},
+    "3m":{count:3,unit:"month",label:"3 Months"},
+    "1y":{count:12,unit:"month",label:"1 Year"},
+  };
+  const cfg=ranges[rangeKey]||ranges["1m"];
+  const buckets=[];
+  if(cfg.unit==="week"){
+    for(let i=cfg.count-1;i>=0;i--){
+      const end=new Date(now);
+      end.setDate(now.getDate()-(i*7));
+      const start=new Date(end);
+      start.setDate(end.getDate()-6);
+      buckets.push({
+        label:`${start.toLocaleString("en-US",{month:"short"})} ${start.getDate()}`,
+        start,
+        end,
+        values:{Sourced:0,Screened:0,Interviewed:0,Offered:0,Placed:0},
+      });
+    }
+  } else {
+    for(let i=cfg.count-1;i>=0;i--){
+      const d=new Date(now.getFullYear(),now.getMonth()-i,1);
+      const end=new Date(d.getFullYear(),d.getMonth()+1,0);
+      buckets.push({
+        label:d.toLocaleString("en-US",{month:"short"}),
+        start:d,
+        end,
+        values:{Sourced:0,Screened:0,Interviewed:0,Offered:0,Placed:0},
+      });
+    }
+  }
+  cands.forEach(c=>{
+    const stage=getPipelineChartStage(c);
+    if(!stage||!c.addedDate) return;
+    const dt=new Date(`${c.addedDate}T00:00:00`);
+    if(Number.isNaN(dt.getTime())) return;
+    const bucket=buckets.find(b=>dt>=b.start&&dt<=b.end);
+    if(bucket) bucket.values[stage]+=1;
+  });
+  const series=Object.keys(DASH_PIPE_COLORS).map(key=>({
+    key,
+    color:DASH_PIPE_COLORS[key],
+    points:buckets.map(b=>b.values[key]),
+  }));
+  const max=Math.max(4,...series.flatMap(s=>s.points));
+  return {buckets,series,max,label:cfg.label};
+}
+
 async function parseCandidateFileWithAI(file) {
   const extractPrompt='Extract candidate info from this resume. Return ONLY valid JSON with these exact fields: name, email, phone, linkedin, title, seniority (one of: Individual Contributor/Senior IC/Team Lead/Manager/Director/VP/SVP/C-Suite / Partner), experience, salary, location, workAuth (one of: US Citizen/Green Card/H-1B/H-4 EAD/L-1/TN Visa/OPT/CPT/EAD/EU Passport/EU Blue Card/Residence Permit/Requires Sponsorship/Other), skills (array of up to 8 most relevant skills), vertical (one of: Telecom / Wireless/AI / ML / Data/Cybersecurity/Software Engineering/Cloud / DevOps/Sales & Business Development/Directors & VPs/SVPs & C-Suite/Client Partners/Project / Program Mgmt/Network Engineering/Consulting), profile. "profile" should be an object with keys: overview (string), experience (array of {company,title,dates,bullets}), education (array of {school,degree,dates}). Only include fields you can confidently extract.';
   const isPDF=file.type==="application/pdf"||file.name.endsWith(".pdf");
@@ -1292,20 +1360,21 @@ const IC={
 // ── DASHBOARD HOME ───────────────────────────────────────────────
 function DashboardHome({cands,jobs,team,onOpenCand,onOpenJob,setPage}){
   const [recentActs,setRecentActs]=useState([]);
+  const [pipeRange,setPipeRange]=useState("1m");
+  const [pipeHover,setPipeHover]=useState(null);
   useEffect(()=>{fetchRecentActivity(15).then(setRecentActs).catch(()=>{});},[cands,jobs]);
   const active=cands.filter(c=>!["Placed","Rejected","On Hold"].includes(c.stage));
   const interviews=cands.filter(c=>["Interview 1","Interview 2","Final Interview"].includes(c.stage));
   const offers=cands.filter(c=>c.stage==="Offer");
   const placed=cands.filter(c=>c.stage==="Placed");
   const openJobs=jobs.filter(j=>["Open – Sourcing","Active"].includes(j.status));
-  const pipeData=[
-    {label:"Applied",count:cands.filter(c=>c.stage==="Sourced").length,color:B.accent},
-    {label:"Screened",count:cands.filter(c=>c.stage==="Submitted"||c.stage==="Client Review").length,color:"#8b5cf6"},
-    {label:"Interviewed",count:interviews.length,color:"#6366f1"},
-    {label:"Offered",count:offers.length,color:"#f59e0b"},
-    {label:"Hired",count:placed.length,color:"#34d399"},
-  ];
-  const maxPipe=Math.max(...pipeData.map(d=>d.count),1);
+  const pipeChart=buildPipelineChartSeries(cands,pipeRange);
+  const activePipeIdx=pipeHover??pipeChart.buckets.length-1;
+  const activePipeBucket=pipeChart.buckets[activePipeIdx];
+  const chartW=760, chartH=220, padX=26, padTop=20, padBottom=34;
+  const stepX=pipeChart.buckets.length>1?(chartW-padX*2)/(pipeChart.buckets.length-1):0;
+  const valueToY=v=>padTop+((pipeChart.max-v)/pipeChart.max)*(chartH-padTop-padBottom);
+  const buildLinePath=points=>points.map((v,i)=>`${i===0?"M":"L"} ${padX+i*stepX} ${valueToY(v)}`).join(" ");
 
   return <div style={{display:"flex",flexDirection:"column",gap:24}}>
     {/* Welcome banner */}
@@ -1326,19 +1395,62 @@ function DashboardHome({cands,jobs,team,onOpenCand,onOpenJob,setPage}){
 
     <div style={{display:"grid",gridTemplateColumns:"1.4fr 1fr",gap:20}}>
       {/* Hiring Pipeline */}
-      <div style={{background:"#fff",border:`1px solid ${B.muted}`,borderRadius:16,padding:"24px 28px"}}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:24}}>
-          <div style={{fontSize:16,fontWeight:700,color:B.ink}}>Hiring Pipeline</div>
-          <div style={{background:B.accentLight,color:B.accent,padding:"4px 12px",borderRadius:8,fontSize:11,fontWeight:600}}>This Month</div>
+      <div style={{background:"#fff",border:`1px solid ${B.muted}`,borderRadius:20,padding:"24px 28px",position:"relative",overflow:"hidden"}}>
+        <div style={{position:"absolute",right:-40,top:-60,width:220,height:220,borderRadius:"50%",background:"radial-gradient(circle, rgba(255,122,89,0.10) 0%, transparent 72%)",pointerEvents:"none"}}/>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:18,position:"relative",zIndex:1}}>
+          <div>
+            <div style={{fontSize:18,fontWeight:700,color:B.ink}}>Hiring Pipeline</div>
+            <div style={{fontSize:12,color:"#A09A93",marginTop:2}}>Sourced, Screened, Interviewed, Offered, and Placed</div>
+          </div>
+          <div style={{display:"flex",gap:6,alignItems:"center"}}>
+            {[
+              {id:"1m",label:"This Month"},
+              {id:"3m",label:"3 Months"},
+              {id:"1y",label:"1 Year"},
+            ].map(opt=><button key={opt.id} onClick={()=>setPipeRange(opt.id)} style={{background:pipeRange===opt.id?B.accent:"#fff",color:pipeRange===opt.id?"#fff":B.ink,border:`1px solid ${pipeRange===opt.id?B.accent:B.muted}`,borderRadius:999,padding:"7px 12px",fontSize:11,fontWeight:700,cursor:"pointer",transition:"all 0.18s"}}>{opt.label}</button>)}
+          </div>
         </div>
-        <div style={{display:"flex",alignItems:"flex-end",justifyContent:"space-between",gap:12,height:160}}>
-          {pipeData.map(d=><div key={d.label} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:8}}>
-            <div style={{fontSize:13,fontWeight:700,color:d.color}}>{d.count}</div>
-            <div style={{width:"100%",background:`${d.color}18`,borderRadius:8,position:"relative",height:Math.max(d.count/maxPipe*120,8),transition:"height 0.5s ease"}}>
-              <div style={{position:"absolute",bottom:0,left:0,right:0,height:"60%",background:`${d.color}30`,borderRadius:8}}/>
-            </div>
-            <div style={{fontSize:10,color:B.ink,fontWeight:500,opacity:0.5}}>{d.label}</div>
+        <div style={{display:"flex",gap:14,alignItems:"center",flexWrap:"wrap",marginBottom:14}}>
+          {pipeChart.series.map(s=><div key={s.key} style={{display:"flex",alignItems:"center",gap:8}}>
+            <span style={{width:10,height:10,borderRadius:"50%",background:s.color,boxShadow:`0 0 0 5px ${s.color}18`}}/>
+            <span style={{fontSize:12,color:B.ink,fontWeight:600}}>{s.key}</span>
+            <span style={{fontSize:12,color:"#A09A93"}}>{activePipeBucket?.values[s.key]||0}</span>
           </div>)}
+        </div>
+        <div style={{position:"relative",height:290,borderRadius:18,background:"linear-gradient(180deg, #fff 0%, #FFFBF8 100%)",border:`1px solid ${B.muted}`,padding:"18px 18px 12px"}}>
+          <svg viewBox={`0 0 ${chartW} ${chartH}`} style={{width:"100%",height:230,display:"block",overflow:"visible"}}>
+            {[0.25,0.5,0.75,1].map((step,i)=>{
+              const y=padTop+(chartH-padTop-padBottom)*step;
+              return <line key={i} x1={padX} x2={chartW-padX} y1={y} y2={y} stroke="#EFE7E1" strokeDasharray="6 8"/>;
+            })}
+            {pipeChart.series.map(s=><path key={s.key} d={buildLinePath(s.points)} fill="none" stroke={s.color} strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" style={{transition:"all 0.18s",filter:pipeHover!==null?"drop-shadow(0 6px 14px rgba(0,0,0,0.08))":"none",opacity:pipeHover!==null&&activePipeBucket?.values[s.key]===0?0.45:1}}/>)}
+            {pipeChart.buckets.map((b,i)=>{
+              const x=padX+i*stepX;
+              return <g key={b.label} onMouseEnter={()=>setPipeHover(i)} onMouseLeave={()=>setPipeHover(null)} style={{cursor:"pointer"}}>
+                <line x1={x} x2={x} y1={padTop} y2={chartH-padBottom+6} stroke={i===activePipeIdx?"#E5D8CF":"transparent"} strokeWidth="1.5"/>
+                {pipeChart.series.map(s=>{
+                  const y=valueToY(s.points[i]);
+                  const activePoint=i===activePipeIdx;
+                  return <g key={s.key}>
+                    <circle cx={x} cy={y} r={activePoint?6.5:4.5} fill="#fff" stroke={s.color} strokeWidth="3" style={{transition:"all 0.16s"}}/>
+                    <circle cx={x} cy={y} r={activePoint?14:0} fill={`${s.color}16`} style={{transition:"all 0.16s"}}/>
+                  </g>;
+                })}
+              </g>;
+            })}
+          </svg>
+          <div style={{display:"flex",justifyContent:"space-between",padding:"0 8px 0 10px",marginTop:-2}}>
+            {pipeChart.buckets.map((b,i)=><div key={b.label} onMouseEnter={()=>setPipeHover(i)} onMouseLeave={()=>setPipeHover(null)} style={{fontSize:i===activePipeIdx?13:12,fontWeight:i===activePipeIdx?700:500,color:i===activePipeIdx?B.ink:"#A09A93",transition:"all 0.16s",cursor:"pointer"}}>{b.label}</div>)}
+          </div>
+          {activePipeBucket&&<div style={{position:"absolute",top:18,right:18,background:"rgba(255,255,255,0.92)",backdropFilter:"blur(12px)",border:`1px solid ${B.muted}`,boxShadow:"0 14px 34px rgba(34,49,63,0.08)",borderRadius:16,padding:"12px 14px",minWidth:170}}>
+            <div style={{fontSize:12,color:"#A09A93",marginBottom:4}}>{activePipeBucket.label}</div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"6px 12px"}}>
+              {pipeChart.series.map(s=><div key={s.key}>
+                <div style={{fontSize:11,color:s.color,fontWeight:700}}>{s.key}</div>
+                <div style={{fontSize:18,color:B.ink,fontWeight:800,lineHeight:1.1}}>{activePipeBucket.values[s.key]}</div>
+              </div>)}
+            </div>
+          </div>}
         </div>
       </div>
 
@@ -1707,13 +1819,9 @@ export default function HCPRecruit(){
               {id:"mine",label:"My Pipeline"},
               {id:"all",label:"All Recruiters"},
             ].map(opt=><button key={opt.id} onClick={()=>setPipelineOwner(opt.id)} style={{background:pipelineOwner===opt.id?B.accent:"#fff",color:pipelineOwner===opt.id?"#fff":B.ink,border:`1px solid ${pipelineOwner===opt.id?B.accent:B.muted}`,borderRadius:8,padding:"8px 12px",fontSize:12,fontWeight:600,cursor:"pointer"}}>{opt.label}</button>)}
-            <select style={{...sel,minWidth:180}} value={pipelineOwner!=="mine"&&pipelineOwner!=="all"?pipelineOwner:""} onChange={e=>setPipelineOwner(e.target.value||"mine")}>
-              <option value="">Select recruiter…</option>
-              {team.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}
-            </select>
           </div>
           <span style={{color:"#A09A93",fontSize:12,fontWeight:500,marginLeft:"auto"}}>
-            {pipelineOwner==="mine"?"Showing your pipeline":pipelineOwner==="all"?"Showing all recruiters":`Showing ${getTeamMember(pipelineOwner)?.name||"selected recruiter"}`}
+            {pipelineOwner==="mine"?"Showing your pipeline":"Showing all recruiters"}
           </span>
         </div>
         <div style={{display:"flex",gap:10,overflowX:"auto",paddingBottom:16,alignItems:"stretch"}}>
