@@ -1407,6 +1407,23 @@ function DashboardHome({cands,jobs,team,onOpenCand,onOpenJob,setPage}){
   const chartW=760, chartH=220, padX=26, padTop=20, padBottom=34;
   const stepX=pipeChart.buckets.length>1?(chartW-padX*2)/(pipeChart.buckets.length-1):0;
   const valueToY=v=>padTop+((pipeChart.max-v)/pipeChart.max)*(chartH-padTop-padBottom);
+  const getCoords=points=>points.map((v,i)=>({x:padX+i*stepX,y:valueToY(v)}));
+  const getCurveControls=(coords,i)=>{
+    const p0=coords[i-1]||coords[i];
+    const p1=coords[i];
+    const p2=coords[i+1]||coords[i];
+    const p3=coords[i+2]||p2;
+    return {
+      p1,
+      cp1:{x:p1.x+(p2.x-p0.x)/6,y:p1.y+(p2.y-p0.y)/6},
+      cp2:{x:p2.x-(p3.x-p1.x)/6,y:p2.y-(p3.y-p1.y)/6},
+      p2,
+    };
+  };
+  const cubicAt=(p0,p1,p2,p3,t)=>{
+    const mt=1-t;
+    return (mt**3)*p0 + 3*(mt**2)*t*p1 + 3*mt*(t**2)*p2 + (t**3)*p3;
+  };
   const interpolatePoint=(points,pos)=>{
     const left=Math.floor(pos);
     const right=Math.min(points.length-1,Math.ceil(pos));
@@ -1418,22 +1435,27 @@ function DashboardHome({cands,jobs,team,onOpenCand,onOpenJob,setPage}){
   const interpolatedSeries=pipeChart.series.map(s=>({
     ...s,
     hoverValue: interpolatePoint(s.points, activePipePos),
+    hoverPoint: (() => {
+      const coords=getCoords(s.points);
+      if(coords.length===0) return {x:padX,y:valueToY(0)};
+      if(coords.length===1) return coords[0];
+      const segment=Math.max(0,Math.min(coords.length-2,Math.floor(activePipePos)));
+      const t=Math.max(0,Math.min(1,activePipePos-segment));
+      const {p1,cp1,cp2,p2}=getCurveControls(coords,segment);
+      return {
+        x:cubicAt(p1.x,cp1.x,cp2.x,p2.x,t),
+        y:cubicAt(p1.y,cp1.y,cp2.y,p2.y,t),
+      };
+    })(),
   }));
-  const hoverX=padX+(stepX*activePipePos);
+  const hoverX=interpolatedSeries[0]?.hoverPoint?.x ?? (padX+(stepX*activePipePos));
   const buildLinePath=points=>{
-    const coords=points.map((v,i)=>({x:padX+i*stepX,y:valueToY(v)}));
+    const coords=getCoords(points);
     if(coords.length<2) return coords.length?`M ${coords[0].x} ${coords[0].y}`:"";
     let path=`M ${coords[0].x} ${coords[0].y}`;
     for(let i=0;i<coords.length-1;i++){
-      const p0=coords[i-1]||coords[i];
-      const p1=coords[i];
-      const p2=coords[i+1];
-      const p3=coords[i+2]||p2;
-      const cp1x=p1.x+(p2.x-p0.x)/6;
-      const cp1y=p1.y+(p2.y-p0.y)/6;
-      const cp2x=p2.x-(p3.x-p1.x)/6;
-      const cp2y=p2.y-(p3.y-p1.y)/6;
-      path+=` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${p2.x} ${p2.y}`;
+      const {p1,cp1,cp2,p2}=getCurveControls(coords,i);
+      path+=` C ${cp1.x} ${cp1.y}, ${cp2.x} ${cp2.y}, ${p2.x} ${p2.y}`;
     }
     return path;
   };
@@ -1496,10 +1518,9 @@ function DashboardHome({cands,jobs,team,onOpenCand,onOpenJob,setPage}){
             <rect x={padX} y={padTop} width={chartW-padX*2} height={chartH-padTop-padBottom+10} fill="transparent"/>
             <line x1={hoverX} x2={hoverX} y1={padTop} y2={chartH-padBottom+6} stroke="#E5D8CF" strokeWidth="1.5"/>
             {interpolatedSeries.map(s=>{
-              const y=valueToY(s.hoverValue);
               return <g key={s.key}>
-                <circle cx={hoverX} cy={y} r={6.5} fill="#fff" stroke={s.color} strokeWidth="3" style={{transition:"all 0.08s linear"}}/>
-                <circle cx={hoverX} cy={y} r={14} fill={`${s.color}16`} style={{transition:"all 0.08s linear"}}/>
+                <circle cx={s.hoverPoint.x} cy={s.hoverPoint.y} r={6.5} fill="#fff" stroke={s.color} strokeWidth="3" style={{transition:"all 0.08s linear"}}/>
+                <circle cx={s.hoverPoint.x} cy={s.hoverPoint.y} r={14} fill={`${s.color}16`} style={{transition:"all 0.08s linear"}}/>
               </g>;
             })}
             {pipeChart.buckets.map((b,i)=>{
