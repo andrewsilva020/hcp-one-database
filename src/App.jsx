@@ -1435,6 +1435,7 @@ function DashboardHome({cands,jobs,team,onOpenCand,onOpenJob,setPage}){
   const interpolatedSeries=pipeChart.series.map(s=>({
     ...s,
     hoverValue: interpolatePoint(s.points, activePipePos),
+    displayValue: Math.round(interpolatePoint(s.points, activePipePos)),
     hoverPoint: (() => {
       const coords=getCoords(s.points);
       if(coords.length===0) return {x:padX,y:valueToY(0)};
@@ -1505,7 +1506,7 @@ function DashboardHome({cands,jobs,team,onOpenCand,onOpenJob,setPage}){
           {interpolatedSeries.map(s=><div key={s.key} style={{display:"flex",alignItems:"center",gap:8}}>
             <span style={{width:10,height:10,borderRadius:"50%",background:s.color,boxShadow:`0 0 0 5px ${s.color}18`}}/>
             <span style={{fontSize:12,color:B.ink,fontWeight:600}}>{s.key}</span>
-            <span style={{fontSize:12,color:"#A09A93"}}>{Math.round(s.hoverValue * 10) / 10}</span>
+            <span style={{fontSize:12,color:"#A09A93"}}>{s.displayValue}</span>
           </div>)}
         </div>
         <div ref={chartRef} onMouseMove={e=>updateHoverFromClientX(e.clientX)} onMouseLeave={()=>setPipeHover(null)} style={{position:"relative",borderRadius:18,background:"linear-gradient(180deg, #fff 0%, #FFFBF8 100%)",border:`1px solid ${B.muted}`,padding:"18px 18px 14px"}}>
@@ -1514,7 +1515,7 @@ function DashboardHome({cands,jobs,team,onOpenCand,onOpenJob,setPage}){
               const y=padTop+(chartH-padTop-padBottom)*step;
               return <line key={i} x1={padX} x2={chartW-padX} y1={y} y2={y} stroke="#EFE7E1" strokeDasharray="6 8"/>;
             })}
-            {pipeChart.series.map(s=><path key={s.key} d={buildLinePath(s.points)} fill="none" stroke={s.color} strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" style={{transition:"all 0.18s",filter:pipeHover!==null?"drop-shadow(0 6px 14px rgba(0,0,0,0.08))":"none",opacity:pipeHover!==null&&Math.round(interpolatePoint(s.points,activePipePos)*10)/10===0?0.45:1}}/>)}
+            {pipeChart.series.map(s=><path key={s.key} d={buildLinePath(s.points)} fill="none" stroke={s.color} strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" style={{transition:"all 0.18s",filter:pipeHover!==null?"drop-shadow(0 6px 14px rgba(0,0,0,0.08))":"none",opacity:pipeHover!==null&&Math.round(interpolatePoint(s.points,activePipePos))===0?0.45:1}}/>)}
             <rect x={padX} y={padTop} width={chartW-padX*2} height={chartH-padTop-padBottom+10} fill="transparent"/>
             <line x1={hoverX} x2={hoverX} y1={padTop} y2={chartH-padBottom+6} stroke="#E5D8CF" strokeWidth="1.5"/>
             {interpolatedSeries.map(s=>{
@@ -1544,7 +1545,7 @@ function DashboardHome({cands,jobs,team,onOpenCand,onOpenJob,setPage}){
             <div style={{display:"grid",gridTemplateColumns:"repeat(5,minmax(0,1fr))",gap:"8px 10px"}}>
               {interpolatedSeries.map(s=><div key={s.key}>
                 <div style={{fontSize:11,color:s.color,fontWeight:700}}>{s.key}</div>
-                <div style={{fontSize:18,color:B.ink,fontWeight:800,lineHeight:1.1}}>{Math.round(s.hoverValue * 10) / 10}</div>
+                <div style={{fontSize:18,color:B.ink,fontWeight:800,lineHeight:1.1}}>{s.displayValue}</div>
               </div>)}
             </div>
           </div>}
