@@ -203,7 +203,7 @@ function getPipelineChartStageFromActivity(item) {
   return null;
 }
 
-function buildPipelineChartSeries(items, rangeKey="1m") {
+function buildPipelineChartSeries(cands, items, rangeKey="1m") {
   const now=new Date();
   const ranges={
     "1m":{count:4,unit:"week",label:"This Month"},
@@ -223,6 +223,7 @@ function buildPipelineChartSeries(items, rangeKey="1m") {
         start,
         end,
         values:{Sourced:0,Screened:0,Interviewed:0,Offered:0,Placed:0},
+        seen:{Sourced:new Set(),Screened:new Set(),Interviewed:new Set(),Offered:new Set(),Placed:new Set()},
       });
     }
   } else {
@@ -234,16 +235,30 @@ function buildPipelineChartSeries(items, rangeKey="1m") {
         start:d,
         end,
         values:{Sourced:0,Screened:0,Interviewed:0,Offered:0,Placed:0},
+        seen:{Sourced:new Set(),Screened:new Set(),Interviewed:new Set(),Offered:new Set(),Placed:new Set()},
       });
     }
   }
+  cands.forEach(c=>{
+    if(!c.id||!c.addedDate) return;
+    const dt=new Date(`${c.addedDate}T00:00:00`);
+    if(Number.isNaN(dt.getTime())) return;
+    const bucket=buckets.find(b=>dt>=b.start&&dt<=b.end);
+    if(bucket && !bucket.seen.Sourced.has(c.id)) {
+      bucket.seen.Sourced.add(c.id);
+      bucket.values.Sourced+=1;
+    }
+  });
   items.forEach(item=>{
     const stage=getPipelineChartStageFromActivity(item);
-    if(!stage||!item.created_at) return;
+    if(!stage||stage==="Sourced"||!item.created_at||!item.candidate_id) return;
     const dt=new Date(item.created_at);
     if(Number.isNaN(dt.getTime())) return;
     const bucket=buckets.find(b=>dt>=b.start&&dt<=b.end);
-    if(bucket) bucket.values[stage]+=1;
+    if(bucket && !bucket.seen[stage].has(item.candidate_id)) {
+      bucket.seen[stage].add(item.candidate_id);
+      bucket.values[stage]+=1;
+    }
   });
   const series=Object.keys(DASH_PIPE_COLORS).map(key=>({
     key,
@@ -1384,7 +1399,7 @@ function DashboardHome({cands,jobs,team,onOpenCand,onOpenJob,setPage}){
   const offers=cands.filter(c=>c.stage==="Offer");
   const placed=cands.filter(c=>c.stage==="Placed");
   const openJobs=jobs.filter(j=>["Open – Sourcing","Active"].includes(j.status));
-  const pipeChart=buildPipelineChartSeries(chartActs,pipeRange);
+  const pipeChart=buildPipelineChartSeries(cands,chartActs,pipeRange);
   const activePipeIdx=pipeHover??pipeChart.buckets.length-1;
   const activePipeBucket=pipeChart.buckets[activePipeIdx];
   const chartW=760, chartH=220, padX=26, padTop=20, padBottom=34;
