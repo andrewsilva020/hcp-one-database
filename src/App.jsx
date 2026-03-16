@@ -172,6 +172,39 @@ function isHiddenCandidateNote(note) {
   return note?.text?.startsWith(AI_PROFILE_PREFIX) || note?.text?.startsWith(AI_SUMMARY_PREFIX);
 }
 
+async function parseCandidateFileWithAI(file) {
+  const extractPrompt='Extract candidate info from this resume. Return ONLY valid JSON with these exact fields: name, email, phone, linkedin, title, seniority (one of: Individual Contributor/Senior IC/Team Lead/Manager/Director/VP/SVP/C-Suite / Partner), experience, salary, location, workAuth (one of: US Citizen/Green Card/H-1B/H-4 EAD/L-1/TN Visa/OPT/CPT/EAD/EU Passport/EU Blue Card/Residence Permit/Requires Sponsorship/Other), skills (array of up to 8 most relevant skills), vertical (one of: Telecom / Wireless/AI / ML / Data/Cybersecurity/Software Engineering/Cloud / DevOps/Sales & Business Development/Directors & VPs/SVPs & C-Suite/Client Partners/Project / Program Mgmt/Network Engineering/Consulting), profile. "profile" should be an object with keys: overview (string), experience (array of {company,title,dates,bullets}), education (array of {school,degree,dates}). Only include fields you can confidently extract.';
+  const isPDF=file.type==="application/pdf"||file.name.endsWith(".pdf");
+  const isDOCX=file.name.match(/\.docx?$/i)||file.type.includes("word");
+  const isImage=file.type.startsWith("image/")||file.name.match(/\.(png|jpg|jpeg|webp)$/i);
+  const base64=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result.split(",")[1]);r.onerror=()=>rej(new Error("Read failed"));r.readAsDataURL(file);});
+  let messages;
+  if(isPDF){
+    messages=[{role:"user",content:[{type:"document",source:{type:"base64",media_type:"application/pdf",data:base64}},{type:"text",text:extractPrompt}]}];
+  } else if(isImage){
+    const imgType=file.type||"image/jpeg";
+    messages=[{role:"user",content:[{type:"image",source:{type:"base64",media_type:imgType,data:base64}},{type:"text",text:extractPrompt}]}];
+  } else if(isDOCX){
+    let docText="";
+    try{
+      const mammoth=await import("mammoth");
+      const arrayBuffer=await file.arrayBuffer();
+      const result=await mammoth.extractRawText({arrayBuffer});
+      docText=result.value?.substring(0,4000)||"";
+    }catch{
+      const ab=await file.arrayBuffer();
+      docText=new TextDecoder("utf-8",{fatal:false}).decode(ab).replace(/[^\x20-\x7E\n\r]/g," ").replace(/\s+/g," ").substring(0,3000);
+    }
+    messages=[{role:"user",content:`${extractPrompt}\n\nResume text:\n${docText}`}];
+  } else {
+    messages=[{role:"user",content:`${extractPrompt}\n\nResume text:\n${atob(base64).replace(/[^\x20-\x7E\n]/g," ").substring(0,3000)}`}];
+  }
+  const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":import.meta.env.VITE_ANTHROPIC_API_KEY,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1400,messages})});
+  const data=await res.json();
+  if(data.error) throw new Error(data.error.message);
+  return JSON.parse((data.content?.[0]?.text||"{}").replace(/```json|```/g,"").trim());
+}
+
 // ── MICRO COMPONENTS ──────────────────────────────────────────────
 function StageBadge({stage}){
   const m=SM[stage]||SM.Sourced;
@@ -431,40 +464,8 @@ function CandForm({initial,allCandidates,onSave,onClose,activeUser=TEAM_FALLBACK
       const {supabase}=await import("./lib/supabase");
       const {error:upErr}=await supabase.storage.from("HCP One Resumes").upload(path,file,{upsert:true});
       if(!upErr) s("resumePath",path);
-      // Now parse — determine media type
-      const isPDF=file.type==="application/pdf"||file.name.endsWith(".pdf");
-      const isDOCX=file.name.match(/\.docx?$/i)||file.type.includes("word");
-      const isImage=file.type.startsWith("image/")||file.name.match(/\.(png|jpg|jpeg|webp)$/i);
-      const base64=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result.split(",")[1]);r.onerror=()=>rej(new Error("Read failed"));r.readAsDataURL(file);});
       setPMsg("AI extracting details…");
-      const extractPrompt="Extract candidate info from this resume. Return ONLY valid JSON with these exact fields: name, email, phone, title, seniority (one of: Individual Contributor/Senior IC/Team Lead/Manager/Director/VP/SVP/C-Suite / Partner), experience, salary, location, workAuth (one of: US Citizen/Green Card/H-1B/H-4 EAD/L-1/TN Visa/OPT/CPT/EAD/EU Passport/EU Blue Card/Residence Permit/Requires Sponsorship/Other), skills (array of up to 8 most relevant skills), vertical (one of: Telecom / Wireless/AI / ML / Data/Cybersecurity/Software Engineering/Cloud / DevOps/Sales & Business Development/Directors & VPs/SVPs & C-Suite/Client Partners/Project / Program Mgmt/Network Engineering/Consulting), profile. \"profile\" should be an object with keys: overview (string), experience (array of {company,title,dates,bullets}), education (array of {school,degree,dates}). Only include fields you can confidently extract.";
-      let messages;
-      if(isPDF){
-        messages=[{role:"user",content:[{type:"document",source:{type:"base64",media_type:"application/pdf",data:base64}},{type:"text",text:extractPrompt}]}];
-      } else if(isImage){
-        const imgType=file.type||"image/jpeg";
-        messages=[{role:"user",content:[{type:"image",source:{type:"base64",media_type:imgType,data:base64}},{type:"text",text:extractPrompt}]}];
-      } else if(isDOCX){
-        // Extract text from DOCX using mammoth npm package
-        let docText="";
-        try{
-          const mammoth=await import("mammoth");
-          const arrayBuffer=await file.arrayBuffer();
-          const result=await mammoth.extractRawText({arrayBuffer});
-          docText=result.value?.substring(0,4000)||"";
-        }catch(me){
-          // fallback: strip binary chars
-          const ab=await file.arrayBuffer();
-          docText=new TextDecoder("utf-8",{fatal:false}).decode(ab).replace(/[^\x20-\x7E\n\r]/g," ").replace(/\s+/g," ").substring(0,3000);
-        }
-        messages=[{role:"user",content:`${extractPrompt}\n\nResume text:\n${docText}`}];
-      } else {
-        messages=[{role:"user",content:`${extractPrompt}\n\nResume text:\n${atob(base64).replace(/[^\x20-\x7E\n]/g," ").substring(0,3000)}`}];
-      }
-      const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":import.meta.env.VITE_ANTHROPIC_API_KEY,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1200,messages})});
-      const data=await res.json();
-      if(data.error) throw new Error(data.error.message);
-      const parsed=JSON.parse((data.content?.[0]?.text||"{}").replace(/```json|```/g,"").trim());
+      const parsed=await parseCandidateFileWithAI(file);
       const mapped=mapParsedCandidate(parsed);
       setProfileDraft(hasAIProfile(parsed.profile) ? normalizeAIProfile(parsed.profile) : null);
       if(!Object.keys(mapped).length){
@@ -1520,7 +1521,45 @@ export default function HCPRecruit(){
   const removeFromJob=async(jid,cid)=>{await removeCandidateFromJob(cid,jid);const data=await fetchJobs();setJobs(data);};
   const deleteCandHandler=async(id)=>{if(!window.confirm("Delete this candidate? This cannot be undone."))return;await deleteCandidate(id);await reload();setModal(null);};
   const deleteJobHandler=async(id)=>{if(!window.confirm("Delete this job order? This cannot be undone."))return;await deleteJob(id);await reload();setModal(null);};
-  const handleResumeUpload=async(candidateId,file)=>{await uploadResume(candidateId,file);await logActivity(candidateId,"resume",activeUser.id,activeUser.name,"Resume uploaded");const data=await fetchCandidates();setCands(data);};
+  const handleResumeUpload=async(candidateId,file)=>{
+    const existing=cands.find(c=>c.id===candidateId);
+    const path=await uploadResume(candidateId,file);
+    let detail="Resume uploaded";
+    try{
+      const parsed=await parseCandidateFileWithAI(file);
+      const mapped={
+        ...(existing||{}),
+        ...Object.fromEntries(Object.entries({
+          name: parsed.name,
+          email: parsed.email,
+          phone: parsed.phone,
+          linkedin: parsed.linkedin,
+          title: parsed.title,
+          seniority: parsed.seniority,
+          experience: parsed.experience,
+          salary: parsed.salary,
+          location: parsed.location,
+          workAuth: parsed.workAuth||parsed.work_auth,
+          skills: parsed.skills,
+          vertical: parsed.vertical,
+          source: parsed.source || existing?.source,
+        }).filter(([,v])=>v!==undefined && v!==null && (!(Array.isArray(v)) || v.length))),
+        id: candidateId,
+        resumePath: path,
+      };
+      await upsertCandidate(mapped);
+      if(hasAIProfile(parsed.profile)){
+        await addCandidateNote(candidateId,{author:"Talyntry AI",authorId:activeUser.id,text:buildAIProfileNote(parsed.profile),date:today()});
+      }
+      detail="Resume uploaded and AI profile updated";
+    }catch(err){
+      console.error("Resume AI parse failed:",err);
+      detail="Resume uploaded (AI profile update failed)";
+    }
+    await logActivity(candidateId,"resume",activeUser.id,activeUser.name,detail);
+    const data=await fetchCandidates();
+    setCands(data);
+  };
   const openCand=(c)=>setModal({t:"cand",c});
 
   const sW=sidebarCollapsed?68:240;
