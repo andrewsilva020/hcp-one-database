@@ -1417,7 +1417,7 @@ function DashboardHome({cands,jobs,team,onOpenCand,onOpenJob,setPage}){
             <span style={{fontSize:12,color:"#A09A93"}}>{activePipeBucket?.values[s.key]||0}</span>
           </div>)}
         </div>
-        <div style={{position:"relative",height:290,borderRadius:18,background:"linear-gradient(180deg, #fff 0%, #FFFBF8 100%)",border:`1px solid ${B.muted}`,padding:"18px 18px 12px"}}>
+        <div style={{position:"relative",borderRadius:18,background:"linear-gradient(180deg, #fff 0%, #FFFBF8 100%)",border:`1px solid ${B.muted}`,padding:"18px 18px 14px"}}>
           <svg viewBox={`0 0 ${chartW} ${chartH}`} style={{width:"100%",height:230,display:"block",overflow:"visible"}}>
             {[0.25,0.5,0.75,1].map((step,i)=>{
               const y=padTop+(chartH-padTop-padBottom)*step;
@@ -1442,9 +1442,12 @@ function DashboardHome({cands,jobs,team,onOpenCand,onOpenJob,setPage}){
           <div style={{display:"flex",justifyContent:"space-between",padding:"0 8px 0 10px",marginTop:-2}}>
             {pipeChart.buckets.map((b,i)=><div key={b.label} onMouseEnter={()=>setPipeHover(i)} onMouseLeave={()=>setPipeHover(null)} style={{fontSize:i===activePipeIdx?13:12,fontWeight:i===activePipeIdx?700:500,color:i===activePipeIdx?B.ink:"#A09A93",transition:"all 0.16s",cursor:"pointer"}}>{b.label}</div>)}
           </div>
-          {activePipeBucket&&<div style={{position:"absolute",top:18,right:18,background:"rgba(255,255,255,0.92)",backdropFilter:"blur(12px)",border:`1px solid ${B.muted}`,boxShadow:"0 14px 34px rgba(34,49,63,0.08)",borderRadius:16,padding:"12px 14px",minWidth:170}}>
-            <div style={{fontSize:12,color:"#A09A93",marginBottom:4}}>{activePipeBucket.label}</div>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"6px 12px"}}>
+          {activePipeBucket&&<div style={{marginTop:14,background:"rgba(255,255,255,0.96)",backdropFilter:"blur(12px)",border:`1px solid ${B.muted}`,boxShadow:"0 10px 30px rgba(34,49,63,0.06)",borderRadius:16,padding:"12px 14px"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:12,marginBottom:8}}>
+              <div style={{fontSize:13,color:B.ink,fontWeight:700}}>{activePipeBucket.label}</div>
+              <div style={{fontSize:11,color:"#A09A93"}}>{pipeChart.label}</div>
+            </div>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(5,minmax(0,1fr))",gap:"8px 10px"}}>
               {pipeChart.series.map(s=><div key={s.key}>
                 <div style={{fontSize:11,color:s.color,fontWeight:700}}>{s.key}</div>
                 <div style={{fontSize:18,color:B.ink,fontWeight:800,lineHeight:1.1}}>{activePipeBucket.values[s.key]}</div>
