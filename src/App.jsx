@@ -83,6 +83,59 @@ const aHue     = name => [...(name||"A")].reduce((a,c)=>a+c.charCodeAt(0),0)%360
 const weekStart = () => { const d=new Date(); d.setDate(d.getDate()-d.getDay()); return d.toISOString().split("T")[0]; };
 const weekEnd   = () => { const d=new Date(); d.setDate(d.getDate()+(6-d.getDay())); return d.toISOString().split("T")[0]; };
 
+const REPORT_PERIODS = [
+  {id:"daily",label:"Daily"},
+  {id:"weekly",label:"Weekly"},
+  {id:"monthly",label:"Monthly"},
+  {id:"quarterly",label:"Quarterly"},
+  {id:"yearly",label:"Yearly"},
+];
+
+function getReportRange(period="weekly"){
+  const now=new Date();
+  const start=new Date(now);
+  const end=new Date(now);
+  start.setHours(0,0,0,0);
+  end.setHours(23,59,59,999);
+  if(period==="daily"){
+    return {start,end,label:`${start.toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})}`};
+  }
+  if(period==="weekly"){
+    const day=start.getDay();
+    start.setDate(start.getDate()-day);
+    end.setTime(start.getTime());
+    end.setDate(start.getDate()+6);
+    end.setHours(23,59,59,999);
+    return {start,end,label:`${start.toLocaleDateString("en-US",{month:"short",day:"numeric"})} – ${end.toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})}`};
+  }
+  if(period==="monthly"){
+    start.setDate(1);
+    end.setMonth(start.getMonth()+1,0);
+    return {start,end,label:start.toLocaleDateString("en-US",{month:"long",year:"numeric"})};
+  }
+  if(period==="quarterly"){
+    const quarterStartMonth=Math.floor(start.getMonth()/3)*3;
+    start.setMonth(quarterStartMonth,1);
+    end.setMonth(quarterStartMonth+3,0);
+    const quarter=Math.floor(quarterStartMonth/3)+1;
+    return {start,end,label:`Q${quarter} ${start.getFullYear()}`};
+  }
+  start.setMonth(0,1);
+  end.setMonth(12,0);
+  return {start,end,label:String(start.getFullYear())};
+}
+
+function parseDateValue(value){
+  if(!value) return null;
+  const dt=new Date(String(value).includes("T")?value:`${value}T00:00:00`);
+  return Number.isNaN(dt.getTime())?null:dt;
+}
+
+function inRange(value,start,end){
+  const dt=parseDateValue(value);
+  return !!dt && dt>=start && dt<=end;
+}
+
 function exportCSV(cands, jobs) {
   const ch=["Name","Email","Phone","Title","Seniority","Vertical","Stage","Work Auth","Salary","Location","Experience","Source","Owner","Collaborators","Skills","Notes","Added","Updated"];
   const cr=cands.map(c=>[c.name,c.email,c.phone,c.title,c.seniority,c.vertical,c.stage,c.workAuth,c.salary,c.location,c.experience,c.source,getTeamMember(c.ownerId)?.name||c.ownerId,(c.collaborators||[]).map(id=>getTeamMember(id)?.name||id).join("; "),(c.skills||[]).join("; "),(c.notes||[]).map(n=>`[${n.author}] ${n.text}`).join(" | "),c.addedDate,c.lastUpdated]);
@@ -116,16 +169,18 @@ function detectDupes(candidates, email, phone, excludeId=null, name="") {
   return [...exact,...fuzzy.map(c=>({...c,_fuzzy:true}))];
 }
 
-function generateWeeklyReport(cands, jobs, filterRecruiter="all", team=TEAM_FALLBACK) {
-  const ws=weekStart(),we=weekEnd();
-  const fc=filterRecruiter==="all"?cands:cands.filter(c=>c.ownerId===filterRecruiter||(c.collaborators||[]).includes(filterRecruiter));
-  const fj=filterRecruiter==="all"?jobs:jobs.filter(j=>(j.assignedRecruiters||[]).includes(filterRecruiter));
+function generateActivityReport(cands, jobs, filterRecruiter="all", team=TEAM_FALLBACK, period="weekly") {
+  const range=getReportRange(period);
+  const baseCands=filterRecruiter==="all"?cands:cands.filter(c=>c.ownerId===filterRecruiter||(c.collaborators||[]).includes(filterRecruiter));
+  const baseJobs=filterRecruiter==="all"?jobs:jobs.filter(j=>(j.assignedRecruiters||[]).includes(filterRecruiter));
+  const fc=baseCands.filter(c=>inRange(c.addedDate||c.lastUpdated,range.start,range.end)||inRange(c.lastUpdated,range.start,range.end));
+  const fj=baseJobs.filter(j=>inRange(j.reqDate,range.start,range.end)||(["Open – Sourcing","Active"].includes(j.status)&&range.end>=new Date()));
   const byStage={};STAGES.forEach(s=>{byStage[s]=fc.filter(c=>c.stage===s);});
   const byClient={};jobs.forEach(j=>{if(!byClient[j.client])byClient[j.client]=[];});
   fc.forEach(c=>{c.submittedTo?.forEach(jid=>{const j=jobs.find(x=>x.id===jid);if(j){if(!byClient[j.client])byClient[j.client]=[];if(!byClient[j.client].find(x=>x.id===c.id))byClient[j.client].push(c);}});});
   const byRecruiter={};
-  (team||TEAM_FALLBACK).forEach(t=>{const owned=cands.filter(c=>c.ownerId===t.id);const collab=cands.filter(c=>(c.collaborators||[]).includes(t.id));byRecruiter[t.id]={name:t.name,color:t.color,owned:owned.length,active:owned.filter(c=>!["Placed","Rejected"].includes(c.stage)).length,offers:owned.filter(c=>c.stage==="Offer").length,placed:owned.filter(c=>c.stage==="Placed").length,interviews:owned.filter(c=>["Interview 1","Interview 2","Final Interview"].includes(c.stage)).length,collab:collab.length,jobs:jobs.filter(j=>(j.assignedRecruiters||[]).includes(t.id)).length};});
-  return {ws,we,active:fc.filter(c=>!["Placed","Rejected"].includes(c.stage)),byStage,byClient,byRecruiter,openJobs:fj.filter(j=>["Open – Sourcing","Active"].includes(j.status)),hotCands:fc.filter(c=>["Interview 1","Interview 2","Final Interview","Offer"].includes(c.stage)),total:fc.length,placed:fc.filter(c=>c.stage==="Placed").length};
+  (team||TEAM_FALLBACK).forEach(t=>{const owned=fc.filter(c=>c.ownerId===t.id);const collab=fc.filter(c=>(c.collaborators||[]).includes(t.id));byRecruiter[t.id]={name:t.name,color:t.color,owned:owned.length,active:owned.filter(c=>!["Placed","Rejected"].includes(c.stage)).length,offers:owned.filter(c=>c.stage==="Offer").length,placed:owned.filter(c=>c.stage==="Placed").length,interviews:owned.filter(c=>["Interview 1","Interview 2","Final Interview"].includes(c.stage)).length,collab:collab.length,jobs:fj.filter(j=>(j.assignedRecruiters||[]).includes(t.id)).length};});
+  return {range,period,active:fc.filter(c=>!["Placed","Rejected"].includes(c.stage)),byStage,byClient,byRecruiter,openJobs:fj.filter(j=>["Open – Sourcing","Active"].includes(j.status)),hotCands:fc.filter(c=>["Interview 1","Interview 2","Final Interview","Offer"].includes(c.stage)),total:fc.length,placed:fc.filter(c=>c.stage==="Placed").length};
 }
 
 const AI_PROFILE_PREFIX = "[AI PROFILE]";
@@ -433,16 +488,18 @@ function LoginScreen({onLogin}){
 // ── WEEKLY REPORT ─────────────────────────────────────────────────
 function WeeklyReport({cands,jobs,team=TEAM_FALLBACK}){
   const [filterR,setFilterR]=useState("all");
-  const r=generateWeeklyReport(cands,jobs,filterR,team);
+  const [period,setPeriod]=useState("weekly");
+  const r=generateActivityReport(cands,jobs,filterR,team,period);
+  const periodLabel=REPORT_PERIODS.find(p=>p.id===period)?.label||"Weekly";
   const printReport=()=>{
     const w=window.open("","_blank");
     const rows=Object.entries(r.byRecruiter).map(([,d])=>`<tr><td>${d.name}</td><td>${d.owned}</td><td>${d.active}</td><td>${d.interviews}</td><td>${d.offers}</td><td>${d.placed}</td><td>${d.collab}</td><td>${d.jobs}</td></tr>`).join("");
     const hotRows=r.hotCands.map(c=>{const o=getTeamMember(c.ownerId);return `<tr><td>${c.name}</td><td>${c.title}</td><td>${c.stage}</td><td>${c.salary||"—"}</td><td>${o?.name||"—"}</td></tr>`;}).join("");
     const jobRows=r.openJobs.map(j=>`<tr><td>${j.title}</td><td>${j.client}</td><td>${j.salary||"—"}</td><td>${j.status}</td><td>${(j.submittedCandidates||[]).length}</td></tr>`).join("");
     const clientRows=Object.entries(r.byClient).filter(([,c])=>c.length>0).map(([client,cs])=>`<tr><td><b>${client}</b></td><td>${cs.length}</td><td>${cs.filter(c=>["Interview 1","Interview 2","Final Interview"].includes(c.stage)).length}</td><td>${cs.filter(c=>c.stage==="Offer").length}</td><td>${cs.filter(c=>c.stage==="Placed").length}</td></tr>`).join("");
-    w.document.write(`<!DOCTYPE html><html><head><title>Talyntry Weekly Report</title><style>body{font-family:'DM Sans',Arial,sans-serif;padding:40px;color:#0a1628;max-width:960px;margin:0 auto}h1{color:#22313F;font-size:22px;border-bottom:3px solid #FF7A59;padding-bottom:10px}h2{color:#22313F;margin-top:32px;font-size:13px;text-transform:uppercase;letter-spacing:1px}table{width:100%;border-collapse:collapse;margin-top:12px;font-size:12px}th{background:#0a1628;color:white;padding:9px 12px;text-align:left}td{padding:8px 12px;border-bottom:1px solid #e2e8f0}.summary{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:20px 0}.card{background:#f1f5f9;border-radius:10px;padding:16px;text-align:center}.num{font-size:28px;font-weight:800;color:#FF7A59}.lbl{font-size:11px;color:#64748b;margin-top:3px}@media print{button{display:none}}</style></head><body>
-    <h1>Talyntry Weekly Activity Report</h1>
-    <p style="color:#64748b">Week of ${r.ws} – ${r.we} · Generated ${today()} · ${filterR==="all"?"All Recruiters":getTeamMember(filterR)?.name}</p>
+    w.document.write(`<!DOCTYPE html><html><head><title>Talyntry ${periodLabel} Report</title><style>body{font-family:'DM Sans',Arial,sans-serif;padding:40px;color:#0a1628;max-width:960px;margin:0 auto}h1{color:#22313F;font-size:22px;border-bottom:3px solid #FF7A59;padding-bottom:10px}h2{color:#22313F;margin-top:32px;font-size:13px;text-transform:uppercase;letter-spacing:1px}table{width:100%;border-collapse:collapse;margin-top:12px;font-size:12px}th{background:#0a1628;color:white;padding:9px 12px;text-align:left}td{padding:8px 12px;border-bottom:1px solid #e2e8f0}.summary{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:20px 0}.card{background:#f1f5f9;border-radius:10px;padding:16px;text-align:center}.num{font-size:28px;font-weight:800;color:#FF7A59}.lbl{font-size:11px;color:#64748b;margin-top:3px}@media print{button{display:none}}</style></head><body>
+    <h1>Talyntry ${periodLabel} Activity Report</h1>
+    <p style="color:#64748b">${periodLabel} period: ${r.range.label} · Generated ${today()} · ${filterR==="all"?"All Recruiters":getTeamMember(filterR)?.name}</p>
     <div class="summary"><div class="card"><div class="num">${r.total}</div><div class="lbl">Total Candidates</div></div><div class="card"><div class="num">${r.active.length}</div><div class="lbl">Active Pipeline</div></div><div class="card"><div class="num">${r.hotCands.length}</div><div class="lbl">Interview / Offer</div></div><div class="card"><div class="num">${r.openJobs.length}</div><div class="lbl">Open Job Orders</div></div></div>
     <h2>Pipeline by Stage</h2><table><tr>${STAGES.map(s=>`<th>${s}</th>`).join("")}</tr><tr>${STAGES.map(s=>`<td>${r.byStage[s]?.length||0}</td>`).join("")}</tr></table>
     <h2>Client Activity</h2><table><tr><th>Client</th><th>Candidates</th><th>In Interview</th><th>Offers</th><th>Placed</th></tr>${clientRows}</table>
@@ -459,7 +516,10 @@ function WeeklyReport({cands,jobs,team=TEAM_FALLBACK}){
         <select style={{...sel,width:190,fontSize:12}} value={filterR} onChange={e=>setFilterR(e.target.value)}>
           <option value="all">All Recruiters</option>{team.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}
         </select>
-        <span style={{fontSize:12,color:C.gray400}}>Week: {r.ws} – {r.we}</span>
+        <select style={{...sel,width:150,fontSize:12}} value={period} onChange={e=>setPeriod(e.target.value)}>
+          {REPORT_PERIODS.map(opt=><option key={opt.id} value={opt.id}>{opt.label}</option>)}
+        </select>
+        <span style={{fontSize:12,color:C.gray400}}>{periodLabel}: {r.range.label}</span>
       </div>
       <button onClick={printReport} style={{background:C.navy,color:C.white,border:"none",borderRadius:8,padding:"9px 18px",fontSize:12,fontWeight:600,cursor:"pointer"}}>🖨 Print / Export PDF</button>
     </div>
@@ -2041,7 +2101,7 @@ export default function HCPRecruit(){
     {modal?.t==="add-job"&&<Modal title="New Job Order" subtitle="Create a job order and assign recruiters" onClose={()=>setModal(null)} wide><JobForm onSave={saveJob} onClose={()=>setModal(null)} activeUser={activeUser} team={team}/></Modal>}
     {modal?.t==="edit-job"&&<Modal title="Edit Job Order" onClose={()=>setModal(null)} wide><JobForm initial={modal.j} onSave={saveJob} onClose={()=>setModal(null)} activeUser={activeUser} team={team}/></Modal>}
     {modal?.t==="job"&&(()=>{const live=jobs.find(j=>j.id===modal.j.id)||modal.j;return <Modal title="Job Order Detail" onClose={()=>setModal(null)} wide><JobDetail job={live} candidates={cands} onEdit={()=>setModal({t:"edit-job",j:live})} onStatusChange={jobStatusChange} onAddNote={addJobNoteHandler} onRemove={removeFromJob} onOpenCand={c=>{setModal(null);setTimeout(()=>setModal({t:"cand",c}),40);}} activeUser={activeUser} onDelete={activeUser?.is_admin?deleteJobHandler:null}/></Modal>;})()}
-    {modal?.t==="report"&&<Modal title="Weekly Activity Report" subtitle={`Week of ${weekStart()} – ${weekEnd()}`} onClose={()=>setModal(null)} xl><WeeklyReport cands={cands} jobs={jobs} team={team}/></Modal>}
+    {modal?.t==="report"&&<Modal title="Activity Report" subtitle="Review recruiting performance across multiple time ranges" onClose={()=>setModal(null)} xl><WeeklyReport cands={cands} jobs={jobs} team={team}/></Modal>}
     {modal?.t==="team"&&<Modal title="Team Management" subtitle={activeUser?.is_admin?"Admin — full control":"View your team"} onClose={()=>setModal(null)} wide><TeamManager team={team} activeUser={activeUser} onSave={async(m)=>{await upsertTeamMember(m);const t=await fetchTeam();TEAM=t;setTeam(t);}} onRefresh={async()=>{const t=await fetchTeam();TEAM=t;setTeam(t);}}/></Modal>}
   </div>;
 }
