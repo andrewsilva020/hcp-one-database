@@ -90,6 +90,7 @@ const REPORT_PERIODS = [
   {id:"quarterly",label:"Quarterly"},
   {id:"yearly",label:"Yearly"},
 ];
+const COMPACT_PIPELINE_STAGES = new Set(["Sourced","Rejected"]);
 
 function getReportRange(period="weekly"){
   const now=new Date();
@@ -134,6 +135,11 @@ function parseDateValue(value){
 function inRange(value,start,end){
   const dt=parseDateValue(value);
   return !!dt && dt>=start && dt<=end;
+}
+
+function dateValueMs(value, fallback=0){
+  const dt=parseDateValue(value);
+  return dt ? dt.getTime() : fallback;
 }
 
 function exportCSV(cands, jobs) {
@@ -1474,11 +1480,19 @@ function DashboardHome({cands,jobs,team,onOpenCand,onOpenJob,setPage}){
   const chartRef=useRef(null);
   const plotRef=useRef(null);
   useEffect(()=>{fetchRecentActivity(15).then(setRecentActs).catch(()=>{});},[cands,jobs]);
-  useEffect(()=>{fetchDashboardActivity().then(setChartActs).catch(()=>{});},[cands.length,jobs.length]);
+  useEffect(()=>{fetchDashboardActivity().then(setChartActs).catch(()=>{});},[cands,jobs]);
   const active=cands.filter(c=>!["Placed","Rejected","On Hold"].includes(c.stage));
   const interviews=cands.filter(c=>["Interview 1","Interview 2","Final Interview"].includes(c.stage));
   const offers=cands.filter(c=>c.stage==="Offer");
-  const placed=cands.filter(c=>c.stage==="Placed");
+  const now=new Date();
+  const monthStart=new Date(now.getFullYear(),now.getMonth(),1);
+  const monthEnd=new Date(now.getFullYear(),now.getMonth()+1,0,23,59,59,999);
+  const placedThisMonth=new Set(
+    chartActs
+      .filter(item=>item.type==="stage_change" && /to Placed$/i.test(item.detail||"") && inRange(item.created_at,monthStart,monthEnd))
+      .map(item=>item.candidate_id)
+      .filter(Boolean)
+  ).size;
   const openJobs=jobs.filter(j=>["Open – Sourcing","Active"].includes(j.status));
   const pipeChart=buildPipelineChartSeries(cands,chartActs,pipeRange);
   const activePipePos=pipeHover??Math.max(0,pipeChart.buckets.length-1);
@@ -1560,7 +1574,7 @@ function DashboardHome({cands,jobs,team,onOpenCand,onOpenJob,setPage}){
         <div style={{fontSize:22,fontWeight:700,marginBottom:4}}>You have {active.length} active candidates</div>
       </div>
       <div style={{display:"flex",gap:20}}>
-        {[["Interviews Scheduled",interviews.length],["Open Jobs",openJobs.length],["Total Candidates",cands.length],["Hires This Month",placed.length]].map(([l,v])=>
+        {[["Interviews Scheduled",interviews.length],["Open Jobs",openJobs.length],["Total Candidates",cands.length],["Hires This Month",placedThisMonth]].map(([l,v])=>
           <div key={l} style={{textAlign:"center",padding:"0 16px",borderLeft:"1px solid rgba(255,255,255,0.1)"}}>
             <div style={{fontSize:28,fontWeight:800,lineHeight:1}}>{v}</div>
             <div style={{fontSize:11,color:"rgba(255,255,255,0.45)",marginTop:4}}>{l}</div>
@@ -1729,6 +1743,7 @@ export default function HCPRecruit(){
   const [cAuth,setCAuth]=useState("All"); const [cOwner,setCOwner]=useState("All"); const [cSort,setCSort]=useState("name");
   const [cSeniority,setCSeniority]=useState("All"); const [cClient,setCClient]=useState("All"); const [cHasResume,setCHasResume]=useState("All");
   const [cFiltersOpen,setCFiltersOpen]=useState(false);
+  const [pipelineExpanded,setPipelineExpanded]=useState({});
   const [js,setJs]=useState(""); const [jStat,setJStat]=useState("All"); const [jClient,setJClient]=useState("All"); const [jOwner,setJOwner]=useState("All");
   const [sidebarCollapsed,setSidebarCollapsed]=useState(false);
 
@@ -1784,6 +1799,18 @@ export default function HCPRecruit(){
 
   // Data
   const clients=[...new Set(jobs.map(j=>j.client).filter(Boolean))].sort();
+  const resetCandidateFilters=()=>{
+    setCs("");
+    setCStage("All");
+    setCVert("All");
+    setCAuth("All");
+    setCOwner("All");
+    setCSort("name");
+    setCSeniority("All");
+    setCClient("All");
+    setCHasResume("All");
+  };
+  const hasActiveCandidateFilters=cs.trim() || cStage!=="All" || cVert!=="All" || cAuth!=="All" || cOwner!=="All" || cSeniority!=="All" || cClient!=="All" || cHasResume!=="All" || cSort!=="name";
   const fCands=cands
     .filter(c=>{const q=cs.toLowerCase();if(!q) return true;const jobsForCand=jobs.filter(j=>(c.submittedTo||[]).includes(j.id));return [c.name,c.title,c.email,c.phone,c.location,c.vertical,c.seniority,c.workAuth,c.salary,c.experience,c.source,c.linkedin,...(c.skills||[]),...(c.notes||[]).map(n=>n.text),...(c.collaborators||[]).map(id=>getTeamMember(id)?.name),getTeamMember(c.ownerId)?.name,...jobsForCand.map(j=>j.title),...jobsForCand.map(j=>j.client)].some(v=>v?.toString().toLowerCase().includes(q));})
     .filter(c=>cStage==="All"||c.stage===cStage).filter(c=>cVert==="All"||c.vertical===cVert)
@@ -1791,7 +1818,13 @@ export default function HCPRecruit(){
     .filter(c=>cSeniority==="All"||c.seniority===cSeniority)
     .filter(c=>cClient==="All"||jobs.filter(j=>(c.submittedTo||[]).includes(j.id)).some(j=>j.client===cClient))
     .filter(c=>cHasResume==="All"||(cHasResume==="yes"?!!c.resumePath:!c.resumePath))
-    .sort((a,b)=>cSort==="stage"?STAGES.indexOf(a.stage)-STAGES.indexOf(b.stage):cSort==="salary"?parseInt((b.salary||"0").replace(/\D/g,""))-parseInt((a.salary||"0").replace(/\D/g,"")):(a.name||"").localeCompare(b.name||""));
+    .sort((a,b)=>
+      cSort==="stage" ? STAGES.indexOf(a.stage)-STAGES.indexOf(b.stage) :
+      cSort==="salary" ? parseInt((b.salary||"0").replace(/\D/g,""))-parseInt((a.salary||"0").replace(/\D/g,"")) :
+      cSort==="added_newest" ? dateValueMs(b.addedDate,0)-dateValueMs(a.addedDate,0) :
+      cSort==="added_oldest" ? dateValueMs(a.addedDate,0)-dateValueMs(b.addedDate,0) :
+      (a.name||"").localeCompare(b.name||"")
+    );
   const pipelineRecruiterId=pipelineOwner==="mine"?activeUser.id:pipelineOwner==="all"?null:pipelineOwner;
   const pipelineCands=fCands.filter(c=>!pipelineRecruiterId||c.ownerId===pipelineRecruiterId);
   const fJobs=jobs.filter(j=>{const q=js.toLowerCase();return !q||[j.title,j.client,j.spoc].some(v=>v?.toLowerCase().includes(q));}).filter(j=>jStat==="All"||j.status===jStat).filter(j=>jClient==="All"||j.client===jClient).filter(j=>jOwner==="All"||(j.assignedRecruiters||[]).includes(jOwner)).sort((a,b)=>({"P1":0,"P2":1,"P3":2}[a.priority]||1)-({"P1":0,"P2":1,"P3":2}[b.priority]||1));
@@ -1951,9 +1984,10 @@ export default function HCPRecruit(){
                 {IC.filter} Filters
                 {(cStage!=="All"||cVert!=="All"||cAuth!=="All"||cOwner!=="All"||cSeniority!=="All"||cClient!=="All"||cHasResume!=="All")&&<span style={{background:B.accent,color:"#fff",borderRadius:10,padding:"1px 7px",fontSize:10,fontWeight:700}}>{[cStage,cVert,cAuth,cOwner,cSeniority,cClient,cHasResume].filter(x=>x!=="All").length}</span>}
               </button>
-              <select style={{...sel,flex:"0 0 140px"}} value={cSort} onChange={e=>setCSort(e.target.value)}>
-                <option value="name">Sort: A–Z</option><option value="stage">Sort: Stage</option><option value="salary">Sort: Rate ↓</option>
+              <select style={{...sel,flex:"0 0 170px"}} value={cSort} onChange={e=>setCSort(e.target.value)}>
+                <option value="name">Sort: A–Z</option><option value="stage">Sort: Stage</option><option value="salary">Sort: Rate ↓</option><option value="added_newest">Sort: Date Added ↓</option><option value="added_oldest">Sort: Date Added ↑</option>
               </select>
+              {hasActiveCandidateFilters&&<button onClick={resetCandidateFilters} style={{background:"#fff",color:B.ink,border:`1px solid ${B.muted}`,borderRadius:999,padding:"8px 14px",fontSize:12,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:6,boxShadow:"0 1px 2px rgba(26,36,46,0.04)"}}>Clear all</button>}
               <span style={{color:"#A09A93",fontSize:12,fontWeight:500,marginLeft:"auto"}}>{fCands.length} candidate{fCands.length!==1?"s":""}</span>
             </div>
             {cFiltersOpen&&<div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(160px,1fr))",gap:8,marginTop:12,paddingTop:12,borderTop:`1px solid ${B.muted}`}}>
@@ -2013,20 +2047,35 @@ export default function HCPRecruit(){
         <div style={{display:"flex",gap:10,overflowX:"auto",paddingBottom:16,alignItems:"stretch"}}>
           {STAGES.map(stage=>{
             const col=pipelineCands.filter(c=>c.stage===stage);const m=SM[stage];
+            const compactStage=COMPACT_PIPELINE_STAGES.has(stage);
+            const expanded=!!pipelineExpanded[stage];
+            const previewCount=compactStage && !expanded ? 4 : col.length;
+            const visibleCol=col.slice(0,previewCount);
+            const hiddenCount=Math.max(0,col.length-visibleCol.length);
             const handleDragOver=e=>{e.preventDefault();e.stopPropagation();};
             const handleDrop=e=>{e.preventDefault();e.stopPropagation();const cid=e.dataTransfer.getData("text/plain");if(cid){const cand=cands.find(x=>x.id===cid);if(cand&&cand.stage!==stage)stageChange(cid,stage,cand.stage);}};
             return <div key={stage} style={{flex:"0 0 210px",minWidth:210,minHeight:300,display:"flex",flexDirection:"column"}}
               onDragOver={handleDragOver}
               onDrop={handleDrop}>
-              <div style={{background:m.bg,border:`1px solid ${m.c}40`,borderRadius:9,padding:"8px 12px",marginBottom:8,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                <span style={{color:m.t||m.c,fontWeight:700,fontSize:11}}>{stage}</span>
-                <span style={{background:m.c,color:"#fff",borderRadius:10,padding:"2px 8px",fontSize:11,fontWeight:700}}>{col.length}</span>
+              <div
+                onClick={()=>compactStage&&setPipelineExpanded(p=>({...p,[stage]:!p[stage]}))}
+                style={{background:m.bg,border:`1px solid ${m.c}40`,borderRadius:9,padding:"8px 12px",marginBottom:8,display:"flex",justifyContent:"space-between",alignItems:"center",cursor:compactStage?"pointer":"default",boxShadow:compactStage&&hiddenCount>0?"0 6px 18px rgba(26,36,46,0.04)":"none"}}
+              >
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <span style={{color:m.t||m.c,fontWeight:700,fontSize:11}}>{stage}</span>
+                  {compactStage&&hiddenCount>0&&<span style={{fontSize:10,color:m.t||m.c,opacity:0.7}}>{expanded?"Expanded":"Compact"}</span>}
+                </div>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  {compactStage&&hiddenCount>0&&<span style={{fontSize:10,color:m.t||m.c,opacity:0.75}}>{expanded?"Show less":`+${hiddenCount} hidden`}</span>}
+                  <span style={{background:m.c,color:"#fff",borderRadius:10,padding:"2px 8px",fontSize:11,fontWeight:700}}>{col.length}</span>
+                  {compactStage&&<span style={{display:"flex",color:m.t||m.c,transform:expanded?"rotate(90deg)":"rotate(0deg)",transition:"transform 0.18s ease"}}>{IC.chevron}</span>}
+                </div>
               </div>
               <div style={{flex:1,minHeight:60,borderRadius:9,border:`2px dashed transparent`,transition:"all 0.2s",padding:2}}
                 onDragOver={e=>{e.preventDefault();e.stopPropagation();e.currentTarget.style.borderColor=`${m.c}40`;e.currentTarget.style.background=`${m.c}06`;}}
                 onDragLeave={e=>{e.currentTarget.style.borderColor="transparent";e.currentTarget.style.background="transparent";}}
                 onDrop={e=>{e.preventDefault();e.stopPropagation();e.currentTarget.style.borderColor="transparent";e.currentTarget.style.background="transparent";handleDrop(e);}}>
-                {col.map(c=>{const o=getTeamMember(c.ownerId);return <div key={c.id} draggable
+                {visibleCol.map(c=>{const o=getTeamMember(c.ownerId);return <div key={c.id} draggable
                   onDragStart={e=>{e.dataTransfer.setData("text/plain",c.id);e.dataTransfer.effectAllowed="move";e.currentTarget.style.opacity="0.4";e.currentTarget.style.transform="scale(0.95)";}}
                   onDragEnd={e=>{e.currentTarget.style.opacity="1";e.currentTarget.style.transform="scale(1)";}}
                   onDragOver={e=>{e.preventDefault();e.stopPropagation();}}
@@ -2038,6 +2087,7 @@ export default function HCPRecruit(){
                   <div style={{fontSize:11,color:"#A09A93",marginBottom:4}}>{c.title}</div>
                   {c.salary&&<div style={{fontSize:11,color:"#34d399",fontWeight:600}}>{c.salary}</div>}
                 </div>;})}
+                {compactStage&&hiddenCount>0&&!expanded&&<button onClick={()=>setPipelineExpanded(p=>({...p,[stage]:true}))} style={{width:"100%",background:"linear-gradient(180deg, rgba(255,255,255,0.9) 0%, #fff 100%)",border:`1px dashed ${m.c}40`,borderRadius:10,padding:"10px 12px",marginTop:4,color:m.t||m.c,fontSize:11,fontWeight:700,cursor:"pointer"}}>{`Show ${hiddenCount} more`}</button>}
                 {!col.length&&<div style={{padding:20,textAlign:"center",color:"#A09A93",fontSize:11}}>Drop here</div>}
               </div>
             </div>;
