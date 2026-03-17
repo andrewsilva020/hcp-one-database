@@ -278,6 +278,13 @@ function getPipelineChartStageFromActivity(item) {
   return null;
 }
 
+function getLatestStageActivityDate(items, candidateId, stageName) {
+  const matched=items
+    .filter(item=>item.candidate_id===candidateId && getPipelineChartStageFromActivity(item)===stageName && item.created_at)
+    .sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
+  return matched[0]?.created_at || null;
+}
+
 function buildPipelineChartSeries(cands, items, rangeKey="1m") {
   const now=new Date();
   const ranges={
@@ -326,13 +333,25 @@ function buildPipelineChartSeries(cands, items, rangeKey="1m") {
   });
   items.forEach(item=>{
     const stage=getPipelineChartStageFromActivity(item);
-    if(!stage||stage==="Sourced"||!item.created_at||!item.candidate_id) return;
+    if(!stage||stage==="Sourced"||stage==="Placed"||!item.created_at||!item.candidate_id) return;
     const dt=new Date(item.created_at);
     if(Number.isNaN(dt.getTime())) return;
     const bucket=buckets.find(b=>dt>=b.start&&dt<=b.end);
     if(bucket && !bucket.seen[stage].has(item.candidate_id)) {
       bucket.seen[stage].add(item.candidate_id);
       bucket.values[stage]+=1;
+    }
+  });
+  cands.forEach(c=>{
+    if(c.stage!=="Placed" || !c.id) return;
+    const latestPlacedAt=getLatestStageActivityDate(items,c.id,"Placed") || c.lastUpdated || c.addedDate;
+    if(!latestPlacedAt) return;
+    const dt=parseDateValue(latestPlacedAt);
+    if(!dt) return;
+    const bucket=buckets.find(b=>dt>=b.start&&dt<=b.end);
+    if(bucket && !bucket.seen.Placed.has(c.id)) {
+      bucket.seen.Placed.add(c.id);
+      bucket.values.Placed+=1;
     }
   });
   const series=Object.keys(DASH_PIPE_COLORS).map(key=>({
@@ -1488,11 +1507,8 @@ function DashboardHome({cands,jobs,team,onOpenCand,onOpenJob,setPage}){
   const monthEnd=new Date(now.getFullYear(),now.getMonth()+1,0,23,59,59,999);
   const placedThisMonth=cands.filter(c=>{
     if(c.stage!=="Placed") return false;
-    const placedEvents=chartActs
-      .filter(item=>item.candidate_id===c.id && item.type==="stage_change" && /to Placed$/i.test(item.detail||""))
-      .sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
-    if(!placedEvents.length) return true;
-    return inRange(placedEvents[0].created_at,monthStart,monthEnd);
+    const latestPlacedAt=getLatestStageActivityDate(chartActs,c.id,"Placed") || c.lastUpdated || c.addedDate;
+    return inRange(latestPlacedAt,monthStart,monthEnd);
   }).length;
   const openJobs=jobs.filter(j=>["Open – Sourcing","Active"].includes(j.status));
   const pipeChart=buildPipelineChartSeries(cands,chartActs,pipeRange);
