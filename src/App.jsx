@@ -90,7 +90,6 @@ const REPORT_PERIODS = [
   {id:"quarterly",label:"Quarterly"},
   {id:"yearly",label:"Yearly"},
 ];
-const COMPACT_PIPELINE_STAGES = new Set(["Sourced","Rejected"]);
 
 function getReportRange(period="weekly"){
   const now=new Date();
@@ -1487,12 +1486,14 @@ function DashboardHome({cands,jobs,team,onOpenCand,onOpenJob,setPage}){
   const now=new Date();
   const monthStart=new Date(now.getFullYear(),now.getMonth(),1);
   const monthEnd=new Date(now.getFullYear(),now.getMonth()+1,0,23,59,59,999);
-  const placedThisMonth=new Set(
-    chartActs
-      .filter(item=>item.type==="stage_change" && /to Placed$/i.test(item.detail||"") && inRange(item.created_at,monthStart,monthEnd))
-      .map(item=>item.candidate_id)
-      .filter(Boolean)
-  ).size;
+  const placedThisMonth=cands.filter(c=>{
+    if(c.stage!=="Placed") return false;
+    const placedEvents=chartActs
+      .filter(item=>item.candidate_id===c.id && item.type==="stage_change" && /to Placed$/i.test(item.detail||""))
+      .sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
+    if(!placedEvents.length) return true;
+    return inRange(placedEvents[0].created_at,monthStart,monthEnd);
+  }).length;
   const openJobs=jobs.filter(j=>["Open – Sourcing","Active"].includes(j.status));
   const pipeChart=buildPipelineChartSeries(cands,chartActs,pipeRange);
   const activePipePos=pipeHover??Math.max(0,pipeChart.buckets.length-1);
@@ -2047,9 +2048,8 @@ export default function HCPRecruit(){
         <div style={{display:"flex",gap:10,overflowX:"auto",paddingBottom:16,alignItems:"stretch"}}>
           {STAGES.map(stage=>{
             const col=pipelineCands.filter(c=>c.stage===stage);const m=SM[stage];
-            const compactStage=COMPACT_PIPELINE_STAGES.has(stage);
             const expanded=!!pipelineExpanded[stage];
-            const previewCount=compactStage && !expanded ? 4 : col.length;
+            const previewCount=expanded ? col.length : 6;
             const visibleCol=col.slice(0,previewCount);
             const hiddenCount=Math.max(0,col.length-visibleCol.length);
             const handleDragOver=e=>{e.preventDefault();e.stopPropagation();};
@@ -2057,18 +2057,12 @@ export default function HCPRecruit(){
             return <div key={stage} style={{flex:"0 0 210px",minWidth:210,minHeight:300,display:"flex",flexDirection:"column"}}
               onDragOver={handleDragOver}
               onDrop={handleDrop}>
-              <div
-                onClick={()=>compactStage&&setPipelineExpanded(p=>({...p,[stage]:!p[stage]}))}
-                style={{background:m.bg,border:`1px solid ${m.c}40`,borderRadius:9,padding:"8px 12px",marginBottom:8,display:"flex",justifyContent:"space-between",alignItems:"center",cursor:compactStage?"pointer":"default",boxShadow:compactStage&&hiddenCount>0?"0 6px 18px rgba(26,36,46,0.04)":"none"}}
-              >
+              <div style={{background:m.bg,border:`1px solid ${m.c}40`,borderRadius:9,padding:"8px 12px",marginBottom:8,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                 <div style={{display:"flex",alignItems:"center",gap:8}}>
                   <span style={{color:m.t||m.c,fontWeight:700,fontSize:11}}>{stage}</span>
-                  {compactStage&&hiddenCount>0&&<span style={{fontSize:10,color:m.t||m.c,opacity:0.7}}>{expanded?"Expanded":"Compact"}</span>}
                 </div>
                 <div style={{display:"flex",alignItems:"center",gap:8}}>
-                  {compactStage&&hiddenCount>0&&<span style={{fontSize:10,color:m.t||m.c,opacity:0.75}}>{expanded?"Show less":`+${hiddenCount} hidden`}</span>}
                   <span style={{background:m.c,color:"#fff",borderRadius:10,padding:"2px 8px",fontSize:11,fontWeight:700}}>{col.length}</span>
-                  {compactStage&&<span style={{display:"flex",color:m.t||m.c,transform:expanded?"rotate(90deg)":"rotate(0deg)",transition:"transform 0.18s ease"}}>{IC.chevron}</span>}
                 </div>
               </div>
               <div style={{flex:1,minHeight:60,borderRadius:9,border:`2px dashed transparent`,transition:"all 0.2s",padding:2}}
@@ -2087,7 +2081,8 @@ export default function HCPRecruit(){
                   <div style={{fontSize:11,color:"#A09A93",marginBottom:4}}>{c.title}</div>
                   {c.salary&&<div style={{fontSize:11,color:"#34d399",fontWeight:600}}>{c.salary}</div>}
                 </div>;})}
-                {compactStage&&hiddenCount>0&&!expanded&&<button onClick={()=>setPipelineExpanded(p=>({...p,[stage]:true}))} style={{width:"100%",background:"linear-gradient(180deg, rgba(255,255,255,0.9) 0%, #fff 100%)",border:`1px dashed ${m.c}40`,borderRadius:10,padding:"10px 12px",marginTop:4,color:m.t||m.c,fontSize:11,fontWeight:700,cursor:"pointer"}}>{`Show ${hiddenCount} more`}</button>}
+                {hiddenCount>0&&!expanded&&<button onClick={()=>setPipelineExpanded(p=>({...p,[stage]:true}))} style={{width:"100%",background:"linear-gradient(180deg, rgba(255,255,255,0.94) 0%, #fff 100%)",border:`1px dashed ${m.c}35`,borderRadius:10,padding:"10px 12px",marginTop:4,color:m.t||m.c,fontSize:11,fontWeight:700,cursor:"pointer"}}>{`Show ${hiddenCount} more`}</button>}
+                {expanded&&col.length>6&&<button onClick={()=>setPipelineExpanded(p=>({...p,[stage]:false}))} style={{width:"100%",background:"#fff",border:`1px solid ${m.c}20`,borderRadius:10,padding:"10px 12px",marginTop:4,color:"#A09A93",fontSize:11,fontWeight:700,cursor:"pointer"}}>Show less</button>}
                 {!col.length&&<div style={{padding:20,textAlign:"center",color:"#A09A93",fontSize:11}}>Drop here</div>}
               </div>
             </div>;
