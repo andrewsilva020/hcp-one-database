@@ -178,7 +178,7 @@ function generateActivityReport(cands, jobs, filterRecruiter="all", team=TEAM_FA
   const range=getReportRange(period);
   const baseCands=filterRecruiter==="all"?cands:cands.filter(c=>c.ownerId===filterRecruiter||(c.collaborators||[]).includes(filterRecruiter));
   const baseJobs=filterRecruiter==="all"?jobs:jobs.filter(j=>(j.assignedRecruiters||[]).includes(filterRecruiter));
-  const fc=baseCands.filter(c=>inRange(c.addedDate||c.lastUpdated,range.start,range.end)||inRange(c.lastUpdated,range.start,range.end));
+  const fc=baseCands.filter(c=>inRange(c.createdAt||c.addedDate||c.lastUpdated,range.start,range.end)||inRange(c.lastUpdated,range.start,range.end));
   const fj=baseJobs.filter(j=>inRange(j.reqDate,range.start,range.end)||(["Open – Sourcing","Active"].includes(j.status)&&range.end>=new Date()));
   const byStage={};STAGES.forEach(s=>{byStage[s]=fc.filter(c=>c.stage===s);});
   const byClient={};jobs.forEach(j=>{if(!byClient[j.client])byClient[j.client]=[];});
@@ -266,6 +266,7 @@ function getPipelineChartStage(candidate) {
 
 function getPipelineChartStageFromActivity(item) {
   if (item.type === "created") return "Sourced";
+  if (item.type === "job_submit") return "Submitted";
   if (item.type !== "stage_change") return null;
   const detail = item.detail || "";
   const match = detail.match(/to (.+)$/);
@@ -322,9 +323,9 @@ function buildPipelineChartSeries(cands, items, rangeKey="1m") {
     }
   }
   cands.forEach(c=>{
-    if(!c.id||!c.addedDate) return;
-    const dt=new Date(`${c.addedDate}T00:00:00`);
-    if(Number.isNaN(dt.getTime())) return;
+    if(!c.id) return;
+    const dt=parseDateValue(c.createdAt||c.addedDate);
+    if(!dt || Number.isNaN(dt.getTime())) return;
     const bucket=buckets.find(b=>dt>=b.start&&dt<=b.end);
     if(bucket && !bucket.seen.Sourced.has(c.id)) {
       bucket.seen.Sourced.add(c.id);
@@ -1838,8 +1839,8 @@ export default function HCPRecruit(){
     .sort((a,b)=>
       cSort==="stage" ? STAGES.indexOf(a.stage)-STAGES.indexOf(b.stage) :
       cSort==="salary" ? parseInt((b.salary||"0").replace(/\D/g,""))-parseInt((a.salary||"0").replace(/\D/g,"")) :
-      cSort==="added_newest" ? dateValueMs(b.addedDate,0)-dateValueMs(a.addedDate,0) :
-      cSort==="added_oldest" ? dateValueMs(a.addedDate,0)-dateValueMs(b.addedDate,0) :
+      cSort==="added_newest" ? dateValueMs(b.createdAt||b.addedDate,0)-dateValueMs(a.createdAt||a.addedDate,0) :
+      cSort==="added_oldest" ? dateValueMs(a.createdAt||a.addedDate,0)-dateValueMs(b.createdAt||b.addedDate,0) :
       (a.name||"").localeCompare(b.name||"")
     );
   const pipelineRecruiterId=pipelineOwner==="mine"?activeUser.id:pipelineOwner==="all"?null:pipelineOwner;

@@ -87,6 +87,7 @@ export async function fetchCandidates() {
     source: c.source,
     collaborators: c.collaborators || [],
     // camelCase aliases for the app
+    createdAt: c.created_at,
     ownerId: c.owner_id,
     workAuth: c.work_auth,
     addedDate: c.added_date,
