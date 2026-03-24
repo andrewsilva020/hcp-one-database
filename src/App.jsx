@@ -141,6 +141,23 @@ function dateValueMs(value, fallback=0){
   return dt ? dt.getTime() : fallback;
 }
 
+function getLatestMatchingActivityDate(items, candidateId, matcher) {
+  const matched=items
+    .filter(item=>item.candidate_id===candidateId && item.created_at && matcher(item))
+    .sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
+  return matched[0]?.created_at || null;
+}
+
+function getCurrentPlacedCandidateDates(cands, items) {
+  return cands
+    .filter(c=>c.id && c.stage==="Placed")
+    .map(c=>({
+      id: c.id,
+      date: getLatestMatchingActivityDate(items,c.id,item=>getPipelineChartStageFromActivity(item)==="Placed") || c.lastUpdated || c.addedDate || c.createdAt,
+    }))
+    .filter(entry=>!!parseDateValue(entry.date));
+}
+
 function exportCSV(cands, jobs) {
   const ch=["Name","Email","Phone","Title","Seniority","Vertical","Stage","Work Auth","Salary","Location","Experience","Source","Owner","Collaborators","Skills","Notes","Added","Updated"];
   const cr=cands.map(c=>[c.name,c.email,c.phone,c.title,c.seniority,c.vertical,c.stage,c.workAuth,c.salary,c.location,c.experience,c.source,getTeamMember(c.ownerId)?.name||c.ownerId,(c.collaborators||[]).map(id=>getTeamMember(id)?.name||id).join("; "),(c.skills||[]).join("; "),(c.notes||[]).map(n=>`[${n.author}] ${n.text}`).join(" | "),c.addedDate,c.lastUpdated]);
@@ -316,6 +333,9 @@ function buildPipelineChartSeries(cands, items, rangeKey="1m") {
       });
     }
   }
+  const rangeStart=buckets[0]?.start;
+  const rangeEnd=buckets[buckets.length-1]?.end;
+  const currentPlacedDates=getCurrentPlacedCandidateDates(cands, items);
   cands.forEach(c=>{
     if(!c.id) return;
     const dt=parseDateValue(c.createdAt||c.addedDate);
@@ -337,14 +357,12 @@ function buildPipelineChartSeries(cands, items, rangeKey="1m") {
       bucket.values[stage]+=1;
     }
   });
-  items.forEach(item=>{
-    const stage=getPipelineChartStageFromActivity(item);
-    if(stage!=="Placed" || !item.created_at || !item.candidate_id || !validCandidateIds.has(item.candidate_id)) return;
-    const dt=parseDateValue(item.created_at);
+  currentPlacedDates.forEach(entry=>{
+    const dt=parseDateValue(entry.date);
     if(!dt) return;
     const bucket=buckets.find(b=>dt>=b.start&&dt<=b.end);
-    if(bucket && !bucket.seen.Placed.has(item.candidate_id)) {
-      bucket.seen.Placed.add(item.candidate_id);
+    if(bucket && !bucket.seen.Placed.has(entry.id)) {
+      bucket.seen.Placed.add(entry.id);
       bucket.values.Placed+=1;
     }
   });
@@ -354,7 +372,14 @@ function buildPipelineChartSeries(cands, items, rangeKey="1m") {
     points:buckets.map(b=>b.values[key]),
   }));
   const max=Math.max(4,...series.flatMap(s=>s.points));
-  return {buckets,series,max,label:cfg.label};
+  const totals={
+    Sourced: cands.filter(c=>c.id && inRange(c.createdAt||c.addedDate,rangeStart,rangeEnd)).length,
+    Submitted: new Set(items.filter(item=>item.candidate_id && validCandidateIds.has(item.candidate_id) && getPipelineChartStageFromActivity(item)==="Submitted" && inRange(item.created_at,rangeStart,rangeEnd)).map(item=>item.candidate_id)).size,
+    Interviewed: new Set(items.filter(item=>item.candidate_id && validCandidateIds.has(item.candidate_id) && getPipelineChartStageFromActivity(item)==="Interviewed" && inRange(item.created_at,rangeStart,rangeEnd)).map(item=>item.candidate_id)).size,
+    Offered: new Set(items.filter(item=>item.candidate_id && validCandidateIds.has(item.candidate_id) && getPipelineChartStageFromActivity(item)==="Offered" && inRange(item.created_at,rangeStart,rangeEnd)).map(item=>item.candidate_id)).size,
+    Placed: currentPlacedDates.filter(entry=>inRange(entry.date,rangeStart,rangeEnd)).length,
+  };
+  return {buckets,series,max,label:cfg.label,totals};
 }
 
 async function parseCandidateFileWithAI(file) {
@@ -1496,20 +1521,18 @@ function DashboardHome({cands,jobs,team,onOpenCand,onOpenJob,setPage}){
   const active=cands.filter(c=>!["Placed","Rejected","On Hold"].includes(c.stage));
   const interviews=cands.filter(c=>["Interview 1","Interview 2","Final Interview"].includes(c.stage));
   const offers=cands.filter(c=>c.stage==="Offer");
-  const validCandidateIds=new Set(cands.map(c=>c.id).filter(Boolean));
   const now=new Date();
   const monthStart=new Date(now.getFullYear(),now.getMonth(),1);
   const monthEnd=new Date(now.getFullYear(),now.getMonth()+1,0,23,59,59,999);
-  const placedThisMonth=new Set(
-    chartActs
-      .filter(item=>item.candidate_id && validCandidateIds.has(item.candidate_id) && getPipelineChartStageFromActivity(item)==="Placed" && inRange(item.created_at,monthStart,monthEnd))
-      .map(item=>item.candidate_id)
-  ).size;
+  const placedThisMonth=getCurrentPlacedCandidateDates(cands, chartActs).filter(entry=>inRange(entry.date,monthStart,monthEnd)).length;
   const openJobs=jobs.filter(j=>["Open – Sourcing","Active"].includes(j.status));
   const pipeChart=buildPipelineChartSeries(cands,chartActs,pipeRange);
   const activePipePos=pipeHover??Math.max(0,pipeChart.buckets.length-1);
   const activePipeIdx=Math.max(0,Math.min(pipeChart.buckets.length-1,Math.round(activePipePos)));
   const activePipeBucket=pipeChart.buckets[activePipeIdx];
+  const showRangeTotals=pipeHover===null;
+  const displaySummary=showRangeTotals ? pipeChart.totals : activePipeBucket?.values;
+  const displaySummaryLabel=showRangeTotals ? pipeChart.label : activePipeBucket?.label;
   const chartW=760, chartH=220, padX=26, padTop=20, padBottom=34;
   const stepX=pipeChart.buckets.length>1?(chartW-padX*2)/(pipeChart.buckets.length-1):0;
   const valueToY=v=>padTop+((pipeChart.max-v)/pipeChart.max)*(chartH-padTop-padBottom);
@@ -1541,7 +1564,7 @@ function DashboardHome({cands,jobs,team,onOpenCand,onOpenJob,setPage}){
   const interpolatedSeries=pipeChart.series.map(s=>({
     ...s,
     hoverValue: interpolatePoint(s.points, activePipePos),
-    displayValue: Math.round(interpolatePoint(s.points, activePipePos)),
+    displayValue: showRangeTotals ? pipeChart.totals[s.key] : Math.round(interpolatePoint(s.points, activePipePos)),
     hoverPoint: (() => {
       const coords=getCoords(s.points);
       if(coords.length===0) return {x:padX,y:valueToY(0)};
@@ -1616,7 +1639,7 @@ function DashboardHome({cands,jobs,team,onOpenCand,onOpenJob,setPage}){
           {interpolatedSeries.map(s=><div key={s.key} style={{display:"flex",alignItems:"center",gap:8}}>
             <span style={{width:10,height:10,borderRadius:"50%",background:s.color,boxShadow:`0 0 0 5px ${s.color}18`}}/>
             <span style={{fontSize:12,color:B.ink,fontWeight:600}}>{s.key}</span>
-            <span style={{fontSize:12,color:"#A09A93"}}>{s.displayValue}</span>
+            <span style={{fontSize:12,color:"#A09A93"}}>{showRangeTotals?displaySummary?.[s.key]??0:s.displayValue}</span>
           </div>)}
         </div>
         <div ref={chartRef} style={{position:"relative",borderRadius:18,background:"linear-gradient(180deg, #fff 0%, #FFFBF8 100%)",border:`1px solid ${B.muted}`,padding:"18px 18px 14px"}}>
@@ -1627,8 +1650,8 @@ function DashboardHome({cands,jobs,team,onOpenCand,onOpenJob,setPage}){
             })}
             {pipeChart.series.map(s=><path key={s.key} d={buildLinePath(s.points)} fill="none" stroke={s.color} strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" style={{transition:"all 0.18s",filter:pipeHover!==null?"drop-shadow(0 6px 14px rgba(0,0,0,0.08))":"none",opacity:pipeHover!==null&&Math.round(interpolatePoint(s.points,activePipePos))===0?0.45:1}}/>)}
             <rect x={padX} y={padTop} width={chartW-padX*2} height={chartH-padTop-padBottom+10} fill="transparent"/>
-            <line x1={hoverX} x2={hoverX} y1={padTop} y2={chartH-padBottom+6} stroke="#E5D8CF" strokeWidth="1.5"/>
-            {interpolatedSeries.map(s=>{
+            {pipeHover!==null&&<line x1={hoverX} x2={hoverX} y1={padTop} y2={chartH-padBottom+6} stroke="#E5D8CF" strokeWidth="1.5"/>}
+            {pipeHover!==null&&interpolatedSeries.map(s=>{
               return <g key={s.key}>
                 <circle cx={s.hoverPoint.x} cy={s.hoverPoint.y} r={6.5} fill="#fff" stroke={s.color} strokeWidth="3"/>
                 <circle cx={s.hoverPoint.x} cy={s.hoverPoint.y} r={14} fill={`${s.color}16`}/>
@@ -1647,15 +1670,15 @@ function DashboardHome({cands,jobs,team,onOpenCand,onOpenJob,setPage}){
           <div style={{display:"flex",justifyContent:"space-between",padding:"0 8px 0 10px",marginTop:-2}}>
             {pipeChart.buckets.map((b,i)=><div key={b.label} style={{fontSize:i===activePipeIdx?13:12,fontWeight:i===activePipeIdx?700:500,color:i===activePipeIdx?B.ink:"#A09A93",transition:"all 0.16s",cursor:"default"}}>{b.label}</div>)}
           </div>
-          {activePipeBucket&&<div style={{marginTop:14,background:"rgba(255,255,255,0.96)",backdropFilter:"blur(12px)",border:`1px solid ${B.muted}`,boxShadow:"0 10px 30px rgba(34,49,63,0.06)",borderRadius:16,padding:"12px 14px"}}>
+          {displaySummary&&<div style={{marginTop:14,background:"rgba(255,255,255,0.96)",backdropFilter:"blur(12px)",border:`1px solid ${B.muted}`,boxShadow:"0 10px 30px rgba(34,49,63,0.06)",borderRadius:16,padding:"12px 14px"}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:12,marginBottom:8}}>
-              <div style={{fontSize:13,color:B.ink,fontWeight:700}}>{activePipeBucket.label}</div>
-              <div style={{fontSize:11,color:"#A09A93"}}>{pipeChart.label}</div>
+              <div style={{fontSize:13,color:B.ink,fontWeight:700}}>{displaySummaryLabel}</div>
+              <div style={{fontSize:11,color:"#A09A93"}}>{pipeHover===null?"Selected range total":pipeChart.label}</div>
             </div>
             <div style={{display:"grid",gridTemplateColumns:"repeat(5,minmax(0,1fr))",gap:"8px 10px"}}>
               {interpolatedSeries.map(s=><div key={s.key}>
                 <div style={{fontSize:11,color:s.color,fontWeight:700}}>{s.key}</div>
-                <div style={{fontSize:18,color:B.ink,fontWeight:800,lineHeight:1.1}}>{s.displayValue}</div>
+                <div style={{fontSize:18,color:B.ink,fontWeight:800,lineHeight:1.1}}>{pipeHover===null?displaySummary[s.key]??0:s.displayValue}</div>
               </div>)}
             </div>
           </div>}
