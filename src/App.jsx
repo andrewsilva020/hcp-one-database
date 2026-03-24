@@ -279,13 +279,6 @@ function getPipelineChartStageFromActivity(item) {
   return null;
 }
 
-function getLatestStageActivityDate(items, candidateId, stageName) {
-  const matched=items
-    .filter(item=>item.candidate_id===candidateId && getPipelineChartStageFromActivity(item)===stageName && item.created_at)
-    .sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
-  return matched[0]?.created_at || null;
-}
-
 function buildPipelineChartSeries(cands, items, rangeKey="1m") {
   const now=new Date();
   const ranges={
@@ -343,15 +336,14 @@ function buildPipelineChartSeries(cands, items, rangeKey="1m") {
       bucket.values[stage]+=1;
     }
   });
-  cands.forEach(c=>{
-    if(c.stage!=="Placed" || !c.id) return;
-    const latestPlacedAt=getLatestStageActivityDate(items,c.id,"Placed") || c.lastUpdated || c.addedDate;
-    if(!latestPlacedAt) return;
-    const dt=parseDateValue(latestPlacedAt);
+  items.forEach(item=>{
+    const stage=getPipelineChartStageFromActivity(item);
+    if(stage!=="Placed" || !item.created_at || !item.candidate_id) return;
+    const dt=parseDateValue(item.created_at);
     if(!dt) return;
     const bucket=buckets.find(b=>dt>=b.start&&dt<=b.end);
-    if(bucket && !bucket.seen.Placed.has(c.id)) {
-      bucket.seen.Placed.add(c.id);
+    if(bucket && !bucket.seen.Placed.has(item.candidate_id)) {
+      bucket.seen.Placed.add(item.candidate_id);
       bucket.values.Placed+=1;
     }
   });
@@ -1506,11 +1498,12 @@ function DashboardHome({cands,jobs,team,onOpenCand,onOpenJob,setPage}){
   const now=new Date();
   const monthStart=new Date(now.getFullYear(),now.getMonth(),1);
   const monthEnd=new Date(now.getFullYear(),now.getMonth()+1,0,23,59,59,999);
-  const placedThisMonth=cands.filter(c=>{
-    if(c.stage!=="Placed") return false;
-    const latestPlacedAt=getLatestStageActivityDate(chartActs,c.id,"Placed") || c.lastUpdated || c.addedDate;
-    return inRange(latestPlacedAt,monthStart,monthEnd);
-  }).length;
+  const placedThisMonth=new Set(
+    chartActs
+      .filter(item=>getPipelineChartStageFromActivity(item)==="Placed" && inRange(item.created_at,monthStart,monthEnd))
+      .map(item=>item.candidate_id)
+      .filter(Boolean)
+  ).size;
   const openJobs=jobs.filter(j=>["Open – Sourcing","Active"].includes(j.status));
   const pipeChart=buildPipelineChartSeries(cands,chartActs,pipeRange);
   const activePipePos=pipeHover??Math.max(0,pipeChart.buckets.length-1);
