@@ -1509,7 +1509,7 @@ const IC={
 };
 
 // ── DASHBOARD HOME ───────────────────────────────────────────────
-function DashboardHome({cands,jobs,team,onOpenCand,onOpenJob,setPage}){
+function DashboardHome({cands,jobs,team,onOpenCand,onOpenJob,setPage,isMobile=false}){
   const [recentActs,setRecentActs]=useState([]);
   const [chartActs,setChartActs]=useState([]);
   const [pipeRange,setPipeRange]=useState("1m");
@@ -1602,49 +1602,49 @@ function DashboardHome({cands,jobs,team,onOpenCand,onOpenJob,setPage}){
     setPipeHover(snapDistance<=snapThreshold?nearest:boundedPos);
   };
 
-  return <div style={{display:"flex",flexDirection:"column",gap:24}}>
+  return <div style={{display:"flex",flexDirection:"column",gap:isMobile?16:24}}>
     {/* Welcome banner */}
-    <div style={{background:`linear-gradient(135deg, ${B.primary} 0%, #2C3E50 100%)`,borderRadius:16,padding:"28px 32px",color:"#fff",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+    <div style={{background:`linear-gradient(135deg, ${B.primary} 0%, #2C3E50 100%)`,borderRadius:16,padding:isMobile?"20px 18px":"28px 32px",color:"#fff",display:"flex",justifyContent:"space-between",alignItems:isMobile?"flex-start":"center",flexDirection:isMobile?"column":"row",gap:isMobile?18:0}}>
       <div>
         <div style={{fontSize:14,color:"rgba(255,255,255,0.5)",marginBottom:4}}>Hello</div>
-        <div style={{fontSize:22,fontWeight:700,marginBottom:4}}>You have {active.length} active candidates</div>
+        <div style={{fontSize:isMobile?18:22,fontWeight:700,marginBottom:4,lineHeight:1.2}}>You have {active.length} active candidates</div>
       </div>
-      <div style={{display:"flex",gap:20}}>
+      <div style={{display:"grid",gridTemplateColumns:isMobile?"repeat(2,minmax(0,1fr))":"repeat(4,minmax(0,1fr))",gap:isMobile?12:20,width:isMobile?"100%":"auto"}}>
         {[["Interviews Scheduled",interviews.length],["Open Jobs",openJobs.length],["Total Candidates",cands.length],["Hires This Month",placedThisMonth]].map(([l,v])=>
-          <div key={l} style={{textAlign:"center",padding:"0 16px",borderLeft:"1px solid rgba(255,255,255,0.1)"}}>
-            <div style={{fontSize:28,fontWeight:800,lineHeight:1}}>{v}</div>
-            <div style={{fontSize:11,color:"rgba(255,255,255,0.45)",marginTop:4}}>{l}</div>
+          <div key={l} style={{textAlign:isMobile?"left":"center",padding:isMobile?"0":"0 16px",borderLeft:isMobile?"none":"1px solid rgba(255,255,255,0.1)",background:isMobile?"rgba(255,255,255,0.04)":"transparent",borderRadius:isMobile?12:0,border:isMobile?"1px solid rgba(255,255,255,0.08)":"none"}}>
+            <div style={{fontSize:isMobile?24:28,fontWeight:800,lineHeight:1,paddingTop:isMobile?12:0,paddingLeft:isMobile?12:0}}>{v}</div>
+            <div style={{fontSize:11,color:"rgba(255,255,255,0.45)",marginTop:4,paddingBottom:isMobile?12:0,paddingLeft:isMobile?12:0}}>{l}</div>
           </div>
         )}
       </div>
     </div>
 
-    <div style={{display:"grid",gridTemplateColumns:"1.4fr 1fr",gap:20}}>
+    <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1.4fr 1fr",gap:isMobile?16:20}}>
       {/* Hiring Pipeline */}
-      <div style={{background:"#fff",border:`1px solid ${B.muted}`,borderRadius:20,padding:"24px 28px",position:"relative",overflow:"hidden"}}>
+      <div style={{background:"#fff",border:`1px solid ${B.muted}`,borderRadius:20,padding:isMobile?"18px 16px":"24px 28px",position:"relative",overflow:"hidden"}}>
         <div style={{position:"absolute",right:-40,top:-60,width:220,height:220,borderRadius:"50%",background:"radial-gradient(circle, rgba(255,122,89,0.10) 0%, transparent 72%)",pointerEvents:"none"}}/>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:18,position:"relative",zIndex:1}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:isMobile?"flex-start":"center",flexDirection:isMobile?"column":"row",gap:isMobile?12:0,marginBottom:18,position:"relative",zIndex:1}}>
           <div>
             <div style={{fontSize:18,fontWeight:700,color:B.ink}}>Hiring Pipeline</div>
             <div style={{fontSize:12,color:"#A09A93",marginTop:2}}>Sourced, Submitted, Interviewed, Offered, and Placed</div>
           </div>
-          <div style={{display:"flex",gap:6,alignItems:"center"}}>
+          <div style={{display:"flex",gap:6,alignItems:"center",width:isMobile?"100%":"auto",overflowX:isMobile?"auto":"visible",paddingBottom:isMobile?2:0}}>
             {[
               {id:"1m",label:"This Month"},
               {id:"3m",label:"3 Months"},
               {id:"1y",label:"1 Year"},
-            ].map(opt=><button key={opt.id} onClick={()=>setPipeRange(opt.id)} style={{background:pipeRange===opt.id?B.accent:"#fff",color:pipeRange===opt.id?"#fff":B.ink,border:`1px solid ${pipeRange===opt.id?B.accent:B.muted}`,borderRadius:999,padding:"7px 12px",fontSize:11,fontWeight:700,cursor:"pointer",transition:"all 0.18s"}}>{opt.label}</button>)}
+            ].map(opt=><button key={opt.id} onClick={()=>setPipeRange(opt.id)} style={{background:pipeRange===opt.id?B.accent:"#fff",color:pipeRange===opt.id?"#fff":B.ink,border:`1px solid ${pipeRange===opt.id?B.accent:B.muted}`,borderRadius:999,padding:"7px 12px",fontSize:11,fontWeight:700,cursor:"pointer",transition:"all 0.18s",flexShrink:0}}>{opt.label}</button>)}
           </div>
         </div>
-        <div style={{display:"flex",gap:14,alignItems:"center",flexWrap:"wrap",marginBottom:14}}>
+        <div style={{display:"flex",gap:isMobile?10:14,alignItems:"center",flexWrap:"wrap",marginBottom:14}}>
           {interpolatedSeries.map(s=><div key={s.key} style={{display:"flex",alignItems:"center",gap:8}}>
             <span style={{width:10,height:10,borderRadius:"50%",background:s.color,boxShadow:`0 0 0 5px ${s.color}18`}}/>
             <span style={{fontSize:12,color:B.ink,fontWeight:600}}>{s.key}</span>
             <span style={{fontSize:12,color:"#A09A93"}}>{pipeChart.totals?.[s.key]??0}</span>
           </div>)}
         </div>
-        <div ref={chartRef} style={{position:"relative",borderRadius:18,background:"linear-gradient(180deg, #fff 0%, #FFFBF8 100%)",border:`1px solid ${B.muted}`,padding:"18px 18px 14px"}}>
-          <svg ref={plotRef} onMouseMove={e=>updateHoverFromClientX(e.clientX)} onMouseLeave={()=>setPipeHover(null)} viewBox={`0 0 ${chartW} ${chartH}`} style={{width:"100%",height:230,display:"block",overflow:"visible"}}>
+        <div ref={chartRef} style={{position:"relative",borderRadius:18,background:"linear-gradient(180deg, #fff 0%, #FFFBF8 100%)",border:`1px solid ${B.muted}`,padding:isMobile?"14px 10px 12px":"18px 18px 14px"}}>
+          <svg ref={plotRef} onMouseMove={e=>updateHoverFromClientX(e.clientX)} onMouseLeave={()=>setPipeHover(null)} viewBox={`0 0 ${chartW} ${chartH}`} style={{width:"100%",height:isMobile?190:230,display:"block",overflow:"visible"}}>
             {[0.25,0.5,0.75,1].map((step,i)=>{
               const y=padTop+(chartH-padTop-padBottom)*step;
               return <line key={i} x1={padX} x2={chartW-padX} y1={y} y2={y} stroke="#EFE7E1" strokeDasharray="6 8"/>;
@@ -1668,15 +1668,15 @@ function DashboardHome({cands,jobs,team,onOpenCand,onOpenJob,setPage}){
               </g>;
             })}
           </svg>
-          <div style={{display:"flex",justifyContent:"space-between",padding:"0 8px 0 10px",marginTop:-2}}>
-            {pipeChart.buckets.map((b,i)=><div key={b.label} style={{fontSize:i===activePipeIdx?13:12,fontWeight:i===activePipeIdx?700:500,color:i===activePipeIdx?B.ink:"#A09A93",transition:"all 0.16s",cursor:"default"}}>{b.label}</div>)}
+          <div style={{display:"flex",justifyContent:"space-between",padding:isMobile?"0 2px":"0 8px 0 10px",marginTop:-2,gap:6}}>
+            {pipeChart.buckets.map((b,i)=><div key={b.label} style={{fontSize:i===activePipeIdx?(isMobile?12:13):(isMobile?11:12),fontWeight:i===activePipeIdx?700:500,color:i===activePipeIdx?B.ink:"#A09A93",transition:"all 0.16s",cursor:"default"}}>{b.label}</div>)}
           </div>
-          {displaySummary&&<div style={{marginTop:14,background:"rgba(255,255,255,0.96)",backdropFilter:"blur(12px)",border:`1px solid ${B.muted}`,boxShadow:"0 10px 30px rgba(34,49,63,0.06)",borderRadius:16,padding:"12px 14px"}}>
+          {displaySummary&&<div style={{marginTop:14,background:"rgba(255,255,255,0.96)",backdropFilter:"blur(12px)",border:`1px solid ${B.muted}`,boxShadow:"0 10px 30px rgba(34,49,63,0.06)",borderRadius:16,padding:isMobile?"12px":"12px 14px"}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:12,marginBottom:8}}>
               <div style={{fontSize:13,color:B.ink,fontWeight:700}}>{displaySummaryLabel}</div>
               <div style={{fontSize:11,color:"#A09A93"}}>{pipeHover===null?"Selected range total":pipeChart.label}</div>
             </div>
-            <div style={{display:"grid",gridTemplateColumns:"repeat(5,minmax(0,1fr))",gap:"8px 10px"}}>
+            <div style={{display:"grid",gridTemplateColumns:isMobile?"repeat(2,minmax(0,1fr))":"repeat(5,minmax(0,1fr))",gap:"8px 10px"}}>
               {interpolatedSeries.map(s=><div key={s.key}>
                 <div style={{fontSize:11,color:s.color,fontWeight:700}}>{s.key}</div>
                 <div style={{fontSize:18,color:B.ink,fontWeight:800,lineHeight:1.1}}>{pipeHover===null?displaySummary[s.key]??0:s.displayValue}</div>
@@ -1687,9 +1687,9 @@ function DashboardHome({cands,jobs,team,onOpenCand,onOpenJob,setPage}){
       </div>
 
       {/* Recent Activity */}
-      <div style={{background:"#fff",border:`1px solid ${B.muted}`,borderRadius:16,padding:"24px 28px"}}>
+      <div style={{background:"#fff",border:`1px solid ${B.muted}`,borderRadius:16,padding:isMobile?"18px 16px":"24px 28px"}}>
         <div style={{fontSize:16,fontWeight:700,color:B.ink,marginBottom:20}}>Recent Activity</div>
-        <div style={{display:"flex",flexDirection:"column",gap:0,maxHeight:320,overflowY:"auto"}}>
+        <div style={{display:"flex",flexDirection:"column",gap:0,maxHeight:isMobile?260:320,overflowY:"auto"}}>
           {recentActs.map((a,i)=>{const ac=ACTIVITY_COLORS[a.type]||B.accent;const cand=cands.find(x=>x.id===a.candidate_id);const candName=cand?.name||"Unknown";const timeAgo=(()=>{const diff=Date.now()-new Date(a.created_at).getTime();const mins=Math.floor(diff/60000);if(mins<1)return "just now";if(mins<60)return mins+"m ago";const hrs=Math.floor(mins/60);if(hrs<24)return hrs+"h ago";const days=Math.floor(hrs/24);return days+"d ago";})();
             let desc="";
             if(a.type==="stage_change")desc=a.detail;
@@ -1713,12 +1713,12 @@ function DashboardHome({cands,jobs,team,onOpenCand,onOpenJob,setPage}){
     </div>
 
     {/* Hot Candidates — full width */}
-    <div style={{background:"#fff",border:`1px solid ${B.muted}`,borderRadius:16,padding:"24px 28px",marginTop:4}}>
+    <div style={{background:"#fff",border:`1px solid ${B.muted}`,borderRadius:16,padding:isMobile?"18px 16px":"24px 28px",marginTop:4}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
         <div><div style={{fontSize:18,fontWeight:700,color:B.ink}}>Hot Candidates</div><div style={{fontSize:12,color:"#A09A93",marginTop:2}}>{[...interviews,...offers].length} candidates in interview or offer stage</div></div>
         <span onClick={()=>setPage("candidates")} style={{fontSize:12,color:B.accent,fontWeight:600,cursor:"pointer"}}>View all →</span>
       </div>
-      {[...interviews,...offers].length>0?<div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:12}}>
+      {[...interviews,...offers].length>0?<div style={{display:"grid",gridTemplateColumns:`repeat(auto-fill,minmax(${isMobile?220:280}px,1fr))`,gap:12}}>
         {[...interviews,...offers].slice(0,8).map(c=>{const o=getTeamMember(c.ownerId);const m=SM[c.stage];const progress=STAGES.indexOf(c.stage)/7*100;
           return <div key={c.id} onClick={()=>onOpenCand(c)} style={{background:B.surface,border:`1px solid ${B.muted}`,borderRadius:14,padding:"18px 20px",cursor:"pointer",transition:"all 0.25s"}} onMouseEnter={e=>{e.currentTarget.style.borderColor=m?.c||B.accent;e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow="0 8px 24px rgba(0,0,0,0.06)";}} onMouseLeave={e=>{e.currentTarget.style.borderColor=B.muted;e.currentTarget.style.transform="translateY(0)";e.currentTarget.style.boxShadow="none";}}>
             <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:12}}>
@@ -1745,12 +1745,12 @@ function DashboardHome({cands,jobs,team,onOpenCand,onOpenJob,setPage}){
     </div>
 
     {/* Current Openings */}
-    <div style={{background:"#fff",border:`1px solid ${B.muted}`,borderRadius:16,padding:"24px 28px",marginTop:16}}>
+    <div style={{background:"#fff",border:`1px solid ${B.muted}`,borderRadius:16,padding:isMobile?"18px 16px":"24px 28px",marginTop:16}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
         <div style={{fontSize:16,fontWeight:700,color:B.ink}}>Current Openings ({openJobs.length})</div>
         <span onClick={()=>setPage("jobs")} style={{fontSize:12,color:B.accent,fontWeight:600,cursor:"pointer"}}>See all →</span>
       </div>
-      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:12}}>
+      <div style={{display:"grid",gridTemplateColumns:`repeat(auto-fill,minmax(${isMobile?150:200}px,1fr))`,gap:12}}>
         {openJobs.slice(0,6).map(j=>{const subs=cands.filter(c=>(j.submittedCandidates||[]).includes(c.id));return <div key={j.id} onClick={()=>onOpenJob(j)} style={{background:B.surface,border:`1px solid ${B.muted}`,borderRadius:12,padding:"16px",cursor:"pointer",transition:"all 0.2s"}} onMouseEnter={e=>e.currentTarget.style.borderColor=B.accent} onMouseLeave={e=>e.currentTarget.style.borderColor=B.muted}>
           <div style={{fontSize:13,fontWeight:700,color:B.ink,marginBottom:4}}>{j.title}</div>
           <div style={{fontSize:11,color:"#A09A93",marginBottom:8}}>{j.client}</div>
@@ -1783,8 +1783,15 @@ export default function HCPRecruit(){
   const [pipelineExpanded,setPipelineExpanded]=useState({});
   const [js,setJs]=useState(""); const [jStat,setJStat]=useState("All"); const [jClient,setJClient]=useState("All"); const [jOwner,setJOwner]=useState("All");
   const [sidebarCollapsed,setSidebarCollapsed]=useState(false);
+  const [isMobile,setIsMobile]=useState(typeof window!=="undefined"?window.innerWidth<900:false);
 
   useEffect(()=>{document.title="Talyntry";if(window.location.pathname!=="/")window.history.replaceState(null,"","/");getSession().then(s=>{setSession(s);setAuthChecked(true);});},[]);
+  useEffect(()=>{
+    const onResize=()=>setIsMobile(window.innerWidth<900);
+    onResize();
+    window.addEventListener("resize",onResize);
+    return ()=>window.removeEventListener("resize",onResize);
+  },[]);
   useEffect(()=>{
     const preventDrag=(e)=>{e.preventDefault();};
     const preventDrop=(e)=>{if(e.target.closest("[data-dropzone]")) return;e.preventDefault();};
@@ -1954,7 +1961,7 @@ export default function HCPRecruit(){
   };
   const openCand=(c)=>setModal({t:"cand",c});
 
-  const sW=sidebarCollapsed?68:240;
+  const sW=isMobile?0:(sidebarCollapsed?68:240);
   const NAV_ITEMS=[
     {id:"dashboard",label:"Dashboard",icon:IC.dashboard},
     {id:"candidates",label:"Candidates",icon:IC.candidates},
@@ -1970,7 +1977,7 @@ export default function HCPRecruit(){
     <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
 
     {/* ═══ SIDEBAR ═══ */}
-    <div style={{width:sW,minHeight:"100vh",background:"#fff",borderRight:`1px solid ${B.muted}`,display:"flex",flexDirection:"column",position:"fixed",left:0,top:0,bottom:0,zIndex:50,transition:"width 0.2s ease",overflow:"hidden"}}>
+    {!isMobile&&<div style={{width:sW,minHeight:"100vh",background:"#fff",borderRight:`1px solid ${B.muted}`,display:"flex",flexDirection:"column",position:"fixed",left:0,top:0,bottom:0,zIndex:50,transition:"width 0.2s ease",overflow:"hidden"}}>
       {/* Logo */}
       <div style={{padding:sidebarCollapsed?"20px 16px":"20px 24px",borderBottom:`1px solid ${B.muted}`,display:"flex",alignItems:"center",gap:10,minHeight:64}}>
         <img src="/logo-dark.png" alt="Talyntry" style={{height:sidebarCollapsed?28:22,width:"auto"}} onError={e=>{e.target.style.display="none"}}/>
@@ -2009,25 +2016,47 @@ export default function HCPRecruit(){
           {!sidebarCollapsed&&<span onClick={()=>signOut().then(()=>setSession(null))} style={{cursor:"pointer",color:"#A09A93",display:"flex",opacity:0.6}} title="Sign out">{IC.logout}</span>}
         </div>
       </div>
-    </div>
+    </div>}
 
     {/* ═══ MAIN CONTENT ═══ */}
-    <div style={{marginLeft:sW,width:`calc(100vw - ${sW}px)`,transition:"all 0.2s ease"}}>
+    <div style={{marginLeft:sW,width:isMobile?"100%":`calc(100vw - ${sW}px)`,transition:"all 0.2s ease",paddingBottom:isMobile?82:0}}>
+      {isMobile&&<div style={{background:"#fff",borderBottom:`1px solid ${B.muted}`,padding:"12px 14px 10px",position:"sticky",top:0,zIndex:55}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,marginBottom:10}}>
+          <img src="/logo-dark.png" alt="Talyntry" style={{height:22,width:"auto"}} onError={e=>{e.target.style.display="none"}}/>
+          <div style={{display:"flex",alignItems:"center",gap:10,minWidth:0}}>
+            <div style={{textAlign:"right",minWidth:0}}>
+              <div style={{fontSize:11,color:"#A09A93",lineHeight:1.1}}>Signed in as</div>
+              <div style={{fontSize:12,fontWeight:700,color:B.ink,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",maxWidth:140}}>{activeUser.name}</div>
+            </div>
+            <RecruiterBadge id={activeUser.id} size={30}/>
+          </div>
+        </div>
+        <div style={{display:"flex",gap:8,overflowX:"auto",paddingBottom:2}}>
+          {NAV_ITEMS.concat(ADMIN_ITEMS).map(item=>{
+            const isActive=page===item.id;
+            const onTap=item.action||(()=>setPage(item.id));
+            return <button key={item.id} onClick={onTap} style={{display:"flex",alignItems:"center",gap:8,whiteSpace:"nowrap",background:isActive?B.accentLight:"#fff",color:isActive?B.accent:B.ink,border:`1px solid ${isActive?B.accentLight:B.muted}`,borderRadius:999,padding:"9px 12px",fontSize:12,fontWeight:700,cursor:"pointer",flexShrink:0,opacity:isActive?1:0.78}}>
+              <span style={{display:"flex"}}>{item.icon}</span>
+              <span>{item.label}</span>
+            </button>;
+          })}
+        </div>
+      </div>}
       {/* Top bar */}
-      <div style={{background:"#fff",borderBottom:`1px solid ${B.muted}`,padding:"0 28px",position:"sticky",top:0,zIndex:40,display:"flex",alignItems:"center",justifyContent:"space-between",height:56}}>
+      <div style={{background:"#fff",borderBottom:`1px solid ${B.muted}`,padding:isMobile?"10px 14px":"0 28px",position:"sticky",top:isMobile?74:0,zIndex:40,display:"flex",alignItems:isMobile?"stretch":"center",justifyContent:"space-between",height:isMobile?"auto":56,flexDirection:isMobile?"column":"row",gap:isMobile?10:0}}>
         <div style={{fontSize:18,fontWeight:700,color:B.ink,textTransform:"capitalize"}}>{page}</div>
-        <div style={{display:"flex",gap:8,alignItems:"center"}}>
-          {(page==="candidates"||page==="pipeline")&&<button onClick={()=>setModal({t:"add-cand"})} style={{display:"flex",alignItems:"center",gap:6,background:B.accent,color:"#fff",border:"none",borderRadius:8,padding:"8px 16px",fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit",boxShadow:"0 2px 8px rgba(255,122,89,0.25)"}}>{IC.plus} Add Candidate</button>}
-          {page==="jobs"&&<button onClick={()=>setModal({t:"add-job"})} style={{display:"flex",alignItems:"center",gap:6,background:B.accent,color:"#fff",border:"none",borderRadius:8,padding:"8px 16px",fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit",boxShadow:"0 2px 8px rgba(255,122,89,0.25)"}}>{IC.plus} Add Job Order</button>}
-          <button onClick={()=>exportCSV(cands,jobs)} style={{display:"flex",alignItems:"center",gap:5,background:B.surface,color:B.ink,border:`1px solid ${B.muted}`,borderRadius:8,padding:"8px 12px",fontSize:12,cursor:"pointer",fontFamily:"inherit",opacity:0.7}}>{IC.download} CSV</button>
+        <div style={{display:"flex",gap:8,alignItems:"center",width:isMobile?"100%":"auto",flexWrap:isMobile?"wrap":"nowrap"}}>
+          {(page==="candidates"||page==="pipeline")&&<button onClick={()=>setModal({t:"add-cand"})} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:6,background:B.accent,color:"#fff",border:"none",borderRadius:8,padding:"8px 16px",fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit",boxShadow:"0 2px 8px rgba(255,122,89,0.25)",flex:isMobile?"1 1 0":"0 0 auto"}}>{IC.plus} Add Candidate</button>}
+          {page==="jobs"&&<button onClick={()=>setModal({t:"add-job"})} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:6,background:B.accent,color:"#fff",border:"none",borderRadius:8,padding:"8px 16px",fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit",boxShadow:"0 2px 8px rgba(255,122,89,0.25)",flex:isMobile?"1 1 0":"0 0 auto"}}>{IC.plus} Add Job Order</button>}
+          <button onClick={()=>exportCSV(cands,jobs)} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:5,background:B.surface,color:B.ink,border:`1px solid ${B.muted}`,borderRadius:8,padding:"8px 12px",fontSize:12,cursor:"pointer",fontFamily:"inherit",opacity:0.7,flex:isMobile?"1 1 0":"0 0 auto"}}>{IC.download} CSV</button>
         </div>
       </div>
 
       {/* Page content */}
-      <div style={{padding:"24px 28px",width:"100%",boxSizing:"border-box"}}>
+      <div style={{padding:isMobile?"16px 14px 22px":"24px 28px",width:"100%",boxSizing:"border-box"}}>
 
         {/* DASHBOARD */}
-        {page==="dashboard"&&<DashboardHome cands={cands} jobs={jobs} team={team} onOpenCand={openCand} onOpenJob={j=>setModal({t:"job",j})} setPage={setPage}/>}
+        {page==="dashboard"&&<DashboardHome cands={cands} jobs={jobs} team={team} onOpenCand={openCand} onOpenJob={j=>setModal({t:"job",j})} setPage={setPage} isMobile={isMobile}/>}
 
         {/* CANDIDATES */}
         {page==="candidates"&&<>
