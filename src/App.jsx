@@ -1530,12 +1530,13 @@ function DashboardHome({cands,jobs,team,onOpenCand,onOpenJob,setPage}){
   const activePipePos=pipeHover??Math.max(0,pipeChart.buckets.length-1);
   const activePipeIdx=Math.max(0,Math.min(pipeChart.buckets.length-1,Math.round(activePipePos)));
   const activePipeBucket=pipeChart.buckets[activePipeIdx];
-  const showRangeTotals=pipeHover===null;
-  const displaySummary=showRangeTotals ? pipeChart.totals : activePipeBucket?.values;
-  const displaySummaryLabel=showRangeTotals ? pipeChart.label : activePipeBucket?.label;
+  const displaySummary=pipeHover===null ? pipeChart.totals : activePipeBucket?.values;
+  const displaySummaryLabel=pipeHover===null ? pipeChart.label : activePipeBucket?.label;
   const chartW=760, chartH=220, padX=26, padTop=20, padBottom=34;
   const stepX=pipeChart.buckets.length>1?(chartW-padX*2)/(pipeChart.buckets.length-1):0;
-  const valueToY=v=>padTop+((pipeChart.max-v)/pipeChart.max)*(chartH-padTop-padBottom);
+  const scaleValue=v=>Math.sqrt(Math.max(0,v));
+  const scaledMax=Math.max(1, scaleValue(pipeChart.max));
+  const valueToY=v=>padTop+((scaledMax-scaleValue(v))/scaledMax)*(chartH-padTop-padBottom);
   const getCoords=points=>points.map((v,i)=>({x:padX+i*stepX,y:valueToY(v)}));
   const getCurveControls=(coords,i)=>{
     const p0=coords[i-1]||coords[i];
@@ -1564,7 +1565,7 @@ function DashboardHome({cands,jobs,team,onOpenCand,onOpenJob,setPage}){
   const interpolatedSeries=pipeChart.series.map(s=>({
     ...s,
     hoverValue: interpolatePoint(s.points, activePipePos),
-    displayValue: showRangeTotals ? pipeChart.totals[s.key] : Math.round(interpolatePoint(s.points, activePipePos)),
+    displayValue: Math.round(interpolatePoint(s.points, activePipePos)),
     hoverPoint: (() => {
       const coords=getCoords(s.points);
       if(coords.length===0) return {x:padX,y:valueToY(0)};
@@ -1639,7 +1640,7 @@ function DashboardHome({cands,jobs,team,onOpenCand,onOpenJob,setPage}){
           {interpolatedSeries.map(s=><div key={s.key} style={{display:"flex",alignItems:"center",gap:8}}>
             <span style={{width:10,height:10,borderRadius:"50%",background:s.color,boxShadow:`0 0 0 5px ${s.color}18`}}/>
             <span style={{fontSize:12,color:B.ink,fontWeight:600}}>{s.key}</span>
-            <span style={{fontSize:12,color:"#A09A93"}}>{showRangeTotals?displaySummary?.[s.key]??0:s.displayValue}</span>
+            <span style={{fontSize:12,color:"#A09A93"}}>{pipeChart.totals?.[s.key]??0}</span>
           </div>)}
         </div>
         <div ref={chartRef} style={{position:"relative",borderRadius:18,background:"linear-gradient(180deg, #fff 0%, #FFFBF8 100%)",border:`1px solid ${B.muted}`,padding:"18px 18px 14px"}}>
