@@ -1775,6 +1775,7 @@ export default function HCPRecruit(){
   const [view,setView]=useState("list");
   const [modal,setModal]=useState(null);
   const [pipelineOwner,setPipelineOwner]=useState("mine");
+  const [pipelineSearch,setPipelineSearch]=useState("");
   const [cs,setCs]=useState(""); const [cStage,setCStage]=useState("All"); const [cVert,setCVert]=useState("All");
   const [cAuth,setCAuth]=useState("All"); const [cOwner,setCOwner]=useState("All"); const [cSort,setCSort]=useState("name");
   const [cSeniority,setCSeniority]=useState("All"); const [cClient,setCClient]=useState("All"); const [cHasResume,setCHasResume]=useState("All");
@@ -1862,7 +1863,27 @@ export default function HCPRecruit(){
       (a.name||"").localeCompare(b.name||"")
     );
   const pipelineRecruiterId=pipelineOwner==="mine"?activeUser.id:pipelineOwner==="all"?null:pipelineOwner;
-  const pipelineCands=fCands.filter(c=>!pipelineRecruiterId||c.ownerId===pipelineRecruiterId);
+  const pipelineSearchQuery=pipelineSearch.trim().toLowerCase();
+  const pipelineCands=cands
+    .filter(c=>!pipelineRecruiterId||c.ownerId===pipelineRecruiterId)
+    .filter(c=>{
+      if(!pipelineSearchQuery) return true;
+      const jobsForCand=jobs.filter(j=>(c.submittedTo||[]).includes(j.id));
+      return [
+        c.name,
+        c.title,
+        c.location,
+        c.workAuth,
+        c.salary,
+        c.vertical,
+        c.seniority,
+        c.source,
+        ...(c.skills||[]),
+        getTeamMember(c.ownerId)?.name,
+        ...jobsForCand.map(j=>j.title),
+        ...jobsForCand.map(j=>j.client),
+      ].some(v=>v?.toString().toLowerCase().includes(pipelineSearchQuery));
+    });
   const fJobs=jobs.filter(j=>{const q=js.toLowerCase();return !q||[j.title,j.client,j.spoc].some(v=>v?.toLowerCase().includes(q));}).filter(j=>jStat==="All"||j.status===jStat).filter(j=>jClient==="All"||j.client===jClient).filter(j=>jOwner==="All"||(j.assignedRecruiters||[]).includes(jOwner)).sort((a,b)=>({"P1":0,"P2":1,"P3":2}[a.priority]||1)-({"P1":0,"P2":1,"P3":2}[b.priority]||1));
   const stats={total:cands.length,active:cands.filter(c=>!["Placed","Rejected","On Hold"].includes(c.stage)).length,hot:cands.filter(c=>["Interview 1","Interview 2","Final Interview","Offer"].includes(c.stage)).length,placed:cands.filter(c=>c.stage==="Placed").length,openJobs:jobs.filter(j=>["Open – Sourcing","Active"].includes(j.status)).length,filled:jobs.filter(j=>j.status==="Filled").length};
 
@@ -2069,15 +2090,27 @@ export default function HCPRecruit(){
         {/* PIPELINE */}
         {page==="pipeline"&&<>
         <div style={{background:"#fff",border:`1px solid ${B.muted}`,borderRadius:12,padding:"14px 16px",marginBottom:16,display:"flex",gap:10,alignItems:"center",flexWrap:"wrap"}}>
-          <div style={{fontSize:12,fontWeight:700,color:B.ink}}>Pipeline View</div>
-          <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
-            {[
-              {id:"mine",label:"My Pipeline"},
-              {id:"all",label:"All Recruiters"},
-            ].map(opt=><button key={opt.id} onClick={()=>setPipelineOwner(opt.id)} style={{background:pipelineOwner===opt.id?B.accent:"#fff",color:pipelineOwner===opt.id?"#fff":B.ink,border:`1px solid ${pipelineOwner===opt.id?B.accent:B.muted}`,borderRadius:8,padding:"8px 12px",fontSize:12,fontWeight:600,cursor:"pointer"}}>{opt.label}</button>)}
+          <div style={{display:"flex",gap:10,alignItems:"center",flexWrap:"wrap",flex:"1 1 680px"}}>
+            <div style={{fontSize:12,fontWeight:700,color:B.ink}}>Pipeline View</div>
+            <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
+              {[
+                {id:"mine",label:"My Pipeline"},
+                {id:"all",label:"All Recruiters"},
+              ].map(opt=><button key={opt.id} onClick={()=>setPipelineOwner(opt.id)} style={{background:pipelineOwner===opt.id?B.accent:"#fff",color:pipelineOwner===opt.id?"#fff":B.ink,border:`1px solid ${pipelineOwner===opt.id?B.accent:B.muted}`,borderRadius:8,padding:"8px 12px",fontSize:12,fontWeight:600,cursor:"pointer"}}>{opt.label}</button>)}
+            </div>
+            <div style={{position:"relative",flex:"1 1 260px",minWidth:220,maxWidth:420}}>
+              <span style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",color:"#A09A93",display:"flex"}}>{IC.search}</span>
+              <input
+                style={{...inp,paddingLeft:32,paddingRight:pipelineSearch?34:12,height:38}}
+                value={pipelineSearch}
+                onChange={e=>setPipelineSearch(e.target.value)}
+                placeholder="Search pipeline by name, title, client..."
+              />
+              {pipelineSearch&&<button onClick={()=>setPipelineSearch("")} style={{position:"absolute",right:8,top:"50%",transform:"translateY(-50%)",border:"none",background:"transparent",color:"#A09A93",fontSize:16,lineHeight:1,cursor:"pointer",padding:4}}>×</button>}
+            </div>
           </div>
           <span style={{color:"#A09A93",fontSize:12,fontWeight:500,marginLeft:"auto"}}>
-            {pipelineOwner==="mine"?"Showing your pipeline":"Showing all recruiters"}
+            {pipelineSearchQuery?`${pipelineCands.length} result${pipelineCands.length!==1?"s":""}`:(pipelineOwner==="mine"?"Showing your pipeline":"Showing all recruiters")}
           </span>
         </div>
         <div style={{display:"flex",gap:10,overflowX:"auto",paddingBottom:16,alignItems:"stretch"}}>
