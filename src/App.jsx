@@ -460,6 +460,16 @@ function StatCard({label,value,accent,icon}){
 const inp={width:"100%",background:C.white,border:`1px solid ${C.gray300}`,borderRadius:8,padding:"9px 12px",color:C.gray800,fontSize:13,outline:"none",boxSizing:"border-box",fontFamily:"inherit"};
 const sel={...inp,cursor:"pointer"};
 const ta={...inp,resize:"vertical",minHeight:80,lineHeight:1.6};
+function useIsMobile(breakpoint=900){
+  const [isMobile,setIsMobile]=useState(typeof window!=="undefined"?window.innerWidth<breakpoint:false);
+  useEffect(()=>{
+    const onResize=()=>setIsMobile(window.innerWidth<breakpoint);
+    onResize();
+    window.addEventListener("resize",onResize);
+    return ()=>window.removeEventListener("resize",onResize);
+  },[breakpoint]);
+  return isMobile;
+}
 function F({label,span2,children}){
   return <div style={{gridColumn:span2?"span 2":"span 1"}}>
     <label style={{display:"block",color:C.gray500,fontSize:11,fontWeight:600,letterSpacing:0.3,marginBottom:5}}>{label}</label>
@@ -468,16 +478,17 @@ function F({label,span2,children}){
 }
 function Divider(){return <div style={{height:1,background:C.gray100,margin:"18px 0"}}/>;}
 function Modal({title,subtitle,onClose,wide,xl,children}){
-  return <div style={{position:"fixed",inset:0,background:"rgba(10,22,40,0.5)",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:16,backdropFilter:"blur(4px)"}} onClick={onClose}>
-    <div style={{background:C.white,borderRadius:16,width:"100%",maxWidth:xl?1060:wide?860:680,maxHeight:"92vh",overflowY:"auto",boxShadow:"0 24px 80px rgba(10,22,40,0.2)",border:`1px solid ${C.gray200}`}} onClick={e=>e.stopPropagation()}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",padding:"22px 24px 0",marginBottom:20}}>
+  const isMobile=useIsMobile();
+  return <div style={{position:"fixed",inset:0,background:"rgba(10,22,40,0.5)",zIndex:1000,display:"flex",alignItems:isMobile?"stretch":"center",justifyContent:"center",padding:isMobile?0:16,backdropFilter:"blur(4px)"}} onClick={onClose}>
+    <div style={{background:C.white,borderRadius:isMobile?0:16,width:"100%",maxWidth:isMobile?"100%":xl?1060:wide?860:680,maxHeight:isMobile?"100vh":"92vh",height:isMobile?"100vh":"auto",overflowY:"auto",boxShadow:isMobile?"none":"0 24px 80px rgba(10,22,40,0.2)",border:isMobile?"none":`1px solid ${C.gray200}`}} onClick={e=>e.stopPropagation()}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",padding:isMobile?"16px 16px 0":"22px 24px 0",marginBottom:isMobile?16:20,position:isMobile?"sticky":"static",top:0,background:C.white,zIndex:2}}>
         <div>
           <h2 style={{margin:0,color:C.navy,fontSize:17,fontFamily:"'DM Sans',sans-serif",fontWeight:700}}>{title}</h2>
           {subtitle&&<div style={{fontSize:12,color:C.gray400,marginTop:2}}>{subtitle}</div>}
         </div>
         <button onClick={onClose} style={{background:C.gray100,border:"none",color:C.gray500,fontSize:15,cursor:"pointer",padding:"5px 9px",borderRadius:6,lineHeight:1}}>✕</button>
       </div>
-      <div style={{padding:"0 24px 24px"}}>{children}</div>
+      <div style={{padding:isMobile?"0 16px 20px":"0 24px 24px"}}>{children}</div>
     </div>
   </div>;
 }
@@ -530,6 +541,7 @@ function LoginScreen({onLogin}){
 
 // ── WEEKLY REPORT ─────────────────────────────────────────────────
 function WeeklyReport({cands,jobs,team=TEAM_FALLBACK}){
+  const isMobile=useIsMobile();
   const [filterR,setFilterR]=useState("all");
   const [period,setPeriod]=useState("weekly");
   const r=generateActivityReport(cands,jobs,filterR,team,period);
@@ -553,8 +565,8 @@ function WeeklyReport({cands,jobs,team=TEAM_FALLBACK}){
     w.document.close();w.focus();setTimeout(()=>w.print(),400);
   };
   return <div>
-    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20,flexWrap:"wrap",gap:10}}>
-      <div style={{display:"flex",gap:10,alignItems:"center"}}>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:isMobile?"stretch":"center",marginBottom:20,flexWrap:"wrap",gap:10,flexDirection:isMobile?"column":"row"}}>
+      <div style={{display:"flex",gap:10,alignItems:"center",flexWrap:"wrap"}}>
         <span style={{fontSize:12,color:C.gray500,fontWeight:500}}>Filter:</span>
         <select style={{...sel,width:190,fontSize:12}} value={filterR} onChange={e=>setFilterR(e.target.value)}>
           <option value="all">All Recruiters</option>{team.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}
@@ -566,7 +578,7 @@ function WeeklyReport({cands,jobs,team=TEAM_FALLBACK}){
       </div>
       <button onClick={printReport} style={{background:C.navy,color:C.white,border:"none",borderRadius:8,padding:"9px 18px",fontSize:12,fontWeight:600,cursor:"pointer"}}>🖨 Print / Export PDF</button>
     </div>
-    <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:22}}>
+    <div style={{display:"grid",gridTemplateColumns:isMobile?"repeat(2,1fr)":"repeat(4,1fr)",gap:10,marginBottom:22}}>
       {[[r.total,"Total Candidates",C.accent,"⬡"],[r.active.length,"Active Pipeline",C.purple,"◈"],[r.hotCands.length,"Interview / Offer",C.pink,"◆"],[r.openJobs.length,"Open Roles",C.success,"□"]].map(([v,l,c,ic])=>(
         <div key={l} style={{background:C.gray50,border:`1px solid ${C.gray200}`,borderRadius:10,padding:"16px",textAlign:"center"}}>
           <div style={{fontSize:11,color:C.gray400,marginBottom:6}}>{ic} {l}</div>
@@ -595,8 +607,8 @@ function WeeklyReport({cands,jobs,team=TEAM_FALLBACK}){
     </div>}
     <div>
       <div style={{fontSize:11,fontWeight:600,color:C.gray500,letterSpacing:0.5,textTransform:"uppercase",marginBottom:10}}>Team Performance</div>
-      <div style={{background:C.white,border:`1px solid ${C.gray200}`,borderRadius:10,overflow:"hidden"}}>
-        <table style={{width:"100%",borderCollapse:"collapse"}}>
+      <div style={{background:C.white,border:`1px solid ${C.gray200}`,borderRadius:10,overflow:"hidden",overflowX:"auto"}}>
+        <table style={{width:"100%",borderCollapse:"collapse",minWidth:760}}>
           <thead><tr style={{background:C.navy}}>{["Recruiter","Owned","Active","Interviews","Offers","Placed","Collab","Jobs"].map(h=><th key={h} style={{padding:"10px 14px",textAlign:"left",color:"rgba(255,255,255,0.7)",fontSize:11,fontWeight:600,letterSpacing:0.5}}>{h}</th>)}</tr></thead>
           <tbody>{Object.entries(r.byRecruiter).map(([id,d],idx)=>{const t=getTeamMember(id);return <tr key={id} style={{borderBottom:`1px solid ${C.gray100}`,background:idx%2===0?C.white:C.gray50}}>
             <td style={{padding:"11px 14px"}}><div style={{display:"flex",alignItems:"center",gap:9}}><RecruiterBadge id={id} size={26}/><div><div style={{color:C.navy,fontSize:13,fontWeight:600}}>{d.name}</div><div style={{color:C.gray400,fontSize:10}}>{t?.role}</div></div></div></td>
@@ -611,6 +623,7 @@ function WeeklyReport({cands,jobs,team=TEAM_FALLBACK}){
 
 // ── CANDIDATE FORM ────────────────────────────────────────────────
 function CandForm({initial,allCandidates,onSave,onClose,activeUser=TEAM_FALLBACK[0],team=TEAM_FALLBACK}){
+  const isMobile=useIsMobile();
   const E={name:"",email:"",phone:"",linkedin:"",title:"",seniority:"",vertical:"",stage:"Sourced",skills:[],salary:"",location:"",workAuth:"",experience:"",source:"",ownerId:activeUser.id,collaborators:[],notes:[]};
   const initialMeta=extractProfileMeta(initial?.notes||[]);
   const [tempId] = useState(()=>initial?.id||(crypto.randomUUID?crypto.randomUUID():`${Date.now()}-${Math.random().toString(36).slice(2)}`));
@@ -739,7 +752,7 @@ function CandForm({initial,allCandidates,onSave,onClose,activeUser=TEAM_FALLBACK
         {profileDraft.overview||"Overview"} · {profileDraft.experience.length} experience entr{profileDraft.experience.length===1?"y":"ies"} · {profileDraft.education.length} education entr{profileDraft.education.length===1?"y":"ies"}
       </div>
     </div>}
-    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"14px 16px"}}>
+    <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:"14px 16px"}}>
       <F label="Full Name *"><input style={inp} value={f.name} onChange={e=>{s("name",e.target.value);chkDupe(f.email,f.phone,e.target.value);}} placeholder="Full name"/></F>
       <F label="Email *"><input style={inp} value={f.email} onChange={e=>{s("email",e.target.value);chkDupe(e.target.value,f.phone);}} placeholder="email@domain.com"/></F>
       <F label="Phone"><input style={inp} value={f.phone} onChange={e=>{s("phone",e.target.value);chkDupe(f.email,e.target.value);}} placeholder="555-000-0000"/></F>
@@ -757,7 +770,7 @@ function CandForm({initial,allCandidates,onSave,onClose,activeUser=TEAM_FALLBACK
     <Divider/>
     <div style={{background:C.gray50,border:`1px solid ${C.gray200}`,borderRadius:10,padding:"14px 16px",marginBottom:16}}>
       <div style={{fontSize:11,fontWeight:600,color:C.gray500,letterSpacing:0.5,textTransform:"uppercase",marginBottom:12}}>Recruiter Assignment</div>
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0 16px"}}>
+    <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:"0 16px"}}>
         <div>
           <label style={{display:"block",color:C.gray600,fontSize:12,fontWeight:500,marginBottom:6}}>Primary Owner</label>
           <select style={sel} value={f.ownerId} onChange={e=>s("ownerId",e.target.value)}>{team.map(t=><option key={t.id} value={t.id}>{t.name} — {t.role}</option>)}</select>
@@ -780,16 +793,16 @@ function CandForm({initial,allCandidates,onSave,onClose,activeUser=TEAM_FALLBACK
     </div>
     <div style={{marginBottom:16}}>
       <label style={{display:"block",color:C.gray500,fontSize:11,fontWeight:600,letterSpacing:0.3,marginBottom:8}}>Skills</label>
-      <div style={{display:"flex",gap:8,marginBottom:8}}>
+      <div style={{display:"flex",gap:8,marginBottom:8,flexDirection:isMobile?"column":"row"}}>
         <input style={{...inp,flex:1}} value={si} onChange={e=>setSi(e.target.value)} onKeyDown={e=>e.key==="Enter"&&(e.preventDefault(),addSkill())} placeholder="Type skill + Enter…"/>
-        <select style={{...sel,width:160}} onChange={e=>{if(e.target.value)addSkill(e.target.value);e.target.value=""}}><option value="">Quick-add…</option>{SKILLS_POOL.filter(x=>!f.skills.includes(x)).map(x=><option key={x}>{x}</option>)}</select>
+        <select style={{...sel,width:isMobile?"100%":160}} onChange={e=>{if(e.target.value)addSkill(e.target.value);e.target.value=""}}><option value="">Quick-add…</option>{SKILLS_POOL.filter(x=>!f.skills.includes(x)).map(x=><option key={x}>{x}</option>)}</select>
       </div>
       <div style={{display:"flex",flexWrap:"wrap",gap:5,minHeight:24}}>
         {f.skills.map(x=><span key={x} style={{background:C.accentL,color:C.accent,borderRadius:5,padding:"3px 9px",fontSize:11,fontWeight:500,display:"inline-flex",alignItems:"center",gap:5}}>{x}<span onClick={()=>s("skills",f.skills.filter(k=>k!==x))} style={{cursor:"pointer",color:C.gray400,fontSize:13,lineHeight:1}}>×</span></span>)}
         {!f.skills.length&&<span style={{color:C.gray300,fontSize:12}}>No skills added yet</span>}
       </div>
     </div>
-    <div style={{display:"flex",gap:10}}>
+    <div style={{display:"flex",gap:10,flexDirection:isMobile?"column":"row"}}>
       <button onClick={submit} style={{flex:1,background:C.navy,color:C.white,border:"none",borderRadius:9,padding:"12px",fontSize:13,fontWeight:700,cursor:"pointer"}}>{initial?.id?"Save Changes":"Add Candidate"}</button>
       <button onClick={onClose} style={{background:C.white,color:C.gray500,border:`1px solid ${C.gray300}`,borderRadius:9,padding:"12px 20px",fontSize:13,cursor:"pointer"}}>Cancel</button>
     </div>
@@ -798,6 +811,7 @@ function CandForm({initial,allCandidates,onSave,onClose,activeUser=TEAM_FALLBACK
 
 // ── CANDIDATE DETAIL ──────────────────────────────────────────────
 function CandDetail({c,jobs,onEdit,onStageChange,onAddNote,onSubmitToJob,activeUser=TEAM_FALLBACK[0],onDelete,onResumeUpload}){
+  const isMobile=useIsMobile();
   const [note,setNote]=useState("");
   const [detTab,setDetTab]=useState("Notes");
   const [resumeUrl,setResumeUrl]=useState(null);
@@ -836,7 +850,7 @@ function CandDetail({c,jobs,onEdit,onStageChange,onAddNote,onSubmitToJob,activeU
   const visibleNotes=(c.notes||[]).filter(n=>!isHiddenCandidateNote(n));
   const post=()=>{if(!note.trim())return;onAddNote(c.id,note.trim());setNote("");};
   return <div>
-    <div style={{display:"flex",gap:14,alignItems:"flex-start",marginBottom:20}}>
+    <div style={{display:"flex",gap:14,alignItems:"flex-start",marginBottom:20,flexDirection:isMobile?"column":"row"}}>
       <Avatar name={c.name} size={52} color={owner?.color}/>
       <div style={{flex:1}}>
         <div style={{fontSize:20,fontWeight:700,color:C.navy,fontFamily:"'DM Sans',sans-serif",letterSpacing:-0.3}}>{c.name}</div>
@@ -847,10 +861,10 @@ function CandDetail({c,jobs,onEdit,onStageChange,onAddNote,onSubmitToJob,activeU
           {c.vertical&&<Tag label={c.vertical} color={C.purple} bg={C.purpleL}/>}
         </div>
       </div>
-      <div style={{display:"flex",gap:8,flexShrink:0}}><button onClick={onEdit} style={{background:C.navy,color:C.white,border:"none",borderRadius:8,padding:"8px 16px",fontSize:12,fontWeight:600,cursor:"pointer"}}>Edit</button>{onDelete&&<button onClick={()=>onDelete(c.id)} style={{background:C.dangerL,color:C.danger,border:`1px solid ${C.danger}30`,borderRadius:8,padding:"8px 14px",fontSize:12,fontWeight:600,cursor:"pointer"}}>Delete</button>}</div>
+      <div style={{display:"flex",gap:8,flexShrink:0,width:isMobile?"100%":"auto"}}><button onClick={onEdit} style={{background:C.navy,color:C.white,border:"none",borderRadius:8,padding:"8px 16px",fontSize:12,fontWeight:600,cursor:"pointer",flex:isMobile?1:"0 0 auto"}}>Edit</button>{onDelete&&<button onClick={()=>onDelete(c.id)} style={{background:C.dangerL,color:C.danger,border:`1px solid ${C.danger}30`,borderRadius:8,padding:"8px 14px",fontSize:12,fontWeight:600,cursor:"pointer",flex:isMobile?1:"0 0 auto"}}>Delete</button>}</div>
     </div>
     <div style={{background:owner?owner.color+"08":C.gray50,border:`1px solid ${owner?owner.color+"30":C.gray200}`,borderRadius:10,padding:"14px 16px",marginBottom:18}}>
-      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:12}}>
+      <div style={{display:"flex",alignItems:isMobile?"flex-start":"center",justifyContent:"space-between",flexWrap:"wrap",gap:12,flexDirection:isMobile?"column":"row"}}>
         <div style={{display:"flex",alignItems:"center",gap:10}}>
           {owner?<>
             <div style={{width:40,height:40,borderRadius:10,background:owner.color,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:700,color:C.white,flexShrink:0}}>{owner.initials}</div>
@@ -861,7 +875,7 @@ function CandDetail({c,jobs,onEdit,onStageChange,onAddNote,onSubmitToJob,activeU
             </div>
           </>:<span style={{color:C.gray400,fontSize:12}}>No owner assigned</span>}
         </div>
-        <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:5}}>
+        <div style={{display:"flex",flexDirection:"column",alignItems:isMobile?"flex-start":"flex-end",gap:5,width:isMobile?"100%":"auto"}}>
           <div style={{color:C.gray400,fontSize:10,fontWeight:600,letterSpacing:0.8,textTransform:"uppercase"}}>Collaborators ({collabs.length}/2)</div>
           {collabs.length>0?<div style={{display:"flex",gap:7}}>
             {collabs.map(t=><div key={t.id} style={{display:"flex",alignItems:"center",gap:6,background:t.color+"15",border:`1px solid ${t.color}40`,borderRadius:7,padding:"5px 10px"}}>
@@ -874,7 +888,7 @@ function CandDetail({c,jobs,onEdit,onStageChange,onAddNote,onSubmitToJob,activeU
     </div>
     <div style={{background:C.gray50,border:`1px solid ${C.gray200}`,borderRadius:10,padding:"14px 16px",marginBottom:18}}>
       <div style={{color:C.gray400,fontSize:10,fontWeight:600,letterSpacing:0.8,textTransform:"uppercase",marginBottom:10}}>Pipeline — click to advance</div>
-      <div style={{display:"flex",gap:0}}>
+      <div style={{display:"flex",gap:0,overflowX:"auto",paddingBottom:2}}>
         {progress.map(st=>{const idx=STAGES.indexOf(st);const done=idx<si&&!["On Hold","Rejected"].includes(c.stage);const cur=st===c.stage;const m=SM[st];
           return <div key={st} onClick={()=>onStageChange(c.id,st)} style={{flex:1,cursor:"pointer",textAlign:"center",padding:"0 1px"}}>
             <div style={{height:4,borderRadius:2,background:done||cur?m.c:C.gray200,marginBottom:4,transition:"background 0.2s"}}/>
@@ -886,7 +900,7 @@ function CandDetail({c,jobs,onEdit,onStageChange,onAddNote,onSubmitToJob,activeU
         {["On Hold","Rejected"].map(st=><span key={st} onClick={()=>onStageChange(c.id,st,c.stage)} style={{cursor:"pointer",background:c.stage===st?SM[st].bg:C.white,color:SM[st].c,border:`1px solid ${SM[st].c}40`,borderRadius:6,padding:"4px 12px",fontSize:11,fontWeight:600}}>{st}{c.stage===st?" ✓":""}</span>)}
       </div>
     </div>
-    <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:16}}>
+    <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"repeat(3,1fr)",gap:8,marginBottom:16}}>
       {[["Email",c.email],["Phone",c.phone],["Location",c.location],["Open to Relocate",profileMeta.openToRelocate],["Salary/Rate",c.salary],["Experience",c.experience],["Source",c.source],["Work Auth",c.workAuth],["Seniority",c.seniority],["Added",c.addedDate]].map(([k,v])=>(
         <div key={k} style={{background:C.gray50,border:`1px solid ${C.gray200}`,borderRadius:8,padding:"10px 12px"}}>
           <div style={{color:C.gray400,fontSize:10,textTransform:"uppercase",letterSpacing:0.5,fontWeight:600,marginBottom:3}}>{k}</div>
@@ -905,7 +919,7 @@ function CandDetail({c,jobs,onEdit,onStageChange,onAddNote,onSubmitToJob,activeU
         <div style={{fontSize:18,fontWeight:700,color:C.navy,marginBottom:12}}>Experience</div>
         <div style={{display:"flex",flexDirection:"column",gap:14}}>
           {aiProfile.experience.map((item,idx)=><div key={`${item.company}-${idx}`} style={{background:C.white,border:`1px solid ${C.gray200}`,borderRadius:12,padding:"16px 18px"}}>
-            <div style={{display:"flex",gap:12,alignItems:"flex-start"}}>
+            <div style={{display:"flex",gap:12,alignItems:"flex-start",flexDirection:isMobile?"column":"row"}}>
               <div style={{width:40,height:40,borderRadius:10,background:C.accentL,color:C.accent,display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,fontWeight:800,flexShrink:0}}>{ini(item.company||item.title||"T")}</div>
               <div style={{flex:1}}>
                 <div style={{fontSize:16,fontWeight:700,color:C.navy}}>{item.company||"Experience"}</div>
@@ -925,7 +939,7 @@ function CandDetail({c,jobs,onEdit,onStageChange,onAddNote,onSubmitToJob,activeU
       {aiProfile.education.length>0&&<div style={{marginBottom:18}}>
         <div style={{fontSize:18,fontWeight:700,color:C.navy,marginBottom:12}}>Education</div>
         <div style={{display:"flex",flexDirection:"column",gap:12}}>
-          {aiProfile.education.map((item,idx)=><div key={`${item.school}-${idx}`} style={{background:C.white,border:`1px solid ${C.gray200}`,borderRadius:12,padding:"16px 18px",display:"flex",gap:12,alignItems:"flex-start"}}>
+          {aiProfile.education.map((item,idx)=><div key={`${item.school}-${idx}`} style={{background:C.white,border:`1px solid ${C.gray200}`,borderRadius:12,padding:"16px 18px",display:"flex",gap:12,alignItems:"flex-start",flexDirection:isMobile?"column":"row"}}>
             <div style={{width:40,height:40,borderRadius:10,background:C.purpleL,color:C.purple,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>🎓</div>
             <div>
               <div style={{fontSize:16,fontWeight:700,color:C.navy}}>{item.school||"Education"}</div>
@@ -944,7 +958,7 @@ function CandDetail({c,jobs,onEdit,onStageChange,onAddNote,onSubmitToJob,activeU
     <div style={{marginBottom:16}}>
       <div style={{color:C.gray400,fontSize:10,fontWeight:600,letterSpacing:0.8,textTransform:"uppercase",marginBottom:8}}>Resume</div>
       {c.resumePath?(
-        <div style={{background:C.successL,border:`1px solid ${C.success}30`,borderRadius:9,padding:"11px 14px",display:"flex",alignItems:"center",gap:10}}>
+        <div style={{background:C.successL,border:`1px solid ${C.success}30`,borderRadius:9,padding:"11px 14px",display:"flex",alignItems:isMobile?"stretch":"center",gap:10,flexDirection:isMobile?"column":"row"}}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
           <div style={{flex:1}}>
             <div style={{color:C.success,fontSize:12,fontWeight:600}}>Resume on file</div>
@@ -978,7 +992,7 @@ function CandDetail({c,jobs,onEdit,onStageChange,onAddNote,onSubmitToJob,activeU
     <div style={{marginBottom:16}}>
       <div style={{color:C.gray400,fontSize:10,fontWeight:600,letterSpacing:0.8,textTransform:"uppercase",marginBottom:8}}>Submitted to Roles ({assigned.length})</div>
       {!assigned.length&&<div style={{color:C.gray300,fontSize:12,padding:"6px 0"}}>Not submitted to any role yet.</div>}
-      {assigned.map(j=><div key={j.id} style={{background:C.gray50,border:`1px solid ${C.gray200}`,borderRadius:8,padding:"10px 13px",marginBottom:6,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+      {assigned.map(j=><div key={j.id} style={{background:C.gray50,border:`1px solid ${C.gray200}`,borderRadius:8,padding:"10px 13px",marginBottom:6,display:"flex",justifyContent:"space-between",alignItems:isMobile?"flex-start":"center",gap:8,flexDirection:isMobile?"column":"row"}}>
         <div><div style={{color:C.navy,fontSize:13,fontWeight:600}}>{j.title}</div><div style={{color:C.gray400,fontSize:11,marginTop:1}}>{j.client} · {j.location}</div></div>
         <JobBadge status={j.status}/>
       </div>)}
@@ -989,7 +1003,7 @@ function CandDetail({c,jobs,onEdit,onStageChange,onAddNote,onSubmitToJob,activeU
     </div>
     <div>
       {/* Tab bar */}
-      <div style={{display:"flex",gap:0,borderBottom:`2px solid ${C.gray100}`,marginBottom:14}}>
+      <div style={{display:"flex",gap:0,borderBottom:`2px solid ${C.gray100}`,marginBottom:14,overflowX:"auto"}}>
         {["Notes","Timeline","Scorecard"].map(t=><button key={t} onClick={()=>setDetTab(t)} style={{background:"none",border:"none",borderBottom:`2px solid ${detTab===t?C.accent:"transparent"}`,marginBottom:-2,padding:"8px 16px",fontSize:12,fontWeight:detTab===t?700:500,color:detTab===t?C.accent:C.gray400,cursor:"pointer"}}>{t==="Scorecard"?"Scorecard":t==="Timeline"?"Timeline":"Notes"}{t==="Notes"&&visibleNotes.length?<span style={{background:C.accentL,color:C.accent,borderRadius:8,padding:"1px 6px",fontSize:10,marginLeft:5,fontWeight:700}}>{visibleNotes.length}</span>:null}</button>)}
       </div>
 
@@ -1007,7 +1021,7 @@ function CandDetail({c,jobs,onEdit,onStageChange,onAddNote,onSubmitToJob,activeU
             <div style={{color:C.gray600,fontSize:12,lineHeight:1.6}}>{n.text}</div>
           </div>;})}
         </div>
-        <div style={{display:"flex",gap:8}}>
+        <div style={{display:"flex",gap:8,flexDirection:isMobile?"column":"row"}}>
           <div style={{display:"flex",alignItems:"center",gap:7,flex:1}}>
             <RecruiterBadge id={activeUser.id} size={24}/>
             <input style={{...inp,flex:1}} value={note} onChange={e=>setNote(e.target.value)} onKeyDown={e=>e.key==="Enter"&&post()} placeholder={`Add note as ${activeUser.name}…`}/>
@@ -1025,6 +1039,7 @@ function CandDetail({c,jobs,onEdit,onStageChange,onAddNote,onSubmitToJob,activeU
 
 // ── JOB FORM ──────────────────────────────────────────────────────
 function JobForm({initial,onSave,onClose,activeUser=TEAM_FALLBACK[0],team=TEAM_FALLBACK}){
+  const isMobile=useIsMobile();
   const E={title:"",client:"",spoc:"",location:"",empType:"Full-Time",salary:"",priority:"P1",status:"Open – Sourcing",reqDate:today(),submitted:0,interviewed:0,offers:0,jd:"",notes:[],submittedCandidates:[],assignedRecruiters:[activeUser.id]};
   const [f,setF]=useState(initial||E);
   const [gen,setGen]=useState(false);
@@ -1063,7 +1078,7 @@ function JobForm({initial,onSave,onClose,activeUser=TEAM_FALLBACK[0],team=TEAM_F
   };
   const submit=()=>{if(!f.title.trim()||!f.client.trim()) return alert("Title and client required.");onSave({...f,id:f.id||Date.now()});};
   return <div>
-    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"14px 16px"}}>
+    <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:"14px 16px"}}>
       <F label="Job Title *" span2><input style={inp} value={f.title} onChange={e=>s("title",e.target.value)} placeholder="AI Penetration Tester"/></F>
       <F label="Client *"><input style={inp} value={f.client} onChange={e=>s("client",e.target.value)} placeholder="Happiest Minds…"/></F>
       <F label="Client SPOC"><input style={inp} value={f.spoc} onChange={e=>s("spoc",e.target.value)} placeholder="Praveen T…"/></F>
@@ -1084,9 +1099,9 @@ function JobForm({initial,onSave,onClose,activeUser=TEAM_FALLBACK[0],team=TEAM_F
       </div>
     </div>
     <div style={{marginBottom:14}}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:isMobile?"flex-start":"center",marginBottom:6,flexDirection:isMobile?"column":"row",gap:isMobile?8:0}}>
         <label style={{color:C.gray500,fontSize:11,fontWeight:600,letterSpacing:0.3}}>Job Description</label>
-        <div style={{display:"flex",gap:6,alignItems:"center"}}>
+        <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap",width:isMobile?"100%":"auto"}}>
           {jdMsg&&<span style={{fontSize:11,fontWeight:600,color:jdMsg.startsWith("✓")?C.success:C.warn}}>{jdMsg}</span>}
           <button onClick={()=>jdRef.current?.click()} style={{background:C.gray100,color:C.gray600,border:`1px solid ${C.gray200}`,borderRadius:6,padding:"4px 10px",fontSize:11,cursor:"pointer",fontWeight:500}}>📎 Drop File</button>
           <button onClick={genJD} disabled={gen} style={{background:C.accentL,color:C.accent,border:`1px solid ${C.accent}30`,borderRadius:6,padding:"4px 12px",fontSize:11,cursor:"pointer",fontWeight:600}}>{gen?"Generating…":"✨ AI Generate"}</button>
@@ -1104,7 +1119,7 @@ function JobForm({initial,onSave,onClose,activeUser=TEAM_FALLBACK[0],team=TEAM_F
         <textarea style={{...ta,minHeight:140,fontFamily:"monospace",fontSize:12,border:"none",borderRadius:8,background:"transparent",width:"100%",boxSizing:"border-box"}} value={f.jd} onChange={e=>s("jd",e.target.value)} placeholder="Paste JD, drop a PDF/DOCX, or use AI Generate…"/>
       </div>
     </div>
-    <div style={{display:"flex",gap:10}}>
+    <div style={{display:"flex",gap:10,flexDirection:isMobile?"column":"row"}}>
       <button onClick={submit} style={{flex:1,background:C.navy,color:C.white,border:"none",borderRadius:9,padding:"12px",fontSize:13,fontWeight:700,cursor:"pointer"}}>{initial?.id?"Save Changes":"Create Job Order"}</button>
       <button onClick={onClose} style={{background:C.white,color:C.gray500,border:`1px solid ${C.gray300}`,borderRadius:9,padding:"12px 20px",fontSize:13,cursor:"pointer"}}>Cancel</button>
     </div>
@@ -1113,6 +1128,7 @@ function JobForm({initial,onSave,onClose,activeUser=TEAM_FALLBACK[0],team=TEAM_F
 
 // ── JOB DETAIL ────────────────────────────────────────────────────
 function JobDetail({job,candidates,onEdit,onStatusChange,onAddNote,onRemove,onOpenCand,activeUser=TEAM_FALLBACK[0],onDelete}){
+  const isMobile=useIsMobile();
   const [note,setNote]=useState("");
   const [showJD,setShowJD]=useState(false);
   const [matching,setMatching]=useState(false);
@@ -1156,7 +1172,7 @@ Score 0-100. Consider: title match, skills, seniority, work auth, location, expe
     setMatching(false);
   };
   return <div>
-    <div style={{display:"flex",gap:12,alignItems:"flex-start",marginBottom:18}}>
+    <div style={{display:"flex",gap:12,alignItems:"flex-start",marginBottom:18,flexDirection:isMobile?"column":"row"}}>
       <div style={{flex:1}}>
         <div style={{fontSize:19,fontWeight:700,color:C.navy,fontFamily:"'DM Sans',sans-serif",letterSpacing:-0.3,lineHeight:1.25,marginBottom:4}}>{job.title}</div>
         <div style={{color:C.gray500,fontSize:13}}>{job.client}{job.spoc?` · SPOC: ${job.spoc}`:""}</div>
@@ -1166,7 +1182,7 @@ Score 0-100. Consider: title match, skills, seniority, work auth, location, expe
           {job.priority&&<span style={{color:PC[job.priority]||C.gray400,background:(PC[job.priority]||C.gray400)+"15",borderRadius:5,padding:"3px 8px",fontSize:11,fontWeight:700}}>{job.priority}</span>}
         </div>
       </div>
-      <div style={{display:"flex",gap:8,flexShrink:0}}><button onClick={onEdit} style={{background:C.navy,color:C.white,border:"none",borderRadius:8,padding:"8px 16px",fontSize:12,fontWeight:600,cursor:"pointer"}}>Edit</button>{onDelete&&<button onClick={()=>onDelete(job.id)} style={{background:C.dangerL,color:C.danger,border:`1px solid ${C.danger}30`,borderRadius:8,padding:"8px 14px",fontSize:12,fontWeight:600,cursor:"pointer"}}>Delete</button>}</div>
+      <div style={{display:"flex",gap:8,flexShrink:0,width:isMobile?"100%":"auto"}}><button onClick={onEdit} style={{background:C.navy,color:C.white,border:"none",borderRadius:8,padding:"8px 16px",fontSize:12,fontWeight:600,cursor:"pointer",flex:isMobile?1:"0 0 auto"}}>Edit</button>{onDelete&&<button onClick={()=>onDelete(job.id)} style={{background:C.dangerL,color:C.danger,border:`1px solid ${C.danger}30`,borderRadius:8,padding:"8px 14px",fontSize:12,fontWeight:600,cursor:"pointer",flex:isMobile?1:"0 0 auto"}}>Delete</button>}</div>
     </div>
     {(job.assignedRecruiters||[]).length>0&&<div style={{background:C.gray50,border:`1px solid ${C.gray200}`,borderRadius:9,padding:"11px 14px",marginBottom:14}}>
       <div style={{fontSize:10,fontWeight:600,color:C.gray400,letterSpacing:0.8,textTransform:"uppercase",marginBottom:8}}>Assigned Recruiters</div>
@@ -1183,7 +1199,7 @@ Score 0-100. Consider: title match, skills, seniority, work auth, location, expe
         {JOB_STATUSES.map(st=>{const m=JSM[st]||JSM["Open – Sourcing"];return <span key={st} onClick={()=>onStatusChange(job.id,st)} style={{cursor:"pointer",background:job.status===st?m.bg:C.white,color:job.status===st?m.c:C.gray400,border:`1px solid ${job.status===st?m.c+"50":C.gray200}`,borderRadius:6,padding:"5px 12px",fontSize:11,fontWeight:600,transition:"all 0.15s"}}>{st}</span>;})}
       </div>
     </div>
-    <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:14}}>
+    <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"repeat(3,1fr)",gap:8,marginBottom:14}}>
       {[["Location",job.location],["Salary/Rate",job.salary],["SPOC",job.spoc],["Type",job.empType],["Req Date",job.reqDate],["Priority",job.priority],["Submitted",job.submitted],["Interviewed",job.interviewed],["Offers",job.offers]].map(([k,v])=>(
         <div key={k} style={{background:C.gray50,border:`1px solid ${C.gray200}`,borderRadius:8,padding:"9px 11px"}}>
           <div style={{color:C.gray400,fontSize:10,textTransform:"uppercase",letterSpacing:0.5,fontWeight:600,marginBottom:3}}>{k}</div>
@@ -1198,12 +1214,14 @@ Score 0-100. Consider: title match, skills, seniority, work auth, location, expe
     <div style={{marginBottom:14}}>
       <div style={{fontSize:10,fontWeight:600,color:C.gray400,letterSpacing:0.8,textTransform:"uppercase",marginBottom:9}}>Submitted Candidates ({submitted.length})</div>
       {!submitted.length&&<div style={{color:C.gray300,fontSize:12,padding:"6px 0"}}>No candidates submitted yet.</div>}
-      {submitted.map(c=>{const o=getTeamMember(c.ownerId);return <div key={c.id} onClick={()=>onOpenCand(c)} style={{background:C.white,border:`1px solid ${C.gray200}`,borderRadius:9,padding:"10px 13px",marginBottom:7,display:"flex",alignItems:"center",gap:10,cursor:"pointer",transition:"all 0.15s",boxShadow:"0 1px 2px rgba(0,0,0,0.04)"}} onMouseEnter={e=>{e.currentTarget.style.borderColor=C.accent;e.currentTarget.style.boxShadow=`0 2px 8px ${C.accent}18`;}} onMouseLeave={e=>{e.currentTarget.style.borderColor=C.gray200;e.currentTarget.style.boxShadow="0 1px 2px rgba(0,0,0,0.04)";}}>
+      {submitted.map(c=>{const o=getTeamMember(c.ownerId);return <div key={c.id} onClick={()=>onOpenCand(c)} style={{background:C.white,border:`1px solid ${C.gray200}`,borderRadius:9,padding:"10px 13px",marginBottom:7,display:"flex",alignItems:isMobile?"flex-start":"center",gap:10,cursor:"pointer",transition:"all 0.15s",boxShadow:"0 1px 2px rgba(0,0,0,0.04)",flexDirection:isMobile?"column":"row"}} onMouseEnter={e=>{e.currentTarget.style.borderColor=C.accent;e.currentTarget.style.boxShadow=`0 2px 8px ${C.accent}18`;}} onMouseLeave={e=>{e.currentTarget.style.borderColor=C.gray200;e.currentTarget.style.boxShadow="0 1px 2px rgba(0,0,0,0.04)";}}>
         <Avatar name={c.name} size={30} color={o?.color}/>
-        <div style={{flex:1}}><div style={{color:C.navy,fontSize:13,fontWeight:600}}>{c.name}</div><div style={{color:C.gray400,fontSize:11,marginTop:1}}>{c.title} · {c.workAuth||c.location}</div></div>
-        <StageBadge stage={c.stage}/>
-        <span style={{fontSize:11,color:C.gray500,minWidth:70,textAlign:"right"}}>{c.salary||"—"}</span>
-        {o&&<RecruiterBadge id={c.ownerId} size={20}/>}
+        <div style={{flex:1,width:isMobile?"100%":"auto"}}><div style={{color:C.navy,fontSize:13,fontWeight:600}}>{c.name}</div><div style={{color:C.gray400,fontSize:11,marginTop:1}}>{c.title} · {c.workAuth||c.location}</div></div>
+        <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",width:isMobile?"100%":"auto"}}>
+          <StageBadge stage={c.stage}/>
+          <span style={{fontSize:11,color:C.gray500,minWidth:isMobile?0:70,textAlign:isMobile?"left":"right"}}>{c.salary||"—"}</span>
+          {o&&<RecruiterBadge id={c.ownerId} size={20}/>}
+        </div>
         <button onClick={e=>{e.stopPropagation();onRemove(job.id,c.id);}} style={{background:"transparent",color:C.gray300,border:"none",fontSize:16,cursor:"pointer",padding:"2px 6px"}}>×</button>
       </div>;})}
     </div>
@@ -1224,10 +1242,10 @@ Score 0-100. Consider: title match, skills, seniority, work auth, location, expe
           const cand=candidates.find(c=>c.id===m.id);
           const scoreColor=m.matchScore>=80?C.success:m.matchScore>=60?C.warn:C.danger;
           return <div key={m.id||i} onClick={()=>cand&&onOpenCand(cand)} style={{background:C.white,border:`1px solid ${C.gray200}`,borderRadius:10,padding:"12px 14px",cursor:cand?"pointer":"default",transition:"all 0.15s"}} onMouseEnter={e=>{if(cand){e.currentTarget.style.borderColor=C.accent;e.currentTarget.style.boxShadow=`0 2px 10px ${C.accent}15`;}}} onMouseLeave={e=>{e.currentTarget.style.borderColor=C.gray200;e.currentTarget.style.boxShadow="none";}}>
-            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:6}}>
+            <div style={{display:"flex",alignItems:isMobile?"flex-start":"center",gap:10,marginBottom:6,flexDirection:isMobile?"column":"row"}}>
               <div style={{width:28,height:28,borderRadius:7,background:scoreColor+"20",border:`2px solid ${scoreColor}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:800,color:scoreColor,flexShrink:0}}>{i+1}</div>
               <div style={{flex:1}}>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:isMobile?"flex-start":"center",flexDirection:isMobile?"column":"row",gap:isMobile?6:0}}>
                   <div style={{color:C.navy,fontSize:13,fontWeight:700}}>{m.name}</div>
                   <div style={{display:"flex",alignItems:"center",gap:6}}>
                     <div style={{background:scoreColor+"20",color:scoreColor,borderRadius:6,padding:"2px 8px",fontSize:11,fontWeight:700}}>{m.matchScore}% match</div>
@@ -1262,7 +1280,7 @@ Score 0-100. Consider: title match, skills, seniority, work auth, location, expe
           <div style={{color:C.gray600,fontSize:12,lineHeight:1.6}}>{n.text}</div>
         </div>;})}
       </div>
-      <div style={{display:"flex",gap:8}}>
+      <div style={{display:"flex",gap:8,flexDirection:isMobile?"column":"row"}}>
         <div style={{display:"flex",alignItems:"center",gap:7,flex:1}}>
           <RecruiterBadge id={activeUser.id} size={22}/>
           <input style={{...inp,flex:1}} value={note} onChange={e=>setNote(e.target.value)} onKeyDown={e=>e.key==="Enter"&&post()} placeholder={`Add note as ${activeUser.name}…`}/>
@@ -2062,7 +2080,7 @@ export default function HCPRecruit(){
         {page==="candidates"&&<>
           <div style={{background:"#fff",border:`1px solid ${B.muted}`,borderRadius:12,padding:"14px 16px",marginBottom:16}}>
             <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
-              <div style={{position:"relative",flex:"1 1 200px",minWidth:180}}>
+              <div style={{position:"relative",flex:"1 1 200px",minWidth:isMobile?0:180,width:isMobile?"100%":"auto"}}>
                 <span style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",color:"#A09A93",display:"flex"}}>{IC.search}</span>
                 <input style={{...inp,paddingLeft:32}} value={cs} onChange={e=>setCs(e.target.value)} placeholder="Search name, title, skill, client, work auth, notes…"/>
               </div>
@@ -2070,7 +2088,7 @@ export default function HCPRecruit(){
                 {IC.filter} Filters
                 {(cStage!=="All"||cVert!=="All"||cAuth!=="All"||cOwner!=="All"||cSeniority!=="All"||cClient!=="All"||cHasResume!=="All")&&<span style={{background:B.accent,color:"#fff",borderRadius:10,padding:"1px 7px",fontSize:10,fontWeight:700}}>{[cStage,cVert,cAuth,cOwner,cSeniority,cClient,cHasResume].filter(x=>x!=="All").length}</span>}
               </button>
-              <select style={{...sel,flex:"0 0 170px"}} value={cSort} onChange={e=>setCSort(e.target.value)}>
+              <select style={{...sel,flex:isMobile?"1 1 100%":"0 0 170px"}} value={cSort} onChange={e=>setCSort(e.target.value)}>
                 <option value="name">Sort: A–Z</option><option value="stage">Sort: Stage</option><option value="salary">Sort: Rate ↓</option><option value="added_newest">Sort: Date Added ↓</option><option value="added_oldest">Sort: Date Added ↑</option>
               </select>
               {hasActiveCandidateFilters&&<button onClick={resetCandidateFilters} style={{background:"#fff",color:B.ink,border:`1px solid ${B.muted}`,borderRadius:999,padding:"8px 14px",fontSize:12,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:6,boxShadow:"0 1px 2px rgba(26,36,46,0.04)"}}>Clear all</button>}
@@ -2089,7 +2107,30 @@ export default function HCPRecruit(){
 
           {/* Candidate list */}
           <div style={{background:"#fff",border:`1px solid ${B.muted}`,borderRadius:12,overflow:"hidden"}}>
-            <table style={{width:"100%",borderCollapse:"collapse",fontSize:13}}>
+            {isMobile?<div style={{padding:12,display:"flex",flexDirection:"column",gap:10}}>
+              {fCands.map(c=>{
+                const o=getTeamMember(c.ownerId);
+                const cJobs=jobs.filter(j=>(c.submittedTo||[]).includes(j.id));
+                return <div key={c.id} onClick={()=>openCand(c)} style={{background:B.surface,border:`1px solid ${B.muted}`,borderRadius:12,padding:"14px 14px 12px",display:"flex",flexDirection:"column",gap:10,cursor:"pointer"}}>
+                  <div style={{display:"flex",alignItems:"flex-start",gap:10}}>
+                    <Avatar name={c.name} size={38} color={o?.color}/>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{fontWeight:700,color:B.ink,fontSize:14,lineHeight:1.2}}>{c.name}</div>
+                      <div style={{fontSize:12,color:"#A09A93",marginTop:3}}>{c.title||"—"}</div>
+                      {c.location&&<div style={{fontSize:11,color:"#A09A93",marginTop:3}}>{c.location}</div>}
+                    </div>
+                    <StageBadge stage={c.stage}/>
+                  </div>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px 10px"}}>
+                    <div><div style={{fontSize:10,color:"#A09A93",textTransform:"uppercase",fontWeight:700,letterSpacing:0.4}}>Rate</div><div style={{fontSize:12,color:c.salary?"#34d399":"#A09A93",fontWeight:700,marginTop:2}}>{c.salary||"—"}</div></div>
+                    <div><div style={{fontSize:10,color:"#A09A93",textTransform:"uppercase",fontWeight:700,letterSpacing:0.4}}>Owner</div><div style={{fontSize:12,color:B.ink,fontWeight:600,marginTop:2}}>{o?.name||"—"}</div></div>
+                    <div><div style={{fontSize:10,color:"#A09A93",textTransform:"uppercase",fontWeight:700,letterSpacing:0.4}}>Client</div><div style={{fontSize:12,color:B.ink,fontWeight:600,marginTop:2}}>{cJobs.map(j=>j.client).filter(Boolean).join(", ")||"—"}</div></div>
+                    <div><div style={{fontSize:10,color:"#A09A93",textTransform:"uppercase",fontWeight:700,letterSpacing:0.4}}>Auth</div><div style={{marginTop:4}}>{c.workAuth?<Tag label={c.workAuth}/>:<span style={{color:"#A09A93",fontSize:12}}>—</span>}</div></div>
+                  </div>
+                </div>;
+              })}
+              {!fCands.length&&<div style={{textAlign:"center",padding:32,color:"#A09A93",fontSize:13}}>No candidates match your filters.</div>}
+            </div>:<table style={{width:"100%",borderCollapse:"collapse",fontSize:13}}>
               <thead><tr style={{background:B.surface}}>
                 {["Candidate","Title","Stage","Rate","Owner","Client","Auth"].map(h=><th key={h} style={{padding:"12px 14px",textAlign:"left",fontWeight:600,color:"#A09A93",fontSize:11,textTransform:"uppercase",letterSpacing:0.5,borderBottom:`1px solid ${B.muted}`}}>{h}</th>)}
               </tr></thead>
@@ -2112,7 +2153,7 @@ export default function HCPRecruit(){
                 })}
                 {!fCands.length&&<tr><td colSpan={7} style={{textAlign:"center",padding:48,color:"#A09A93",fontSize:13}}>No candidates match your filters.</td></tr>}
               </tbody>
-            </table>
+            </table>}
           </div>
         </>}
 
@@ -2127,7 +2168,7 @@ export default function HCPRecruit(){
                 {id:"all",label:"All Recruiters"},
               ].map(opt=><button key={opt.id} onClick={()=>setPipelineOwner(opt.id)} style={{background:pipelineOwner===opt.id?B.accent:"#fff",color:pipelineOwner===opt.id?"#fff":B.ink,border:`1px solid ${pipelineOwner===opt.id?B.accent:B.muted}`,borderRadius:8,padding:"8px 12px",fontSize:12,fontWeight:600,cursor:"pointer"}}>{opt.label}</button>)}
             </div>
-            <div style={{position:"relative",flex:"1 1 260px",minWidth:220,maxWidth:420}}>
+            <div style={{position:"relative",flex:"1 1 260px",minWidth:isMobile?0:220,maxWidth:isMobile?"100%":420,width:isMobile?"100%":"auto"}}>
               <span style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",color:"#A09A93",display:"flex"}}>{IC.search}</span>
               <input
                 style={{...inp,paddingLeft:32,paddingRight:pipelineSearch?34:12,height:38}}
@@ -2142,7 +2183,7 @@ export default function HCPRecruit(){
             {pipelineSearchQuery?`${pipelineCands.length} result${pipelineCands.length!==1?"s":""}`:(pipelineOwner==="mine"?"Showing your pipeline":"Showing all recruiters")}
           </span>
         </div>
-        <div style={{display:"flex",gap:10,overflowX:"auto",paddingBottom:16,alignItems:"stretch"}}>
+        <div style={{display:"flex",gap:10,overflowX:"auto",paddingBottom:16,alignItems:"stretch",scrollSnapType:isMobile?"x proximity":"none"}}>
           {STAGES.map(stage=>{
             const col=pipelineCands.filter(c=>c.stage===stage);const m=SM[stage];
             const expanded=!!pipelineExpanded[stage];
@@ -2151,7 +2192,7 @@ export default function HCPRecruit(){
             const hiddenCount=Math.max(0,col.length-visibleCol.length);
             const handleDragOver=e=>{e.preventDefault();e.stopPropagation();};
             const handleDrop=e=>{e.preventDefault();e.stopPropagation();const cid=e.dataTransfer.getData("text/plain");if(cid){const cand=cands.find(x=>x.id===cid);if(cand&&cand.stage!==stage)stageChange(cid,stage,cand.stage);}};
-            return <div key={stage} style={{flex:"0 0 210px",minWidth:210,minHeight:300,display:"flex",flexDirection:"column"}}
+            return <div key={stage} style={{flex:`0 0 ${isMobile?260:210}px`,minWidth:isMobile?260:210,minHeight:300,display:"flex",flexDirection:"column",scrollSnapAlign:isMobile?"start":"none"}}
               onDragOver={handleDragOver}
               onDrop={handleDrop}>
               <div style={{background:m.bg,border:`1px solid ${m.c}40`,borderRadius:9,padding:"8px 12px",marginBottom:8,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
@@ -2190,16 +2231,16 @@ export default function HCPRecruit(){
         {/* JOBS */}
         {page==="jobs"&&<>
           <div style={{background:"#fff",border:`1px solid ${B.muted}`,borderRadius:12,padding:"14px 16px",marginBottom:16,display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}}>
-            <div style={{position:"relative",flex:"1 1 200px",minWidth:180}}>
+            <div style={{position:"relative",flex:"1 1 200px",minWidth:isMobile?0:180,width:isMobile?"100%":"auto"}}>
               <span style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",color:"#A09A93",display:"flex"}}>{IC.search}</span>
               <input style={{...inp,paddingLeft:32}} value={js} onChange={e=>setJs(e.target.value)} placeholder="Search role, client, SPOC…"/>
             </div>
-            <select style={{...sel,flex:"0 0 155px"}} value={jStat} onChange={e=>setJStat(e.target.value)}><option value="All">All Statuses</option>{JOB_STATUSES.map(s=><option key={s}>{s}</option>)}</select>
-            <select style={{...sel,flex:"0 0 145px"}} value={jClient} onChange={e=>setJClient(e.target.value)}><option value="All">All Clients</option>{clients.map(c=><option key={c}>{c}</option>)}</select>
-            <select style={{...sel,flex:"0 0 145px"}} value={jOwner} onChange={e=>setJOwner(e.target.value)}><option value="All">All Recruiters</option>{team.map(t=><option key={t.id} value={t.id}>{t.name.split(" ")[0]}</option>)}</select>
+            <select style={{...sel,flex:isMobile?"1 1 calc(50% - 4px)":"0 0 155px"}} value={jStat} onChange={e=>setJStat(e.target.value)}><option value="All">All Statuses</option>{JOB_STATUSES.map(s=><option key={s}>{s}</option>)}</select>
+            <select style={{...sel,flex:isMobile?"1 1 calc(50% - 4px)":"0 0 145px"}} value={jClient} onChange={e=>setJClient(e.target.value)}><option value="All">All Clients</option>{clients.map(c=><option key={c}>{c}</option>)}</select>
+            <select style={{...sel,flex:isMobile?"1 1 100%":"0 0 145px"}} value={jOwner} onChange={e=>setJOwner(e.target.value)}><option value="All">All Recruiters</option>{team.map(t=><option key={t.id} value={t.id}>{t.name.split(" ")[0]}</option>)}</select>
             <span style={{color:"#A09A93",fontSize:12,fontWeight:500,marginLeft:"auto"}}>{fJobs.length} role{fJobs.length!==1?"s":""}</span>
           </div>
-          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(320px,1fr))",gap:12}}>
+          <div style={{display:"grid",gridTemplateColumns:`repeat(auto-fill,minmax(${isMobile?260:320}px,1fr))`,gap:12}}>
             {fJobs.map(j=>{
               const subs=cands.filter(c=>j.submittedCandidates?.includes(c.id));
               const PC={"P1":C.danger,"P2":C.warn,"P3":C.gray400};
