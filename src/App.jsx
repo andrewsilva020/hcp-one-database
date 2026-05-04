@@ -205,6 +205,18 @@ function generateActivityReport(cands, jobs, filterRecruiter="all", team=TEAM_FA
   return {range,period,active:fc.filter(c=>!["Placed","Rejected"].includes(c.stage)),byStage,byClient,byRecruiter,openJobs:fj.filter(j=>["Open – Sourcing","Active"].includes(j.status)),hotCands:fc.filter(c=>["Interview 1","Interview 2","Final Interview","Offer"].includes(c.stage)),total:fc.length,placed:fc.filter(c=>c.stage==="Placed").length};
 }
 
+async function callAnthropic({messages,maxTokens=1200,model="claude-sonnet-4-20250514"}) {
+  const res=await fetch("/api/anthropic",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({messages,maxTokens,model}),
+  });
+  const data=await res.json().catch(()=>({error:"Invalid server response"}));
+  if(!res.ok) throw new Error(data?.error||data?.message||"Anthropic request failed");
+  if(data?.error) throw new Error(data.error?.message||data.error);
+  return data;
+}
+
 const AI_PROFILE_PREFIX = "[AI PROFILE]";
 const AI_SUMMARY_PREFIX = "[AI Summary]";
 const PROFILE_META_PREFIX = "[PROFILE META]";
@@ -409,8 +421,7 @@ async function parseCandidateFileWithAI(file) {
   } else {
     messages=[{role:"user",content:`${extractPrompt}\n\nResume text:\n${atob(base64).replace(/[^\x20-\x7E\n]/g," ").substring(0,3000)}`}];
   }
-  const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":import.meta.env.VITE_ANTHROPIC_API_KEY,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1400,messages})});
-  const data=await res.json();
+  const data=await callAnthropic({messages,maxTokens:1400});
   if(data.error) throw new Error(data.error.message);
   return JSON.parse((data.content?.[0]?.text||"{}").replace(/```json|```/g,"").trim());
 }
@@ -665,8 +676,7 @@ function CandForm({initial,allCandidates,onSave,onClose,activeUser=TEAM_FALLBACK
     setPMsg(`AI reading ${originLabel.toLowerCase()} text…`);
     try{
       const extractPrompt=`Extract candidate info from this ${originLabel.toLowerCase()} text. Return ONLY valid JSON with these exact fields when present: name, email, phone, linkedin, title, seniority (one of: Individual Contributor/Senior IC/Team Lead/Manager/Director/VP/SVP/C-Suite / Partner), experience, salary, location, workAuth (one of: US Citizen/Green Card/H-1B/H-4 EAD/L-1/TN Visa/OPT/CPT/EAD/EU Passport/EU Blue Card/Residence Permit/Requires Sponsorship/Other), skills (array of up to 8 most relevant skills), vertical (one of: Telecom / Wireless/AI / ML / Data/Cybersecurity/Software Engineering/Cloud / DevOps/Sales & Business Development/Directors & VPs/SVPs & C-Suite/Client Partners/Project / Program Mgmt/Network Engineering/Consulting), source, profile. "profile" should be an object with keys: overview (string), experience (array of {company,title,dates,bullets}), education (array of {school,degree,dates}). Keep the overview concise and recruiter-friendly. Infer only when strongly supported by the text. Use "LinkedIn" as source if this appears to be a LinkedIn profile.`;
-      const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":import.meta.env.VITE_ANTHROPIC_API_KEY,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1200,messages:[{role:"user",content:`${extractPrompt}\n\nProfile text:\n${text.substring(0,18000)}`}]})});
-      const data=await res.json();
+      const data=await callAnthropic({maxTokens:1200,messages:[{role:"user",content:`${extractPrompt}\n\nProfile text:\n${text.substring(0,18000)}`}]});
       if(data.error) throw new Error(data.error.message);
       const parsed=JSON.parse((data.content?.[0]?.text||"{}").replace(/```json|```/g,"").trim());
       const mapped=mapParsedCandidate(parsed);
@@ -1056,8 +1066,7 @@ function JobForm({initial,onSave,onClose,activeUser=TEAM_FALLBACK[0],team=TEAM_F
       const isPDF=file.type==="application/pdf"||file.name.endsWith(".pdf");
       const base64=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result.split(",")[1]);r.onerror=()=>rej(r.error);r.readAsDataURL(file);});
       if(isPDF){
-        const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":import.meta.env.VITE_ANTHROPIC_API_KEY,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:2000,messages:[{role:"user",content:[{type:"document",source:{type:"base64",media_type:"application/pdf",data:base64}},{type:"text",text:"Extract the full job description text from this document. Return only the plain text content, no commentary."}]}]})});
-        const data=await res.json();
+        const data=await callAnthropic({maxTokens:2000,messages:[{role:"user",content:[{type:"document",source:{type:"base64",media_type:"application/pdf",data:base64}},{type:"text",text:"Extract the full job description text from this document. Return only the plain text content, no commentary."}]}]});
         if(data.error) throw new Error(data.error.message);
         s("jd",data.content?.[0]?.text||"");
         setJdMsg("✓ JD extracted from PDF.");
@@ -1072,7 +1081,7 @@ function JobForm({initial,onSave,onClose,activeUser=TEAM_FALLBACK[0],team=TEAM_F
   const genJD=async()=>{
     if(!f.title||!f.client) return alert("Enter title and client first.");
     setGen(true);
-    try{const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":import.meta.env.VITE_ANTHROPIC_API_KEY,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:900,messages:[{role:"user",content:`Write a professional job description. Role: ${f.title}. Client: ${f.client}. Location: ${f.location||"TBD"}. Pay: ${f.salary||"Competitive"}. Type: ${f.empType}. Sections: About the Role, Responsibilities (4 bullets), Required Qualifications (4 bullets), Nice to Have, Compensation. Plain text, use • for bullets.`}]})});const d=await res.json();s("jd",d.content?.[0]?.text||"");}
+    try{const d=await callAnthropic({maxTokens:900,messages:[{role:"user",content:`Write a professional job description. Role: ${f.title}. Client: ${f.client}. Location: ${f.location||"TBD"}. Pay: ${f.salary||"Competitive"}. Type: ${f.empType}. Sections: About the Role, Responsibilities (4 bullets), Required Qualifications (4 bullets), Nice to Have, Compensation. Plain text, use • for bullets.`}]});s("jd",d.content?.[0]?.text||"");}
     catch{alert("JD generation failed.");}
     setGen(false);
   };
@@ -1162,8 +1171,7 @@ Return JSON array of top 5 matches:
 
 Score 0-100. Consider: title match, skills, seniority, work auth, location, experience. Be specific in reasons.`;
 
-      const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":import.meta.env.VITE_ANTHROPIC_API_KEY,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1500,messages:[{role:"user",content:prompt}]})});
-      const data=await res.json();
+      const data=await callAnthropic({maxTokens:1500,messages:[{role:"user",content:prompt}]});
       if(data.error) throw new Error(data.error.message);
       const raw=data.content?.[0]?.text||"[]";
       const parsed=JSON.parse(raw.replace(/```json|```/g,"").trim());
